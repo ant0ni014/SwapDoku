@@ -3,176 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SwapDoku — Minimalistisches Echtzeit-Multiplayer-Sudoku</title>
-  <meta name="description" content="Minimalistisches Echtzeit-Web-Sudoku mit Supabase Realtime BaaS, Board-Swap Co-Op und Gamification.">
+  <title>SwapDoku — Minimal Sudoku</title>
 
-  <!-- Inter Font von Google Fonts für skandinavische Typografie -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
-
-  <!-- Supabase JS Client v2 via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="app-container">
-    <!-- HEADER & STATUS -->
-    <header class="app-header">
+  <div class="app">
+    <!-- Header: Ruhig & reduziert -->
+    <header class="header">
       <div class="brand">
-        <h1 class="logo">Swap<span>Doku</span></h1>
-        <span class="tagline">Realtime BaaS Sudoku</span>
+        <h1>SwapDoku</h1>
       </div>
-
-      <div class="user-status">
-        <div class="points-badge" id="pointsBadge" title="Deine aktuellen Sync-Points">
-          <span class="badge-icon">✦</span>
-          <span id="userPoints">0</span>
-          <span class="points-label">Pts</span>
-        </div>
-        <button class="icon-btn" id="openShopBtn" title="Theme-Shop öffnen" aria-label="Theme Shop">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 2a7 7 0 0 0 7 7c0 2-2 3-2 3"></path>
-            <circle cx="8" cy="14" r="1"></circle>
-            <circle cx="12" cy="17" r="1"></circle>
-            <circle cx="16" cy="14" r="1"></circle>
-          </svg>
+      <div class="user-meta">
+        <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
+          <span class="pts-val" id="userPoints">0</span> Pts
         </button>
       </div>
     </header>
 
-    <!-- NAVIGATION / MODUS-AUSWAHL -->
-    <nav class="mode-nav">
-      <button class="mode-tab active" data-mode="zen" id="tabZen">Single (Zen)</button>
-      <button class="mode-tab" data-mode="versus" id="tabVersus">Versus</button>
-      <button class="mode-tab" data-mode="swap" id="tabSwap">Co-Op Swap</button>
+    <!-- Modi -->
+    <nav class="modes">
+      <button class="mode-btn active" data-mode="zen" id="tabZen">Zen</button>
+      <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
+      <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
     </nav>
 
-    <!-- MULTIPLAYER LOBBY PANEL (Erscheint nur bei Versus / Co-Op) -->
-    <section class="multiplayer-lobby hidden" id="multiplayerLobby">
-      <div class="lobby-controls">
-        <div class="lobby-actions">
-          <button class="btn btn-secondary" id="createRoomBtn">Raum erstellen</button>
-          <div class="join-group">
-            <input type="text" id="roomCodeInput" maxlength="4" placeholder="Code" aria-label="4-stelliger Raumcode">
-            <button class="btn btn-secondary" id="joinRoomBtn">Beitreten</button>
-          </div>
+    <!-- Multiplayer Lobby -->
+    <section class="lobby hidden" id="multiplayerLobby">
+      <div class="lobby-row">
+        <button class="btn" id="createRoomBtn">Raum erstellen</button>
+        <span class="divider">oder</span>
+        <div class="join-box">
+          <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
+          <button class="btn" id="joinRoomBtn">Beitreten</button>
         </div>
-        
-        <div class="lobby-status-bar" id="lobbyStatusBar">
-          <div class="room-code-display hidden" id="roomCodeDisplay">
-            Raum: <strong id="currentRoomCode">----</strong>
-          </div>
-          <div class="connection-indicator">
-            <span class="dot" id="connDot"></span>
-            <span id="connText">Nicht verbunden</span>
-          </div>
-        </div>
+      </div>
+      <div class="lobby-info">
+        <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
+        <span class="status-indicator">
+          <span class="dot" id="connDot"></span>
+          <span id="connText">Nicht verbunden</span>
+        </span>
       </div>
     </section>
 
-    <!-- HUD / MATCH INFO (Timer & Versus Progress) -->
-    <section class="game-hud" id="gameHud">
-      <!-- Versus Live Fortschrittsbalken -->
-      <div class="hud-item versus-bars hidden" id="versusBars">
-        <div class="progress-wrapper">
-          <div class="progress-meta"><span>Du</span><span id="playerProgressLabel">0%</span></div>
-          <div class="progress-track"><div class="progress-fill" id="playerProgressBar" style="width: 0%"></div></div>
+    <!-- Info / HUD -->
+    <section class="hud" id="gameHud">
+      <!-- Versus Progress -->
+      <div class="versus-wrap hidden" id="versusBars">
+        <div class="bar-row">
+          <span>Du</span>
+          <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
+          <span class="bar-pct" id="playerProgressLabel">0%</span>
         </div>
-        <div class="progress-wrapper">
-          <div class="progress-meta"><span>Gegner</span><span id="opponentProgressLabel">0%</span></div>
-          <div class="progress-track"><div class="progress-fill opponent" id="opponentProgressBar" style="width: 0%"></div></div>
+        <div class="bar-row">
+          <span>Gegner</span>
+          <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
+          <span class="bar-pct" id="opponentProgressLabel">0%</span>
         </div>
       </div>
 
-      <!-- Synchroner Swap Timer -->
-      <div class="hud-item swap-timer-box hidden" id="swapTimerBox">
-        <span class="timer-label">Nächster Board-Swap in:</span>
-        <div class="timer-display" id="swapTimer">10s</div>
-      </div>
-
-      <!-- RTT / Latenz-Anzeige für Evaluation in der Seminararbeit -->
-      <div class="hud-item latency-display" id="latencyDisplay" title="Realtime Broadcast Round-Trip-Time (Evaluations-Metrik)">
-        RTT: <span id="rttValue">--</span> ms
+      <!-- Swap Timer -->
+      <div class="swap-wrap hidden" id="swapTimerBox">
+        <span>Swap in</span>
+        <strong id="swapTimer">10s</strong>
       </div>
     </section>
 
-    <!-- BOARD WRAPPER & 9x9 GRID -->
-    <main class="board-section">
-      <div class="sudoku-board" id="sudokuGrid" role="grid" aria-label="Sudoku Spielfeld">
-        <!-- 81 Zellen werden dynamisch via app.js erzeugt -->
-      </div>
+    <!-- 9x9 Sudoku Feld -->
+    <main class="grid-wrap">
+      <div class="sudoku-grid" id="sudokuGrid"></div>
     </main>
 
-    <!-- ON-SCREEN NUMPAD & CONTROLS (OPTIMIERT FÜR TOUCH & DESKTOP) -->
-    <section class="controls-section">
-      <div class="action-buttons">
-        <button class="btn btn-tool" id="btnErase" title="Zelle leeren (Backspace)">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
-            <line x1="18" y1="9" x2="12" y2="15"></line>
-            <line x1="12" y1="9" x2="18" y2="15"></line>
-          </svg>
-          <span>Löschen</span>
-        </button>
-        <button class="btn btn-tool" id="btnNotes" title="Notizen-Modus an/aus">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 20h9"></path>
-            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-          </svg>
-          <span id="notesStatus">Notizen: Aus</span>
-        </button>
-        <button class="btn btn-tool" id="btnNewGame" title="Neues Spiel im aktuellen Modus">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="1 4 1 10 7 10"></polyline>
-            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-          </svg>
-          <span>Neu</span>
-        </button>
+    <!-- Steuerleiste -->
+    <section class="controls">
+      <div class="toolbar">
+        <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
+        <button class="tool-btn" id="btnErase">Löschen</button>
+        <button class="tool-btn" id="btnNewGame">Neu</button>
       </div>
 
       <div class="numpad" id="numpad">
-        <button class="num-key" data-digit="1">1</button>
-        <button class="num-key" data-digit="2">2</button>
-        <button class="num-key" data-digit="3">3</button>
-        <button class="num-key" data-digit="4">4</button>
-        <button class="num-key" data-digit="5">5</button>
-        <button class="num-key" data-digit="6">6</button>
-        <button class="num-key" data-digit="7">7</button>
-        <button class="num-key" data-digit="8">8</button>
-        <button class="num-key" data-digit="9">9</button>
+        <button class="num" data-num="1">1</button>
+        <button class="num" data-num="2">2</button>
+        <button class="num" data-num="3">3</button>
+        <button class="num" data-num="4">4</button>
+        <button class="num" data-num="5">5</button>
+        <button class="num" data-num="6">6</button>
+        <button class="num" data-num="7">7</button>
+        <button class="num" data-num="8">8</button>
+        <button class="num" data-num="9">9</button>
       </div>
     </section>
-
-    <!-- FOOTER / PROJEKTHINWEIS -->
-    <footer class="app-footer">
-      <p>SwapDoku &bull; FOM Seminararbeit &bull; Vanilla JS & Supabase Realtime</p>
-    </footer>
   </div>
 
-  <!-- THEME SHOP & GAMIFICATION MODAL -->
-  <div class="modal-overlay hidden" id="themeModal">
+  <!-- Theme Modal -->
+  <div class="modal hidden" id="themeModal">
     <div class="modal-card">
-      <div class="modal-header">
-        <h3>Theme Shop & Gamification</h3>
-        <button class="close-btn" id="closeShopBtn" aria-label="Schließen">&times;</button>
+      <div class="modal-top">
+        <h2>Themes</h2>
+        <button class="close-btn" id="closeShopBtn">&times;</button>
       </div>
-      <div class="modal-body">
-        <p class="modal-intro">Löse Sudokus, um <strong>Sync-Points</strong> zu sammeln und exklusive skandinavische Themes freizuschalten.</p>
-        
-        <div class="themes-grid" id="themesContainer">
-          <!-- Dynamisch gerendert aus Themes-Definition -->
-        </div>
-      </div>
+      <div class="theme-list" id="themesContainer"></div>
     </div>
   </div>
 
-  <!-- NOTIFICATION TOAST -->
+  <!-- Toast -->
   <div class="toast hidden" id="toast"></div>
 
-  <!-- HAUPTLOGIK -->
   <script src="app.js"></script>
 </body>
 </html>

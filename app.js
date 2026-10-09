@@ -1,146 +1,109 @@
 /**
- * ==============================================================================
- * SwapDoku / SyncDoku: Hauptanwendungs-Logik
- * Modul: Web Technologie (FOM-Seminararbeit)
- * 
- * Funktionen:
- * 1. Sudoku Engine: Deterministische Puzzle-Generierung, Solver & Validierung
- * 2. Supabase Integration: Anonyme Authentifizierung, PostgreSQL Sync & RPC
- * 3. Realtime Channels: WebSockets via Supabase (Broadcast & Presence)
- * 4. Versus & Co-Op Board-Swap: Synchrone 10s-Timer & Grid-Austausch
- * 5. Gamification & Theme-Engine: Dynamic CSS Variables & Shop
- * 6. Latenz-Evaluation: RTT Broadcast Messung für empirische Analyse
- * ==============================================================================
+ * SwapDoku: Kernlogik & Realtime-Synchronisation
  */
 
-// 1. KONFIGURATION & FALLBACK (Vercel / Local Setup)
-// HINWEIS: Ersetze diese Werte durch deine Supabase-Projekt-Credentials aus dem Dashboard.
-// Sollten Platzhalter aktiv sein, schaltet die App automatisch in einen sicheren Offline-Demo-Modus.
 const SUPABASE_CONFIG = {
   url: window.__SUPABASE_URL__ || 'https://xyzcompany.supabase.co',
   anonKey: window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key'
 };
 
-// 2. THEME DEFINITIONEN
-const AVAILABLE_THEMES = [
-  { id: 'nordic-light', name: 'Nordic Light', cost: 0, colors: ['#f8fafc', '#ffffff', '#2563eb'] },
-  { id: 'dark-slate', name: 'Dark Slate', cost: 100, colors: ['#0f172a', '#1e293b', '#10b981'] },
-  { id: 'matcha-paper', name: 'Matcha Paper', cost: 200, colors: ['#f4f5f0', '#283618', '#588157'] },
-  { id: 'nordic-frost', name: 'Nordic Frost', cost: 300, colors: ['#f0f7ff', '#0c4a6e', '#0284c7'] }
+const THEMES = [
+  { id: 'nordic-light', name: 'Nordic Light', cost: 0 },
+  { id: 'dark-slate', name: 'Dark Slate', cost: 100 },
+  { id: 'matcha-paper', name: 'Matcha Paper', cost: 200 },
+  { id: 'nordic-frost', name: 'Nordic Frost', cost: 300 }
 ];
 
-// 3. ANWENDUNGS-ZUSTAND (Application State)
 const state = {
-  // Supabase Client & User
   supabase: null,
   user: null,
-  isOfflineMode: false,
+  isOffline: false,
   profile: {
     sync_points: 0,
     active_theme: 'nordic-light',
     unlocked_themes: ['nordic-light']
   },
 
-  // Game Mode: 'zen' | 'versus' | 'swap'
-  mode: 'zen',
+  mode: 'zen', // 'zen' | 'versus' | 'swap'
   
-  // Sudoku Board Data (9x9 Arrays)
+  // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
   initialBoard: Array(81).fill(0),
   currentBoard: Array(81).fill(0),
   notes: Array.from({ length: 81 }, () => new Set()),
   
-  // UI Selection
-  selectedCellIndex: null,
-  notesMode: false,
+  selectedIndex: null,
+  notesActive: false,
 
-  // Realtime & Multiplayer
+  // Realtime
   channel: null,
   roomCode: null,
   isHost: false,
   peersCount: 0,
-  opponentProgress: 0,
   
-  // Board-Swap Co-Op Timer
-  swapIntervalId: null,
-  swapSecondsLeft: 10,
-
-  // Evaluations-Metriken (Seminararbeit)
-  lastBroadcastTimestamp: 0,
-  rttMs: null
+  // Swap Timer
+  swapTimerId: null,
+  swapSecondsLeft: 10
 };
 
-// 4. SUDOKU GENERATOR & VALIDATOR ENGINE
+// Sudoku Backtracking Generator
 class SudokuEngine {
-  /**
-   * Erzeugt ein standardkonformes Sudoku.
-   * Basierend auf Backtracking zur garantierten Lösbarkeit.
-   */
-  static generatePuzzle(cluesCount = 36) {
+  static generate(clues = 34) {
     const board = Array(81).fill(0);
-    this.fillDiagonalBoxes(board);
-    this.solveBoard(board);
+    this.fillBoxes(board);
+    this.solve(board);
     const solution = [...board];
 
-    // Zufällig Zellen entfernen bis Ziel-Clues erreicht sind
     const puzzle = [...solution];
-    let toRemove = 81 - cluesCount;
+    let toRemove = 81 - clues;
     const indices = Array.from({ length: 81 }, (_, i) => i).sort(() => Math.random() - 0.5);
 
-    for (const index of indices) {
+    for (const idx of indices) {
       if (toRemove <= 0) break;
-      puzzle[index] = 0;
+      puzzle[idx] = 0;
       toRemove--;
     }
 
     return { solution, initialBoard: puzzle };
   }
 
-  static fillDiagonalBoxes(board) {
+  static fillBoxes(b) {
     for (let box = 0; box < 9; box += 3) {
-      this.fillBox(board, box, box);
-    }
-  }
-
-  static fillBox(board, startRow, startCol) {
-    const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
-    let idx = 0;
-    for (let r = 0; r < 3; r++) {
-      for (let c = 0; c < 3; c++) {
-        const cellIndex = (startRow + r) * 9 + (startCol + c);
-        board[cellIndex] = nums[idx++];
+      const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+      let i = 0;
+      for (let r = 0; r < 3; r++) {
+        for (let c = 0; c < 3; c++) {
+          b[(box + r) * 9 + (box + c)] = nums[i++];
+        }
       }
     }
   }
 
-  static isValid(board, row, col, num) {
+  static isValid(b, row, col, num) {
     for (let i = 0; i < 9; i++) {
-      if (board[row * 9 + i] === num) return false;
-      if (board[i * 9 + col] === num) return false;
+      if (b[row * 9 + i] === num || b[i * 9 + col] === num) return false;
     }
-
-    const startRow = Math.floor(row / 3) * 3;
-    const startCol = Math.floor(col / 3) * 3;
+    const startR = Math.floor(row / 3) * 3;
+    const startC = Math.floor(col / 3) * 3;
     for (let r = 0; r < 3; r++) {
       for (let c = 0; c < 3; c++) {
-        if (board[(startRow + r) * 9 + (startCol + c)] === num) return false;
+        if (b[(startR + r) * 9 + (startC + c)] === num) return false;
       }
     }
     return true;
   }
 
-  static solveBoard(board) {
+  static solve(b) {
     for (let i = 0; i < 81; i++) {
-      if (board[i] === 0) {
-        const row = Math.floor(i / 9);
-        const col = i % 9;
-        const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9].sort(() => Math.random() - 0.5);
-
+      if (b[i] === 0) {
+        const r = Math.floor(i / 9);
+        const c = i % 9;
+        const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
         for (const num of nums) {
-          if (this.isValid(board, row, col, num)) {
-            board[i] = num;
-            if (this.solveBoard(board)) return true;
-            board[i] = 0;
+          if (this.isValid(b, r, c, num)) {
+            b[i] = num;
+            if (this.solve(b)) return true;
+            b[i] = 0;
           }
         }
         return false;
@@ -149,526 +112,415 @@ class SudokuEngine {
     return true;
   }
 
-  /**
-   * Prüft, ob das aktuelle Board vollständig und konfliktfrei gefüllt ist.
-   */
-  static isCompleteAndValid(currentBoard, solution) {
-    for (let i = 0; i < 81; i++) {
-      if (currentBoard[i] === 0) return false;
-      if (currentBoard[i] !== solution[i]) return false;
-    }
-    return true;
-  }
-
-  static countSolvedCells(currentBoard, solution) {
+  static countSolved(current, solution) {
     let count = 0;
     for (let i = 0; i < 81; i++) {
-      if (currentBoard[i] !== 0 && currentBoard[i] === solution[i]) {
-        count++;
-      }
+      if (current[i] !== 0 && current[i] === solution[i]) count++;
     }
     return count;
   }
+
+  static isComplete(current, solution) {
+    for (let i = 0; i < 81; i++) {
+      if (current[i] === 0 || current[i] !== solution[i]) return false;
+    }
+    return true;
+  }
 }
 
-// 5. DOM-ELEMENTE
+// DOM Referenzen
 const dom = {
-  themeHtml: document.documentElement,
-  userPoints: document.getElementById('userPoints'),
-  pointsBadge: document.getElementById('pointsBadge'),
-  openShopBtn: document.getElementById('openShopBtn'),
-  closeShopBtn: document.getElementById('closeShopBtn'),
-  themeModal: document.getElementById('themeModal'),
-  themesContainer: document.getElementById('themesContainer'),
+  root: document.documentElement,
+  points: document.getElementById('userPoints'),
+  openShop: document.getElementById('openShopBtn'),
+  closeShop: document.getElementById('closeShopBtn'),
+  shopModal: document.getElementById('themeModal'),
+  themesList: document.getElementById('themesContainer'),
   tabZen: document.getElementById('tabZen'),
   tabVersus: document.getElementById('tabVersus'),
   tabSwap: document.getElementById('tabSwap'),
-  multiplayerLobby: document.getElementById('multiplayerLobby'),
-  createRoomBtn: document.getElementById('createRoomBtn'),
-  joinRoomBtn: document.getElementById('joinRoomBtn'),
-  roomCodeInput: document.getElementById('roomCodeInput'),
-  roomCodeDisplay: document.getElementById('roomCodeDisplay'),
-  currentRoomCode: document.getElementById('currentRoomCode'),
+  lobby: document.getElementById('multiplayerLobby'),
+  createRoom: document.getElementById('createRoomBtn'),
+  joinRoom: document.getElementById('joinRoomBtn'),
+  roomInput: document.getElementById('roomCodeInput'),
+  roomDisplay: document.getElementById('roomCodeDisplay'),
+  currentRoom: document.getElementById('currentRoomCode'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
-  gameHud: document.getElementById('gameHud'),
   versusBars: document.getElementById('versusBars'),
-  playerProgressBar: document.getElementById('playerProgressBar'),
-  opponentProgressBar: document.getElementById('opponentProgressBar'),
-  playerProgressLabel: document.getElementById('playerProgressLabel'),
-  opponentProgressLabel: document.getElementById('opponentProgressLabel'),
-  swapTimerBox: document.getElementById('swapTimerBox'),
+  playerBar: document.getElementById('playerProgressBar'),
+  opponentBar: document.getElementById('opponentProgressBar'),
+  playerLabel: document.getElementById('playerProgressLabel'),
+  opponentLabel: document.getElementById('opponentProgressLabel'),
+  swapBox: document.getElementById('swapTimerBox'),
   swapTimer: document.getElementById('swapTimer'),
-  latencyDisplay: document.getElementById('latencyDisplay'),
-  rttValue: document.getElementById('rttValue'),
-  sudokuGrid: document.getElementById('sudokuGrid'),
-  btnErase: document.getElementById('btnErase'),
+  grid: document.getElementById('sudokuGrid'),
   btnNotes: document.getElementById('btnNotes'),
-  notesStatus: document.getElementById('notesStatus'),
+  btnErase: document.getElementById('btnErase'),
   btnNewGame: document.getElementById('btnNewGame'),
   numpad: document.getElementById('numpad'),
   toast: document.getElementById('toast')
 };
 
-// 6. INITIALISIERUNG
-async function initApp() {
-  initSudokuDOM();
-  setupEventListeners();
-  await initSupabaseAuth();
+// Initialisierung
+async function init() {
+  buildGrid();
+  bindEvents();
+  await initAuth();
   startNewGame();
 }
 
-/**
- * Erzeugt die 81 Zellen des Sudoku-Gitters
- */
-function initSudokuDOM() {
-  dom.sudokuGrid.innerHTML = '';
+function buildGrid() {
+  dom.grid.innerHTML = '';
   for (let i = 0; i < 81; i++) {
     const cell = document.createElement('div');
     cell.className = 'cell';
     cell.dataset.index = i;
-    
-    // Notizen Subgrid
-    const notesGrid = document.createElement('div');
-    notesGrid.className = 'notes-grid';
-    for (let n = 1; n <= 9; n++) {
-      const noteItem = document.createElement('span');
-      noteItem.className = 'note-item';
-      noteItem.dataset.note = n;
-      notesGrid.appendChild(noteItem);
-    }
-    cell.appendChild(notesGrid);
 
-    // Klick auf Zelle
+    const valSpan = document.createElement('span');
+    valSpan.className = 'val';
+    cell.appendChild(valSpan);
+
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'notes';
+    for (let n = 1; n <= 9; n++) {
+      const noteSpan = document.createElement('span');
+      notesDiv.appendChild(noteSpan);
+    }
+    cell.appendChild(notesDiv);
+
     cell.addEventListener('click', () => selectCell(i));
-    dom.sudokuGrid.appendChild(cell);
+    dom.grid.appendChild(cell);
   }
 }
 
-/**
- * Anbindung an Supabase Auth (Anonym) & Realtime Client
- */
-async function initSupabaseAuth() {
+async function initAuth() {
   try {
     if (!window.supabase || SUPABASE_CONFIG.url.includes('xyzcompany')) {
-      console.warn('[SwapDoku] Supabase Credentials nicht konfiguriert. Verwende Offline/Demo-Modus.');
-      state.isOfflineMode = true;
-      loadLocalProfile();
-      updateUIProfile();
+      state.isOffline = true;
+      loadLocalState();
+      updatePointsDisplay();
       return;
     }
 
-    state.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, {
-      realtime: { params: { eventsPerSecond: 10 } }
-    });
+    state.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+    const { data: sessionData } = await state.supabase.auth.getSession();
+    let session = sessionData?.session;
 
-    // Anonyme Session anfragen/wiederherstellen
-    const { data: sessionData, error: sessionErr } = await state.supabase.auth.getSession();
-    let currentSession = sessionData?.session;
-
-    if (!currentSession || sessionErr) {
-      const { data: authData, error: authErr } = await state.supabase.auth.signInAnonymously();
-      if (authErr) throw authErr;
-      currentSession = authData.session;
+    if (!session) {
+      const { data: authData, error } = await state.supabase.auth.signInAnonymously();
+      if (error) throw error;
+      session = authData.session;
     }
 
-    state.user = currentSession.user;
-    console.log('[SwapDoku] Authentifiziert als anonymer User:', state.user.id);
-
-    // Profil und freigeschaltete Themes aus PostgreSQL laden
-    await fetchProfileFromSupabase();
-  } catch (err) {
-    console.warn('[SwapDoku] Supabase Fehler, Fallback auf Offline:', err.message);
-    state.isOfflineMode = true;
-    loadLocalProfile();
-    updateUIProfile();
-  }
-}
-
-async function fetchProfileFromSupabase() {
-  if (state.isOfflineMode || !state.supabase || !state.user) return;
-  try {
-    const { data: profile, error } = await state.supabase
-      .from('profiles')
-      .select('sync_points, active_theme')
-      .eq('id', state.user.id)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('[SwapDoku] Profil-Ladefehler:', error);
-      return;
-    }
-
-    if (profile) {
-      state.profile.sync_points = profile.sync_points;
-      state.profile.active_theme = profile.active_theme;
-    }
-
-    // Freigeschaltete Themes
-    const { data: unlocked } = await state.supabase
-      .from('unlocked_themes')
-      .select('theme_id')
-      .eq('user_id', state.user.id);
-
-    if (unlocked && unlocked.length > 0) {
-      state.profile.unlocked_themes = unlocked.map(u => u.theme_id);
-    }
-
-    applyTheme(state.profile.active_theme);
-    updateUIProfile();
+    state.user = session.user;
+    await syncProfileFromDB();
   } catch (e) {
-    console.error('[SwapDoku] Fehler beim Laden des Profils:', e);
+    state.isOffline = true;
+    loadLocalState();
+    updatePointsDisplay();
   }
 }
 
-function loadLocalProfile() {
-  const saved = localStorage.getItem('swapdoku_profile');
+async function syncProfileFromDB() {
+  if (!state.supabase || !state.user) return;
+  try {
+    const { data } = await state.supabase.from('profiles').select('sync_points, active_theme').eq('id', state.user.id).single();
+    if (data) {
+      state.profile.sync_points = data.sync_points || 0;
+      state.profile.active_theme = data.active_theme || 'nordic-light';
+    }
+    const { data: themes } = await state.supabase.from('unlocked_themes').select('theme_id').eq('user_id', state.user.id);
+    if (themes) {
+      state.profile.unlocked_themes = themes.map(t => t.theme_id);
+    }
+    setTheme(state.profile.active_theme);
+    updatePointsDisplay();
+  } catch (_) {}
+}
+
+function loadLocalState() {
+  const saved = localStorage.getItem('swapdoku_state');
   if (saved) {
-    try {
-      state.profile = JSON.parse(saved);
-    } catch (_) {}
+    try { state.profile = JSON.parse(saved); } catch (_) {}
   }
-  applyTheme(state.profile.active_theme);
+  setTheme(state.profile.active_theme);
 }
 
-function saveLocalProfile() {
-  localStorage.setItem('swapdoku_profile', JSON.stringify(state.profile));
+function saveLocalState() {
+  localStorage.setItem('swapdoku_state', JSON.stringify(state.profile));
 }
 
-function updateUIProfile() {
-  dom.userPoints.textContent = state.profile.sync_points;
+function updatePointsDisplay() {
+  dom.points.textContent = state.profile.sync_points;
 }
 
-// 7. SPIELSTART & LOGIK
-function startNewGame(sharedBoard = null, sharedSolution = null) {
-  stopSwapTimer();
+// Spielablauf
+function startNewGame(customBoard = null, customSol = null) {
+  stopSwapCountdown();
 
-  if (sharedBoard && sharedSolution) {
-    state.initialBoard = [...sharedBoard];
-    state.currentBoard = [...sharedBoard];
-    state.solution = [...sharedSolution];
+  if (customBoard && customSol) {
+    state.initialBoard = [...customBoard];
+    state.currentBoard = [...customBoard];
+    state.solution = [...customSol];
   } else {
-    const { solution, initialBoard } = SudokuEngine.generatePuzzle(36);
+    const { solution, initialBoard } = SudokuEngine.generate(34);
     state.solution = solution;
     state.initialBoard = [...initialBoard];
     state.currentBoard = [...initialBoard];
   }
 
-  // Notizen zurücksetzen
   state.notes = Array.from({ length: 81 }, () => new Set());
-  state.selectedCellIndex = null;
-  state.opponentProgress = 0;
-  updateOpponentProgress(0);
-  updateLocalProgress();
+  state.selectedIndex = null;
 
-  renderBoard();
+  updateProgressBars(0, 0);
+  render();
 
   if (state.mode === 'swap') {
-    startSwapTimer();
+    startSwapCountdown();
   }
 }
 
-function renderBoard() {
-  const cells = dom.sudokuGrid.children;
+function render() {
+  const cells = dom.grid.children;
   for (let i = 0; i < 81; i++) {
     const cell = cells[i];
     const val = state.currentBoard[i];
     const isGiven = state.initialBoard[i] !== 0;
 
-    // Klassen zurücksetzen
     cell.className = 'cell';
     if (isGiven) cell.classList.add('given');
-    if (state.selectedCellIndex === i) cell.classList.add('selected');
+    if (state.selectedIndex === i) cell.classList.add('selected');
 
-    // Zell-Inhalt vs Notizen
-    const notesGrid = cell.querySelector('.notes-grid');
+    const valSpan = cell.querySelector('.val');
+    const notesDiv = cell.querySelector('.notes');
+
     if (val !== 0) {
-      cell.childNodes[0].nodeValue = val;
-      notesGrid.style.display = 'none';
+      valSpan.textContent = val;
+      valSpan.style.display = 'block';
+      notesDiv.style.display = 'none';
+
+      // Fehler markieren falls benutzerdefinierte Zahl falsch ist
+      if (!isGiven && val !== state.solution[i]) {
+        cell.classList.add('error');
+      }
     } else {
-      cell.childNodes[0].nodeValue = '';
-      notesGrid.style.display = 'grid';
-      const noteItems = notesGrid.children;
+      valSpan.textContent = '';
+      valSpan.style.display = 'none';
+      notesDiv.style.display = 'grid';
+
+      const noteSpans = notesDiv.children;
       for (let n = 1; n <= 9; n++) {
-        noteItems[n - 1].textContent = state.notes[i].has(n) ? n : '';
+        noteSpans[n - 1].textContent = state.notes[i].has(n) ? n : '';
       }
     }
   }
+
+  highlightRelated();
 }
 
 function selectCell(index) {
-  state.selectedCellIndex = index;
-  highlightRelatedCells(index);
-  renderBoard();
+  state.selectedIndex = index;
+  render();
 }
 
-function highlightRelatedCells(index) {
-  const cells = dom.sudokuGrid.children;
-  const row = Math.floor(index / 9);
-  const col = index % 9;
-  const selectedValue = state.currentBoard[index];
+function highlightRelated() {
+  if (state.selectedIndex === null) return;
+  const cells = dom.grid.children;
+  const row = Math.floor(state.selectedIndex / 9);
+  const col = state.selectedIndex % 9;
+  const currentVal = state.currentBoard[state.selectedIndex];
 
   for (let i = 0; i < 81; i++) {
+    if (i === state.selectedIndex) continue;
     const r = Math.floor(i / 9);
     const c = i % 9;
     const sameBox = Math.floor(r / 3) === Math.floor(row / 3) && Math.floor(c / 3) === Math.floor(col / 3);
 
-    cells[i].classList.remove('highlighted');
-    if (i !== index && (r === row || c === col || sameBox || (selectedValue !== 0 && state.currentBoard[i] === selectedValue))) {
+    if (r === row || c === col || sameBox || (currentVal !== 0 && state.currentBoard[i] === currentVal)) {
       cells[i].classList.add('highlighted');
     }
   }
 }
 
-function handleInput(digit) {
-  const idx = state.selectedCellIndex;
-  if (idx === null) return;
-  if (state.initialBoard[idx] !== 0) return; // Vorgegebene Zahlen sind gesperrt
+function handleNumberInput(num) {
+  const idx = state.selectedIndex;
+  if (idx === null || state.initialBoard[idx] !== 0) return;
 
-  if (state.notesMode) {
-    // Notiz toggeln
-    if (state.notes[idx].has(digit)) {
-      state.notes[idx].delete(digit);
+  if (state.notesActive) {
+    if (state.notes[idx].has(num)) {
+      state.notes[idx].delete(num);
     } else {
-      state.notes[idx].add(digit);
+      state.notes[idx].add(num);
     }
     state.currentBoard[idx] = 0;
   } else {
-    // Feste Zahl eintragen
-    state.currentBoard[idx] = digit;
+    state.currentBoard[idx] = num;
     state.notes[idx].clear();
-
-    // Validierung auf Fehler prüfen
-    const cellEl = dom.sudokuGrid.children[idx];
-    if (digit !== state.solution[idx]) {
-      cellEl.classList.add('error');
-    } else {
-      cellEl.classList.remove('error');
-    }
-
-    // Fortschritt & Siegprüfung
-    checkGameProgress();
+    checkProgress();
   }
 
-  renderBoard();
+  render();
 }
 
-function eraseCell() {
-  const idx = state.selectedCellIndex;
+function clearCell() {
+  const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
   state.currentBoard[idx] = 0;
   state.notes[idx].clear();
-  const cellEl = dom.sudokuGrid.children[idx];
-  cellEl.classList.remove('error');
-
-  updateLocalProgress();
-  renderBoard();
+  checkProgress();
+  render();
 }
 
-// 8. FORTSCHRITT & GAMIFICATION BELOHNUNG
-async function checkGameProgress() {
-  updateLocalProgress();
-
-  // Im Versus-Modus: Füllstand via Broadcast übertragen
-  if (state.mode === 'versus' && state.channel) {
-    const solved = SudokuEngine.countSolvedCells(state.currentBoard, state.solution);
-    broadcastMessage('PROGRESS', {
-      solvedCount: solved,
-      totalCount: 81,
-      timestamp: Date.now()
-    });
-  }
-
-  // Siegprüfung
-  if (SudokuEngine.isCompleteAndValid(state.currentBoard, state.solution)) {
-    handleVictory();
-  }
-}
-
-function updateLocalProgress() {
-  const solved = SudokuEngine.countSolvedCells(state.currentBoard, state.solution);
-  const percentage = Math.round((solved / 81) * 100);
-  dom.playerProgressBar.style.width = `${percentage}%`;
-  dom.playerProgressLabel.textContent = `${percentage}%`;
-}
-
-function updateOpponentProgress(percentage) {
-  dom.opponentProgressBar.style.width = `${percentage}%`;
-  dom.opponentProgressLabel.textContent = `${percentage}%`;
-}
-
-async function handleVictory() {
-  let earnedPoints = 50;
-  if (state.mode === 'versus') earnedPoints = 100;
-  if (state.mode === 'swap') earnedPoints = 75;
-
-  showToast(`Glückwunsch! Rätsel gelöst (+${earnedPoints} Pts)`);
+function checkProgress() {
+  const solved = SudokuEngine.countSolved(state.currentBoard, state.solution);
+  const pct = Math.round((solved / 81) * 100);
+  dom.playerBar.style.width = `${pct}%`;
+  dom.playerLabel.textContent = `${pct}%`;
 
   if (state.mode === 'versus' && state.channel) {
-    broadcastMessage('GAME_OVER', { winnerId: state.user?.id || 'local' });
+    broadcast('PROGRESS', { solved, total: 81 });
   }
 
-  // Punkte gutschreiben
-  await awardSyncPoints(earnedPoints);
-}
-
-async function awardSyncPoints(points) {
-  if (state.isOfflineMode || !state.supabase) {
-    state.profile.sync_points += points;
-    saveLocalProfile();
-    updateUIProfile();
-    return;
-  }
-
-  try {
-    const { data: newPoints, error } = await state.supabase.rpc('add_sync_points', {
-      points_to_add: points
-    });
-
-    if (error) throw error;
-    state.profile.sync_points = newPoints;
-    updateUIProfile();
-  } catch (err) {
-    console.error('[SwapDoku] Punkte-Update-Fehler:', err);
-    // Optimistisches Fallback
-    state.profile.sync_points += points;
-    updateUIProfile();
+  if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
+    gameWon();
   }
 }
 
-// 9. REALTIME BROADCAST & MULTIPLAYER LOBBY
-function switchMode(newMode) {
-  state.mode = newMode;
-  [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(tab => tab.classList.remove('active'));
+function updateProgressBars(playerPct, oppPct) {
+  dom.playerBar.style.width = `${playerPct}%`;
+  dom.playerLabel.textContent = `${playerPct}%`;
+  dom.opponentBar.style.width = `${oppPct}%`;
+  dom.opponentLabel.textContent = `${oppPct}%`;
+}
 
-  if (newMode === 'zen') {
+async function gameWon() {
+  let pts = 50;
+  if (state.mode === 'versus') pts = 100;
+  if (state.mode === 'swap') pts = 75;
+
+  toast(`Gelöst! +${pts} Punkte`);
+
+  if (state.mode === 'versus' && state.channel) {
+    broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
+  }
+
+  await addPoints(pts);
+}
+
+async function addPoints(pts) {
+  state.profile.sync_points += pts;
+  updatePointsDisplay();
+  saveLocalState();
+
+  if (!state.isOffline && state.supabase && state.user) {
+    try {
+      await state.supabase.rpc('add_sync_points', { points_to_add: pts });
+    } catch (_) {}
+  }
+}
+
+// Modi & Lobby
+function setMode(mode) {
+  state.mode = mode;
+  [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
+
+  dom.lobby.classList.toggle('hidden', mode === 'zen');
+  dom.versusBars.classList.toggle('hidden', mode !== 'versus');
+  dom.swapBox.classList.toggle('hidden', mode !== 'swap');
+
+  if (mode === 'zen') {
     dom.tabZen.classList.add('active');
-    dom.multiplayerLobby.classList.add('hidden');
-    dom.versusBars.classList.add('hidden');
-    dom.swapTimerBox.classList.add('hidden');
-    leaveCurrentRoom();
-  } else if (newMode === 'versus') {
+    leaveRoom();
+  } else if (mode === 'versus') {
     dom.tabVersus.classList.add('active');
-    dom.multiplayerLobby.classList.remove('hidden');
-    dom.versusBars.classList.remove('hidden');
-    dom.swapTimerBox.classList.add('hidden');
-  } else if (newMode === 'swap') {
+  } else {
     dom.tabSwap.classList.add('active');
-    dom.multiplayerLobby.classList.remove('hidden');
-    dom.versusBars.classList.add('hidden');
-    dom.swapTimerBox.classList.remove('hidden');
   }
 
   startNewGame();
 }
 
-function generateRoomCode() {
-  return Math.random().toString(36).substring(2, 6).toUpperCase();
-}
-
-async function createRoom() {
-  const code = generateRoomCode();
+function createRoom() {
+  const code = Math.random().toString(36).substring(2, 6).toUpperCase();
   state.isHost = true;
-  await joinRoom(code);
+  joinRoom(code);
 }
 
 async function joinRoom(code) {
   if (!code || code.length !== 4) {
-    showToast('Bitte einen 4-stelligen Raum-Code eingeben.');
+    toast('4-stelligen Code eingeben');
     return;
   }
 
-  leaveCurrentRoom();
+  leaveRoom();
   state.roomCode = code.toUpperCase();
-  dom.currentRoomCode.textContent = state.roomCode;
-  dom.roomCodeDisplay.classList.remove('hidden');
+  dom.currentRoom.textContent = state.roomCode;
+  dom.roomDisplay.classList.remove('hidden');
   setConnectionStatus('connecting', 'Verbinde...');
 
-  if (state.isOfflineMode || !state.supabase) {
-    showToast('Multiplayer benötigt gültige Supabase-Konfiguration.');
-    setConnectionStatus('connected', `Demo-Raum ${state.roomCode}`);
+  if (state.isOffline || !state.supabase) {
+    setConnectionStatus('connected', `Demo ${state.roomCode}`);
     return;
   }
 
-  const channelName = `swapdoku-room:${state.roomCode}`;
-  state.channel = state.supabase.channel(channelName, {
-    config: {
-      broadcast: { self: false },
-      presence: { key: state.user?.id || 'anon-' + Math.random().toString(36).substring(2, 7) }
-    }
+  state.channel = state.supabase.channel(`room:${state.roomCode}`, {
+    config: { broadcast: { self: false } }
   });
 
-  // 1. Presence: Spielerzählung
   state.channel.on('presence', { event: 'sync' }, () => {
-    const presenceState = state.channel.presenceState();
-    state.peersCount = Object.keys(presenceState).length;
-    setConnectionStatus('connected', `${state.peersCount} Spieler im Raum`);
+    const pres = state.channel.presenceState();
+    state.peersCount = Object.keys(pres).length;
+    setConnectionStatus('connected', `${state.peersCount} Spieler`);
 
-    // Wenn Host und zweiter Spieler beigetreten ist: Spiel synchron starten
-    if (state.isHost && state.peersCount === 2) {
-      if (state.mode === 'versus') {
-        broadcastMessage('INIT_VERSUS', {
-          initialBoard: state.initialBoard,
-          solution: state.solution
-        });
-      }
+    if (state.isHost && state.peersCount === 2 && state.mode === 'versus') {
+      broadcast('SYNC_BOARD', {
+        initialBoard: state.initialBoard,
+        solution: state.solution
+      });
     }
   });
 
-  // 2. Broadcast Events
   state.channel
-    .on('broadcast', { event: 'INIT_VERSUS' }, ({ payload }) => {
-      showToast('Versus gestartet! Gleiches Board synchronisiert.');
+    .on('broadcast', { event: 'SYNC_BOARD' }, ({ payload }) => {
+      toast('Board synchronisiert');
       startNewGame(payload.initialBoard, payload.solution);
     })
     .on('broadcast', { event: 'PROGRESS' }, ({ payload }) => {
-      // Evaluations-Metrik: Round Trip Time (RTT) Latenzberechnung
-      if (payload.timestamp) {
-        state.rttMs = Date.now() - payload.timestamp;
-        dom.rttValue.textContent = state.rttMs;
-      }
-      const oppPercent = Math.round((payload.solvedCount / payload.totalCount) * 100);
-      updateOpponentProgress(oppPercent);
+      const pct = Math.round((payload.solved / payload.total) * 100);
+      dom.opponentBar.style.width = `${pct}%`;
+      dom.opponentLabel.textContent = `${pct}%`;
     })
-    .on('broadcast', { event: 'SWAP_BOARDS' }, ({ payload }) => {
-      handleIncomingBoardSwap(payload);
+    .on('broadcast', { event: 'SWAP' }, ({ payload }) => {
+      applyIncomingSwap(payload);
     })
     .on('broadcast', { event: 'GAME_OVER' }, () => {
-      showToast('Der Gegner hat das Rätsel zuerst gelöst!');
+      toast('Gegner war schneller');
     });
 
-  // Channel abonnieren
   state.channel.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
       setConnectionStatus('connected', 'Verbunden');
-      await state.channel.track({
-        joinedAt: new Date().toISOString(),
-        mode: state.mode
-      });
-      showToast(`Raum ${state.roomCode} beigetreten.`);
+      await state.channel.track({ user: state.user?.id });
     }
   });
 }
 
-function broadcastMessage(event, payload) {
-  if (!state.channel) return;
-  state.lastBroadcastTimestamp = Date.now();
-  state.channel.send({
-    type: 'broadcast',
-    event,
-    payload: { ...payload, timestamp: Date.now() }
-  });
+function broadcast(event, payload) {
+  if (state.channel) {
+    state.channel.send({ type: 'broadcast', event, payload });
+  }
 }
 
-function leaveCurrentRoom() {
+function leaveRoom() {
   if (state.channel) {
     state.channel.unsubscribe();
     state.channel = null;
   }
   state.roomCode = null;
   state.isHost = false;
-  dom.roomCodeDisplay.classList.add('hidden');
+  dom.roomDisplay.classList.add('hidden');
   setConnectionStatus('disconnected', 'Nicht verbunden');
 }
 
@@ -677,252 +529,205 @@ function setConnectionStatus(status, text) {
   dom.connText.textContent = text;
 }
 
-// 10. CO-OP BOARD-SWAP TIMER & MECHANIK
-function startSwapTimer() {
-  stopSwapTimer();
+// Co-Op Swap Countdown
+function startSwapCountdown() {
+  stopSwapCountdown();
   state.swapSecondsLeft = 10;
   dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
-  state.swapIntervalId = setInterval(() => {
+  state.swapTimerId = setInterval(() => {
     state.swapSecondsLeft--;
     dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
     if (state.swapSecondsLeft <= 0) {
       state.swapSecondsLeft = 10;
-      triggerBoardSwap();
+      doBoardSwap();
     }
   }, 1000);
 }
 
-function stopSwapTimer() {
-  if (state.swapIntervalId) {
-    clearInterval(state.swapIntervalId);
-    state.swapIntervalId = null;
+function stopSwapCountdown() {
+  if (state.swapTimerId) {
+    clearInterval(state.swapTimerId);
+    state.swapTimerId = null;
   }
 }
 
-/**
- * Löst das SWAP_BOARDS Event aus: Eigene Boards werden verpackt und übers Netzwerk geschickt.
- */
-function triggerBoardSwap() {
-  // Visuelle 3D-Flip Animation
-  dom.sudokuGrid.classList.add('swapping');
-  setTimeout(() => dom.sudokuGrid.classList.remove('swapping'), 600);
+function doBoardSwap() {
+  dom.grid.classList.add('swapping');
+  setTimeout(() => dom.grid.classList.remove('swapping'), 300);
 
   if (state.channel) {
-    broadcastMessage('SWAP_BOARDS', {
+    broadcast('SWAP', {
       currentBoard: state.currentBoard,
       initialBoard: state.initialBoard,
-      solution: state.solution,
-      senderId: state.user?.id || 'player'
+      solution: state.solution
     });
   } else {
-    // Im lokalen Co-Op Demo Modus: Board einfach mit einem alternativen Puzzle austauschen
-    const { solution, initialBoard } = SudokuEngine.generatePuzzle(34);
-    state.solution = solution;
-    state.initialBoard = initialBoard;
-    state.currentBoard = [...initialBoard];
-    renderBoard();
-    showToast('SWAP! Lokales Board ausgetauscht.');
+    // Lokaler Demo-Swap
+    const next = SudokuEngine.generate(34);
+    state.solution = next.solution;
+    state.initialBoard = next.initialBoard;
+    state.currentBoard = [...next.initialBoard];
+    render();
+    toast('Board getauscht');
   }
 }
 
-function handleIncomingBoardSwap(payload) {
-  dom.sudokuGrid.classList.add('swapping');
-  setTimeout(() => dom.sudokuGrid.classList.remove('swapping'), 600);
+function applyIncomingSwap(payload) {
+  dom.grid.classList.add('swapping');
+  setTimeout(() => dom.grid.classList.remove('swapping'), 300);
 
-  // Neues Board des Partners übernehmen
   state.currentBoard = [...payload.currentBoard];
   state.initialBoard = [...payload.initialBoard];
   state.solution = [...payload.solution];
-  state.selectedCellIndex = null;
+  state.selectedIndex = null;
 
-  renderBoard();
-  updateLocalProgress();
-  showToast('SWAP! Du spielst jetzt am Board deines Partners!');
+  render();
+  checkProgress();
+  toast('Board getauscht');
 }
 
-// 11. THEME-ENGINE & GAMIFICATION SHOP
-function applyTheme(themeId) {
-  dom.themeHtml.setAttribute('data-theme', themeId);
-}
-
-function openThemeShop() {
-  renderThemeShop();
-  dom.themeModal.classList.remove('hidden');
-}
-
-function closeThemeShop() {
-  dom.themeModal.classList.add('hidden');
+// Themes
+function setTheme(id) {
+  dom.root.setAttribute('data-theme', id);
 }
 
 function renderThemeShop() {
-  dom.themesContainer.innerHTML = '';
+  dom.themesList.innerHTML = '';
+  THEMES.forEach(t => {
+    const isOwned = state.profile.unlocked_themes.includes(t.id);
+    const isActive = state.profile.active_theme === t.id;
+    const canAfford = state.profile.sync_points >= t.cost;
 
-  AVAILABLE_THEMES.forEach(theme => {
-    const isUnlocked = state.profile.unlocked_themes.includes(theme.id);
-    const isActive = state.profile.active_theme === theme.id;
-    const canAfford = state.profile.sync_points >= theme.cost;
-
-    const card = document.createElement('div');
-    card.className = 'theme-card';
-
-    const info = document.createElement('div');
-    info.className = 'theme-info';
-    info.innerHTML = `
-      <div class="theme-title">${theme.name} ${isActive ? '(Aktiv)' : ''}</div>
-      <div class="theme-cost">${theme.cost === 0 ? 'Kostenlos' : theme.cost + ' Pts'}</div>
-      <div class="theme-swatches">
-        ${theme.colors.map(c => `<span class="swatch" style="background:${c}"></span>`).join('')}
+    const row = document.createElement('div');
+    row.className = 'theme-row';
+    row.innerHTML = `
+      <div>
+        <div class="theme-name">${t.name}</div>
+        <div class="theme-price">${t.cost === 0 ? 'Standard' : t.cost + ' Pts'}</div>
       </div>
     `;
 
-    const actionBtn = document.createElement('button');
-    actionBtn.className = 'btn btn-secondary';
+    const btn = document.createElement('button');
+    btn.className = 'btn';
 
     if (isActive) {
-      actionBtn.textContent = 'Aktiv';
-      actionBtn.disabled = true;
-    } else if (isUnlocked) {
-      actionBtn.textContent = 'Aktivieren';
-      actionBtn.onclick = () => activateTheme(theme.id);
+      btn.textContent = 'Aktiv';
+      btn.disabled = true;
+    } else if (isOwned) {
+      btn.textContent = 'Aktivieren';
+      btn.onclick = () => activateTheme(t.id);
     } else {
-      actionBtn.textContent = `Freischalten (${theme.cost} Pts)`;
-      actionBtn.disabled = !canAfford;
-      actionBtn.onclick = () => buyTheme(theme.id, theme.cost);
+      btn.textContent = 'Kaufen';
+      btn.disabled = !canAfford;
+      btn.onclick = () => buyTheme(t.id, t.cost);
     }
 
-    card.appendChild(info);
-    card.appendChild(actionBtn);
-    dom.themesContainer.appendChild(card);
+    row.appendChild(btn);
+    dom.themesList.appendChild(row);
   });
 }
 
-async function activateTheme(themeId) {
-  state.profile.active_theme = themeId;
-  applyTheme(themeId);
+function activateTheme(id) {
+  state.profile.active_theme = id;
+  setTheme(id);
+  saveLocalState();
   renderThemeShop();
 
-  if (!state.isOfflineMode && state.supabase && state.user) {
-    await state.supabase.from('profiles').update({ active_theme: themeId }).eq('id', state.user.id);
-  } else {
-    saveLocalProfile();
+  if (!state.isOffline && state.supabase && state.user) {
+    state.supabase.from('profiles').update({ active_theme: id }).eq('id', state.user.id);
   }
 }
 
-async function buyTheme(themeId, cost) {
-  if (state.profile.sync_points < cost) {
-    showToast('Nicht genügend Sync-Points!');
-    return;
-  }
+async function buyTheme(id, cost) {
+  if (state.profile.sync_points < cost) return;
 
-  if (state.isOfflineMode || !state.supabase) {
-    state.profile.sync_points -= cost;
-    state.profile.unlocked_themes.push(themeId);
-    state.profile.active_theme = themeId;
-    saveLocalProfile();
-    applyTheme(themeId);
-    updateUIProfile();
-    renderThemeShop();
-    showToast(`${themeId} erfolgreich freigeschaltet!`);
-    return;
-  }
+  state.profile.sync_points -= cost;
+  state.profile.unlocked_themes.push(id);
+  state.profile.active_theme = id;
+  setTheme(id);
+  updatePointsDisplay();
+  saveLocalState();
+  renderThemeShop();
+  toast(`${id} freigeschaltet`);
 
-  try {
-    const { error } = await state.supabase.rpc('purchase_theme', {
-      theme_name: themeId,
-      cost: cost
-    });
-
-    if (error) throw error;
-
-    state.profile.sync_points -= cost;
-    state.profile.unlocked_themes.push(themeId);
-    state.profile.active_theme = themeId;
-    applyTheme(themeId);
-    updateUIProfile();
-    renderThemeShop();
-    showToast(`${themeId} erfolgreich freigeschaltet!`);
-  } catch (err) {
-    showToast(`Fehler beim Kauf: ${err.message}`);
+  if (!state.isOffline && state.supabase && state.user) {
+    try {
+      await state.supabase.rpc('purchase_theme', { theme_name: id, cost });
+    } catch (_) {}
   }
 }
 
-// 12. EVENT LISTENERS & TASTATUR-STEUERUNG
-function setupEventListeners() {
-  // Modus-Umschaltung
-  dom.tabZen.addEventListener('click', () => switchMode('zen'));
-  dom.tabVersus.addEventListener('click', () => switchMode('versus'));
-  dom.tabSwap.addEventListener('click', () => switchMode('swap'));
+// UI & Tastatur Events
+function bindEvents() {
+  dom.tabZen.addEventListener('click', () => setMode('zen'));
+  dom.tabVersus.addEventListener('click', () => setMode('versus'));
+  dom.tabSwap.addEventListener('click', () => setMode('swap'));
 
-  // Raum-Lobby
-  dom.createRoomBtn.addEventListener('click', createRoom);
-  dom.joinRoomBtn.addEventListener('click', () => joinRoom(dom.roomCodeInput.value.trim()));
-  dom.roomCodeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') joinRoom(dom.roomCodeInput.value.trim());
+  dom.createRoom.addEventListener('click', createRoom);
+  dom.joinRoom.addEventListener('click', () => joinRoom(dom.roomInput.value.trim()));
+  dom.roomInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinRoom(dom.roomInput.value.trim());
   });
 
-  // Tools & Numpad
-  dom.btnErase.addEventListener('click', eraseCell);
+  dom.btnErase.addEventListener('click', clearCell);
   dom.btnNewGame.addEventListener('click', () => startNewGame());
   dom.btnNotes.addEventListener('click', () => {
-    state.notesMode = !state.notesMode;
-    dom.btnNotes.classList.toggle('active', state.notesMode);
-    dom.notesStatus.textContent = `Notizen: ${state.notesMode ? 'An' : 'Aus'}`;
+    state.notesActive = !state.notesActive;
+    dom.btnNotes.classList.toggle('active', state.notesActive);
+    dom.btnNotes.textContent = `Notizen: ${state.notesActive ? 'An' : 'Aus'}`;
   });
 
-  dom.numpad.addEventListener('click', (e) => {
-    const btn = e.target.closest('.num-key');
+  dom.numpad.addEventListener('click', e => {
+    const btn = e.target.closest('.num');
     if (!btn) return;
-    const digit = parseInt(btn.dataset.digit, 10);
-    handleInput(digit);
+    handleNumberInput(parseInt(btn.dataset.num, 10));
   });
 
-  // Physische Tastatur-Eingaben
-  window.addEventListener('keydown', (e) => {
-    if (['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(e.key)) {
-      handleInput(parseInt(e.key, 10));
+  window.addEventListener('keydown', e => {
+    if (e.key >= '1' && e.key <= '9') {
+      handleNumberInput(parseInt(e.key, 10));
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
-      eraseCell();
-    } else if (e.key === 'n' || e.key === 'N') {
+      clearCell();
+    } else if (e.key.toLowerCase() === 'n') {
       dom.btnNotes.click();
     } else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-      handleArrowNavigation(e.key);
+      moveSelection(e.key);
     }
   });
 
-  // Theme Shop
-  dom.openShopBtn.addEventListener('click', openThemeShop);
-  dom.closeShopBtn.addEventListener('click', closeThemeShop);
-  dom.themeModal.addEventListener('click', (e) => {
-    if (e.target === dom.themeModal) closeThemeShop();
+  dom.openShop.addEventListener('click', () => {
+    renderThemeShop();
+    dom.shopModal.classList.remove('hidden');
+  });
+  dom.closeShop.addEventListener('click', () => dom.shopModal.classList.add('hidden'));
+  dom.shopModal.addEventListener('click', e => {
+    if (e.target === dom.shopModal) dom.shopModal.classList.add('hidden');
   });
 }
 
-function handleArrowNavigation(key) {
-  if (state.selectedCellIndex === null) {
+function moveSelection(key) {
+  if (state.selectedIndex === null) {
     selectCell(0);
     return;
   }
-  let row = Math.floor(state.selectedCellIndex / 9);
-  let col = state.selectedCellIndex % 9;
+  let r = Math.floor(state.selectedIndex / 9);
+  let c = state.selectedIndex % 9;
 
-  if (key === 'ArrowUp') row = (row - 1 + 9) % 9;
-  if (key === 'ArrowDown') row = (row + 1) % 9;
-  if (key === 'ArrowLeft') col = (col - 1 + 9) % 9;
-  if (key === 'ArrowRight') col = (col + 1) % 9;
+  if (key === 'ArrowUp') r = (r - 1 + 9) % 9;
+  if (key === 'ArrowDown') r = (r + 1) % 9;
+  if (key === 'ArrowLeft') c = (c - 1 + 9) % 9;
+  if (key === 'ArrowRight') c = (c + 1) % 9;
 
-  selectCell(row * 9 + col);
+  selectCell(r * 9 + c);
 }
 
-function showToast(msg) {
+function toast(msg) {
   dom.toast.textContent = msg;
   dom.toast.classList.remove('hidden');
-  clearTimeout(dom.toast._timeout);
-  dom.toast._timeout = setTimeout(() => {
-    dom.toast.classList.add('hidden');
-  }, 2800);
+  clearTimeout(dom.toast._t);
+  dom.toast._t = setTimeout(() => dom.toast.classList.add('hidden'), 2200);
 }
 
-// 13. BOOTSTRAP BEIM LADEN
-window.addEventListener('DOMContentLoaded', initApp);
+window.addEventListener('DOMContentLoaded', init);
