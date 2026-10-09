@@ -1,0 +1,705 @@
+/* ==============================================================================
+   SwapDoku / SyncDoku: Minimalistisches skandinavisches Stylesheet
+   Design-Prinzipien: Feine Borders, Inter-Typografie, harmonische Kontraste,
+   dynamische CSS-Variablen-Engine für dynamische Themes.
+   ============================================================================== */
+
+/* 1. THEME-ENGINE (CSS CUSTOM PROPERTIES) */
+:root,
+[data-theme="nordic-light"] {
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-secondary: #f1f5f9;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: #eff6ff;
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-grid-thick: #334155;
+  --cell-selected: #dbeafe;
+  --cell-highlight: #f1f5f9;
+  --cell-given: #0f172a;
+  --cell-user: #2563eb;
+  --cell-error: #fee2e2;
+  --cell-error-text: #ef4444;
+  --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+[data-theme="dark-slate"] {
+  --bg-app: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-secondary: #334155;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --accent: #10b981;
+  --accent-hover: #059669;
+  --accent-light: rgba(16, 185, 129, 0.15);
+  --border-subtle: #334155;
+  --border-medium: #475569;
+  --border-grid-thick: #94a3b8;
+  --cell-selected: rgba(16, 185, 129, 0.25);
+  --cell-highlight: #334155;
+  --cell-given: #f8fafc;
+  --cell-user: #34d399;
+  --cell-error: rgba(239, 68, 68, 0.25);
+  --cell-error-text: #f87171;
+  --shadow-subtle: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 10px 20px -3px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="matcha-paper"] {
+  --bg-app: #f4f5f0;
+  --bg-surface: #fbfbf9;
+  --bg-secondary: #e9ebe2;
+  --text-main: #283618;
+  --text-muted: #606c38;
+  --accent: #588157;
+  --accent-hover: #3a5a40;
+  --accent-light: #dad7cd;
+  --border-subtle: #dad7cd;
+  --border-medium: #a3b18a;
+  --border-grid-thick: #3a5a40;
+  --cell-selected: #e3ebd8;
+  --cell-highlight: #ecefe6;
+  --cell-given: #283618;
+  --cell-user: #3a5a40;
+  --cell-error: #fae1dd;
+  --cell-error-text: #d90429;
+  --shadow-subtle: 0 4px 6px -1px rgba(58, 90, 64, 0.05);
+  --shadow-card: 0 10px 15px -3px rgba(58, 90, 64, 0.08);
+}
+
+[data-theme="nordic-frost"] {
+  --bg-app: #f0f7ff;
+  --bg-surface: #ffffff;
+  --bg-secondary: #e0f2fe;
+  --text-main: #0c4a6e;
+  --text-muted: #0284c7;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-light: #e0f2fe;
+  --border-subtle: #bae6fd;
+  --border-medium: #7dd3fc;
+  --border-grid-thick: #0369a1;
+  --cell-selected: #bae6fd;
+  --cell-highlight: #e0f2fe;
+  --cell-given: #0c4a6e;
+  --cell-user: #0284c7;
+  --cell-error: #ffe4e6;
+  --cell-error-text: #e11d48;
+  --shadow-subtle: 0 4px 6px -1px rgba(2, 132, 199, 0.05);
+  --shadow-card: 0 10px 15px -3px rgba(2, 132, 199, 0.08);
+}
+
+/* 2. BASIS-RESET & TYPOGRAFIE */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  padding: 16px;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 3. HEADER */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+}
+
+.brand .logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.brand .logo span {
+  color: var(--accent);
+}
+
+.brand .tagline {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  display: block;
+}
+
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.points-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-subtle);
+}
+
+.points-badge .badge-icon {
+  color: var(--accent);
+}
+
+.points-badge .points-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.icon-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-subtle);
+}
+
+.icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 4. MODUS-NAVIGATION */
+.mode-nav {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: var(--bg-secondary);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  gap: 4px;
+}
+
+.mode-tab {
+  background: transparent;
+  border: none;
+  padding: 8px 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-tab.active {
+  background-color: var(--bg-surface);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: var(--shadow-subtle);
+}
+
+/* 5. MULTIPLAYER LOBBY */
+.multiplayer-lobby {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  box-shadow: var(--shadow-subtle);
+}
+
+.lobby-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.join-group {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.join-group input {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  color: var(--text-main);
+}
+
+.join-group input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.lobby-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.connection-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+}
+
+.dot.connected { background-color: #10b981; }
+.dot.connecting { background-color: #f59e0b; }
+
+/* 6. GAME HUD & METRIKEN */
+.game-hud {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  min-height: 28px;
+  font-size: 0.82rem;
+}
+
+.versus-bars {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.progress-track {
+  height: 6px;
+  background-color: var(--bg-secondary);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.progress-fill.opponent {
+  background-color: #f97316;
+}
+
+.swap-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.timer-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.timer-display {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  min-width: 38px;
+}
+
+.latency-display {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* 7. SUDOKU GRID (9x9) */
+.board-section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.sudoku-board {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border-grid-thick);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  user-select: none;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+}
+
+/* Subtiles 3D-Flip & Swapping Visual */
+.sudoku-board.swapping {
+  transform: scale(0.92) rotateY(180deg);
+  opacity: 0.4;
+}
+
+.cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+  font-weight: 500;
+  color: var(--cell-user);
+  border-right: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+/* 3x3 Block Trennlinien */
+.cell:nth-child(3n) {
+  border-right: 2px solid var(--border-grid-thick);
+}
+
+.cell:nth-child(9n) {
+  border-right: none;
+}
+
+.cell:nth-child(n+19):nth-child(-n+27),
+.cell:nth-child(n+46):nth-child(-n+54) {
+  border-bottom: 2px solid var(--border-grid-thick);
+}
+
+.cell:nth-child(n+73) {
+  border-bottom: none;
+}
+
+/* Zell-Zustände */
+.cell.given {
+  color: var(--cell-given);
+  font-weight: 700;
+}
+
+.cell.selected {
+  background-color: var(--cell-selected) !important;
+}
+
+.cell.highlighted {
+  background-color: var(--cell-highlight);
+}
+
+.cell.error {
+  background-color: var(--cell-error);
+  color: var(--cell-error-text);
+}
+
+/* Notizen in einer Zelle (3x3 Subgrid) */
+.cell .notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cell .note-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* 8. CONTROLS & NUMPAD */
+.controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.btn {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.btn-secondary {
+  background-color: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.btn-secondary:hover {
+  border-color: var(--border-medium);
+}
+
+.btn-tool {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  box-shadow: var(--shadow-subtle);
+}
+
+.btn-tool:hover {
+  background-color: var(--bg-secondary);
+}
+
+.btn-tool.active {
+  background-color: var(--accent-light);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+}
+
+.num-key {
+  aspect-ratio: 1 / 1.1;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: var(--shadow-subtle);
+  touch-action: manipulation;
+}
+
+.num-key:hover, .num-key:active {
+  background-color: var(--bg-secondary);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+/* 9. THEME SHOP MODAL */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+}
+
+.modal-card {
+  background-color: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  max-width: 440px;
+  width: 100%;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-intro {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.themes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background-color: var(--bg-app);
+}
+
+.theme-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.theme-cost {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.theme-swatches {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* 10. TOAST NOTIFICATIONS */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--text-main);
+  color: var(--bg-surface);
+  padding: 10px 18px;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: var(--shadow-card);
+  z-index: 200;
+  animation: toastFade 0.3s ease;
+}
+
+@keyframes toastFade {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 11. HELPER CLASSES */
+.hidden {
+  display: none !important;
+}
+
+.app-footer {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* 12. RESPONSIVE BREAKPOINTS */
+@media (max-width: 480px) {
+  body {
+    padding: 8px;
+  }
+  .app-container {
+    gap: 10px;
+  }
+  .numpad {
+    gap: 4px;
+  }
+  .num-key {
+    font-size: 1.1rem;
+  }
+}
