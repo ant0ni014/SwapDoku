@@ -1,5 +1,5 @@
 /**
- * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine & Theme-Management
+ * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine, Gamification & Rangliste
  */
 
 const SUPABASE_CONFIG = {
@@ -19,15 +19,23 @@ const state = {
   user: null,
   isOffline: false,
   profile: {
+    username: 'Spieler',
     sync_points: 0,
     active_theme: 'nordic-light',
     unlocked_themes: ['nordic-light']
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
+  zenDifficulty: 'medium', // 'easy' (5 ❤), 'medium' (3 ❤), 'hard' (1 ❤)
   opponentType: 'online', // 'online' | 'bot'
   botDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
+  botRunning: false,
   
+  // Herzen / Fehlerbegrenzung
+  maxHearts: 3,
+  currentHearts: 3,
+  isGameOver: false,
+
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
   initialBoard: Array(81).fill(0),
@@ -120,10 +128,6 @@ class SudokuEngine {
     return true;
   }
 
-  /**
-   * Berechnet den tatsächlichen Fortschritt der vom Spieler zu lösenden Leerzellen.
-   * Vorgegebene Zahlen starten bei 0 %, das vollständig gelöste Board erreicht 100 %.
-   */
   static getProgress(current, initial, solution) {
     let emptyCount = 0;
     let correctlyFilled = 0;
@@ -147,6 +151,23 @@ class SudokuEngine {
     }
     return true;
   }
+
+  static getCompletedDigits(current, solution) {
+    const counts = {};
+    for (let d = 1; d <= 9; d++) counts[d] = 0;
+
+    for (let i = 0; i < 81; i++) {
+      if (current[i] !== 0 && current[i] === solution[i]) {
+        counts[current[i]]++;
+      }
+    }
+
+    const completed = new Set();
+    for (let d = 1; d <= 9; d++) {
+      if (counts[d] === 9) completed.add(d);
+    }
+    return completed;
+  }
 }
 
 // DOM Referenzen
@@ -155,19 +176,32 @@ const dom = {
   points: document.getElementById('userPoints'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
   themeToggleIcon: document.getElementById('themeToggleIcon'),
+  openLeaderboardBtn: document.getElementById('openLeaderboardBtn'),
   openShop: document.getElementById('openShopBtn'),
   closeShop: document.getElementById('closeShopBtn'),
   shopModal: document.getElementById('themeModal'),
   themesList: document.getElementById('themesContainer'),
+  leaderboardModal: document.getElementById('leaderboardModal'),
+  closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
+  usernameInput: document.getElementById('usernameInput'),
+  btnSaveUsername: document.getElementById('btnSaveUsername'),
+  myRankInfo: document.getElementById('myRankInfo'),
+  myRankPoints: document.getElementById('myRankPoints'),
+  leaderboardBody: document.getElementById('leaderboardBody'),
   tabZen: document.getElementById('tabZen'),
   tabVersus: document.getElementById('tabVersus'),
   tabSwap: document.getElementById('tabSwap'),
+  zenDifficultyBar: document.getElementById('zenDifficultyBar'),
+  zenDiffEasy: document.getElementById('zenDiffEasy'),
+  zenDiffMedium: document.getElementById('zenDiffMedium'),
+  zenDiffHard: document.getElementById('zenDiffHard'),
   lobby: document.getElementById('multiplayerLobby'),
   btnPlayOnline: document.getElementById('btnPlayOnline'),
   btnPlayBot: document.getElementById('btnPlayBot'),
   onlineSection: document.getElementById('onlineSection'),
   botSection: document.getElementById('botSection'),
   botStatusText: document.getElementById('botStatusText'),
+  btnStartBotGame: document.getElementById('btnStartBotGame'),
   diffEasy: document.getElementById('diffEasy'),
   diffMedium: document.getElementById('diffMedium'),
   diffHard: document.getElementById('diffHard'),
@@ -178,6 +212,9 @@ const dom = {
   currentRoom: document.getElementById('currentRoomCode'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
+  gameHud: document.getElementById('gameHud'),
+  heartsWrap: document.getElementById('heartsWrap'),
+  heartsDisplay: document.getElementById('heartsDisplay'),
   versusBars: document.getElementById('versusBars'),
   playerBar: document.getElementById('playerProgressBar'),
   opponentBar: document.getElementById('opponentProgressBar'),
@@ -258,8 +295,9 @@ async function initAuth() {
 async function syncProfileFromDB() {
   if (!state.supabase || !state.user) return;
   try {
-    const { data } = await state.supabase.from('profiles').select('sync_points, active_theme').eq('id', state.user.id).single();
+    const { data } = await state.supabase.from('profiles').select('username, sync_points, active_theme').eq('id', state.user.id).single();
     if (data) {
+      state.profile.username = data.username || 'Spieler';
       state.profile.sync_points = data.sync_points || 0;
       state.profile.active_theme = data.active_theme || 'nordic-light';
     }
@@ -275,7 +313,10 @@ async function syncProfileFromDB() {
 function loadLocalState() {
   const saved = localStorage.getItem('swapdoku_state');
   if (saved) {
-    try { state.profile = JSON.parse(saved); } catch (_) {}
+    try { 
+      const parsed = JSON.parse(saved);
+      state.profile = { ...state.profile, ...parsed };
+    } catch (_) {}
   }
   setTheme(state.profile.active_theme);
 }
@@ -288,17 +329,76 @@ function updatePointsDisplay() {
   dom.points.textContent = state.profile.sync_points;
 }
 
-// Spielablauf
+// -----------------------------------------------------------------------------
+// HERZEN & LEBEN LOGIK
+// -----------------------------------------------------------------------------
+function setupHeartsForDifficulty() {
+  if (state.mode === 'zen') {
+    switch (state.zenDifficulty) {
+      case 'easy': state.maxHearts = 5; break;
+      case 'hard': state.maxHearts = 1; break;
+      case 'medium':
+      default: state.maxHearts = 3; break;
+    }
+  } else {
+    state.maxHearts = 3;
+  }
+  state.currentHearts = state.maxHearts;
+  state.isGameOver = false;
+  renderHearts();
+}
+
+function renderHearts() {
+  let heartsStr = '';
+  for (let i = 0; i < state.maxHearts; i++) {
+    heartsStr += (i < state.currentHearts) ? '❤' : '🖤';
+  }
+  dom.heartsDisplay.textContent = heartsStr;
+}
+
+function deductHeart() {
+  if (state.currentHearts > 0) {
+    state.currentHearts--;
+    renderHearts();
+  }
+
+  if (state.currentHearts <= 0) {
+    handleGameOver();
+  }
+}
+
+function handleGameOver() {
+  state.isGameOver = true;
+  stopBot();
+  stopSwapCountdown();
+  toast('Verloren! Keine Herzen mehr übrig.');
+}
+
+// -----------------------------------------------------------------------------
+// SPIELABLAUF & RENDERING
+// -----------------------------------------------------------------------------
+function getCluesForZenDifficulty() {
+  switch (state.zenDifficulty) {
+    case 'easy': return 40;   // Viele Vorgaben
+    case 'hard': return 28;   // Wenige Vorgaben
+    case 'medium':
+    default: return 34;
+  }
+}
+
 function startNewGame(customBoard = null, customSol = null) {
   stopSwapCountdown();
   stopBot();
+  state.botRunning = false;
+  setupHeartsForDifficulty();
 
   if (customBoard && customSol) {
     state.initialBoard = [...customBoard];
     state.currentBoard = [...customBoard];
     state.solution = [...customSol];
   } else {
-    const { solution, initialBoard } = SudokuEngine.generate(34);
+    const clues = state.mode === 'zen' ? getCluesForZenDifficulty() : 34;
+    const { solution, initialBoard } = SudokuEngine.generate(clues);
     state.solution = solution;
     state.initialBoard = [...initialBoard];
     state.currentBoard = [...initialBoard];
@@ -309,13 +409,14 @@ function startNewGame(customBoard = null, customSol = null) {
 
   updateProgressBars(0, 0);
   render();
+  updateNumpadCompletedState();
 
-  if (state.opponentType === 'bot' && (state.mode === 'versus' || state.mode === 'swap')) {
-    initBot();
+  if (state.mode === 'swap' && state.opponentType !== 'bot') {
+    startSwapCountdown();
   }
 
-  if (state.mode === 'swap') {
-    startSwapCountdown();
+  if (state.opponentType === 'bot') {
+    dom.botStatusText.textContent = 'Bereit. Klicke auf "Spiel gegen Bot starten".';
   }
 }
 
@@ -358,6 +459,7 @@ function render() {
 }
 
 function selectCell(index) {
+  if (state.isGameOver) return;
   state.selectedIndex = index;
   render();
 }
@@ -381,9 +483,28 @@ function highlightRelated() {
   }
 }
 
+function updateNumpadCompletedState() {
+  const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
+  const numButtons = dom.numpad.querySelectorAll('.num');
+
+  numButtons.forEach(btn => {
+    const digit = parseInt(btn.dataset.num, 10);
+    if (completedDigits.has(digit)) {
+      btn.classList.add('completed');
+    } else {
+      btn.classList.remove('completed');
+    }
+  });
+}
+
 function handleNumberInput(num) {
+  if (state.isGameOver) return;
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
+
+  // Prüfen, ob Zahl bereits vollständig belegt ist
+  const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
+  if (completedDigits.has(num)) return;
 
   if (state.notesActive) {
     if (state.notes[idx].has(num)) {
@@ -393,21 +514,33 @@ function handleNumberInput(num) {
     }
     state.currentBoard[idx] = 0;
   } else {
+    // Zahl eintragen & auf Fehler prüfen
+    const wasEmpty = state.currentBoard[idx] === 0;
+    const isCorrect = (num === state.solution[idx]);
+
     state.currentBoard[idx] = num;
     state.notes[idx].clear();
+
+    if (!isCorrect && wasEmpty) {
+      deductHeart();
+    }
+
     checkProgress();
+    updateNumpadCompletedState();
   }
 
   render();
 }
 
 function clearCell() {
+  if (state.isGameOver) return;
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
   state.currentBoard[idx] = 0;
   state.notes[idx].clear();
   checkProgress();
+  updateNumpadCompletedState();
   render();
 }
 
@@ -464,15 +597,17 @@ async function addPoints(pts) {
 // -----------------------------------------------------------------------------
 function getBotIntervalMs() {
   switch (state.botDifficulty) {
-    case 'easy': return 3800;   // ~3.8s pro Zelle (gemütlich)
-    case 'hard': return 1400;   // ~1.4s pro Zelle (schnell/fordernd)
+    case 'easy': return 3800;   // ~3.8s pro Zelle
+    case 'hard': return 1400;   // ~1.4s pro Zelle
     case 'medium':
-    default: return 2400;       // ~2.4s pro Zelle (ausgeglichen)
+    default: return 2400;       // ~2.4s pro Zelle
   }
 }
 
-function initBot() {
+function startBotMatch() {
   stopBot();
+  state.botRunning = true;
+  dom.botStatusText.textContent = `Bot läuft (${state.botDifficulty}).`;
 
   if (state.mode === 'versus') {
     state.botInitial = [...state.initialBoard];
@@ -483,6 +618,7 @@ function initBot() {
     state.botInitial = [...botPuzzle.initialBoard];
     state.botBoard = [...botPuzzle.initialBoard];
     state.botSolution = [...botPuzzle.solution];
+    startSwapCountdown();
   }
 
   const initialBotPct = SudokuEngine.getProgress(state.botBoard, state.botInitial, state.botSolution);
@@ -499,6 +635,7 @@ function stopBot() {
     clearInterval(state.botIntervalId);
     state.botIntervalId = null;
   }
+  state.botRunning = false;
 }
 
 function botStep() {
@@ -536,15 +673,12 @@ function setBotDifficulty(diff) {
     b.classList.toggle('active', b.dataset.diff === diff);
   });
 
-  const diffNames = { easy: 'Einfach (gemütlich)', medium: 'Mittel (ausgeglichen)', hard: 'Schwer (herausfordernd)' };
-  dom.botStatusText.textContent = `Bot-Stufe: ${diffNames[diff]}.`;
+  const diffNames = { easy: 'Einfach', medium: 'Mittel', hard: 'Schwer' };
+  dom.botStatusText.textContent = `Bot-Stufe: ${diffNames[diff]}. Klicke auf Start.`;
 
-  // Laufenden Bot-Timer mit neuem Intervall neu starten
-  if (state.opponentType === 'bot' && state.botIntervalId) {
-    clearInterval(state.botIntervalId);
-    state.botIntervalId = setInterval(() => {
-      botStep();
-    }, getBotIntervalMs());
+  if (state.botRunning) {
+    stopBot();
+    startBotMatch();
   }
 }
 
@@ -555,6 +689,7 @@ function setMode(mode) {
   state.mode = mode;
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
 
+  dom.zenDifficultyBar.classList.toggle('hidden', mode !== 'zen');
   dom.lobby.classList.toggle('hidden', mode === 'zen');
   dom.versusBars.classList.toggle('hidden', mode !== 'versus');
   dom.swapBox.classList.toggle('hidden', mode !== 'swap');
@@ -573,6 +708,14 @@ function setMode(mode) {
   startNewGame();
 }
 
+function setZenDifficulty(diff) {
+  state.zenDifficulty = diff;
+  [dom.zenDiffEasy, dom.zenDiffMedium, dom.zenDiffHard].forEach(b => {
+    b.classList.toggle('active', b.dataset.diff === diff);
+  });
+  startNewGame();
+}
+
 function setOpponentType(type) {
   state.opponentType = type;
   dom.btnPlayOnline.classList.toggle('active', type === 'online');
@@ -583,8 +726,6 @@ function setOpponentType(type) {
 
   if (type === 'bot') {
     leaveRoom();
-    const diffNames = { easy: 'Einfach', medium: 'Mittel', hard: 'Schwer' };
-    dom.botStatusText.textContent = `Bot aktiv (${diffNames[state.botDifficulty]}).`;
   }
 
   updateOpponentLabels();
@@ -732,6 +873,7 @@ function doBoardSwap() {
     state.selectedIndex = null;
     render();
     checkProgress();
+    updateNumpadCompletedState();
     toast('Board mit Bot getauscht!');
   } else if (state.channel) {
     broadcast('SWAP', {
@@ -760,7 +902,96 @@ function applyIncomingSwap(payload) {
 
   render();
   checkProgress();
+  updateNumpadCompletedState();
   toast('Board getauscht');
+}
+
+// -----------------------------------------------------------------------------
+// RANGLISTE & SPIELERNAME
+// -----------------------------------------------------------------------------
+async function openLeaderboard() {
+  dom.usernameInput.value = state.profile.username;
+  dom.myRankPoints.textContent = state.profile.sync_points;
+  dom.leaderboardModal.classList.remove('hidden');
+  await loadLeaderboardData();
+}
+
+function closeLeaderboard() {
+  dom.leaderboardModal.classList.add('hidden');
+}
+
+async function saveUsername() {
+  const newName = dom.usernameInput.value.trim();
+  if (!newName) {
+    toast('Name darf nicht leer sein');
+    return;
+  }
+
+  state.profile.username = newName;
+  saveLocalState();
+  toast('Name gespeichert');
+
+  if (!state.isOffline && state.supabase && state.user) {
+    try {
+      await state.supabase.from('profiles').update({ username: newName }).eq('id', state.user.id);
+    } catch (_) {}
+  }
+  await loadLeaderboardData();
+}
+
+async function loadLeaderboardData() {
+  dom.leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Lade Rangliste...</td></tr>';
+
+  let list = [];
+
+  if (!state.isOffline && state.supabase) {
+    try {
+      const { data, error } = await state.supabase
+        .from('profiles')
+        .select('id, username, sync_points')
+        .order('sync_points', { ascending: false })
+        .limit(20);
+
+      if (!error && data) {
+        list = data;
+      }
+    } catch (_) {}
+  }
+
+  // Fallback / Lokale Demonstration falls offline oder nur 1 User
+  if (list.length === 0) {
+    list = [
+      { id: 'bot-1', username: 'SudokuMaster', sync_points: 350 },
+      { id: 'bot-2', username: 'ZenSeeker', sync_points: 225 },
+      { id: state.user?.id || 'local-me', username: state.profile.username, sync_points: state.profile.sync_points },
+      { id: 'bot-3', username: 'NordicSolver', sync_points: 100 },
+      { id: 'bot-4', username: 'GridRunner', sync_points: 50 }
+    ];
+  }
+
+  // Eigene Person hervorheben und Rang ermitteln
+  const currentUserId = state.user?.id || 'local-me';
+  let myRank = '-';
+
+  list.sort((a, b) => b.sync_points - a.sync_points);
+
+  dom.leaderboardBody.innerHTML = '';
+  list.forEach((entry, idx) => {
+    const isMe = entry.id === currentUserId || entry.username === state.profile.username;
+    const rank = idx + 1;
+    if (isMe) myRank = rank;
+
+    const tr = document.createElement('tr');
+    if (isMe) tr.className = 'my-row';
+    tr.innerHTML = `
+      <td>#${rank}</td>
+      <td>${entry.username || 'Spieler'} ${isMe ? '(Du)' : ''}</td>
+      <td style="text-align: right;">${entry.sync_points}</td>
+    `;
+    dom.leaderboardBody.appendChild(tr);
+  });
+
+  dom.myRankInfo.innerHTML = `Dein Rang: <strong>Platz ${myRank}</strong> &bull; Punkte: <strong>${state.profile.sync_points}</strong>`;
 }
 
 // -----------------------------------------------------------------------------
@@ -856,19 +1087,33 @@ function bindEvents() {
   // Theme Toggle (Hell/Dunkel)
   dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
 
+  // Rangliste
+  dom.openLeaderboardBtn.addEventListener('click', openLeaderboard);
+  dom.closeLeaderboardBtn.addEventListener('click', closeLeaderboard);
+  dom.btnSaveUsername.addEventListener('click', saveUsername);
+  dom.leaderboardModal.addEventListener('click', e => {
+    if (e.target === dom.leaderboardModal) closeLeaderboard();
+  });
+
   // Modi-Tabs
   dom.tabZen.addEventListener('click', () => setMode('zen'));
   dom.tabVersus.addEventListener('click', () => setMode('versus'));
   dom.tabSwap.addEventListener('click', () => setMode('swap'));
 
+  // Zen Schwierigkeitsgrade
+  dom.zenDiffEasy.addEventListener('click', () => setZenDifficulty('easy'));
+  dom.zenDiffMedium.addEventListener('click', () => setZenDifficulty('medium'));
+  dom.zenDiffHard.addEventListener('click', () => setZenDifficulty('hard'));
+
   // Online vs Bot Umschalter
   dom.btnPlayOnline.addEventListener('click', () => setOpponentType('online'));
   dom.btnPlayBot.addEventListener('click', () => setOpponentType('bot'));
 
-  // Bot-Schwierigkeitsgrade
+  // Bot-Schwierigkeitsgrade & Start Button
   dom.diffEasy.addEventListener('click', () => setBotDifficulty('easy'));
   dom.diffMedium.addEventListener('click', () => setBotDifficulty('medium'));
   dom.diffHard.addEventListener('click', () => setBotDifficulty('hard'));
+  dom.btnStartBotGame.addEventListener('click', startBotMatch);
 
   // Raum-Lobby
   dom.createRoom.addEventListener('click', createRoom);
@@ -888,7 +1133,7 @@ function bindEvents() {
 
   dom.numpad.addEventListener('click', e => {
     const btn = e.target.closest('.num');
-    if (!btn) return;
+    if (!btn || btn.classList.contains('completed')) return;
     handleNumberInput(parseInt(btn.dataset.num, 10));
   });
 

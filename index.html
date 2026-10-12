@@ -14,7 +14,7 @@
 </head>
 <body>
   <div class="app">
-    <!-- Header mit Titel, Theme-Umschalter (Hell/Dunkel) & Punkte -->
+    <!-- Header mit Titel, Theme-Umschalter, Rangliste & Punkte -->
     <header class="header">
       <div class="brand">
         <h1>SwapDoku</h1>
@@ -24,6 +24,11 @@
         <button class="icon-toggle" id="themeToggleBtn" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel Modus">
           <span id="themeToggleIcon">☾</span>
         </button>
+        <!-- Rangliste Button -->
+        <button class="icon-toggle" id="openLeaderboardBtn" title="Rangliste öffnen" aria-label="Rangliste">
+          <span>🏆</span>
+        </button>
+        <!-- Punkte-Pill -->
         <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
           <span class="pts-val" id="userPoints">0</span> Pts
         </button>
@@ -36,6 +41,18 @@
       <button class="mode-btn" data-mode="versus" id="tabVersus" title="Gegen Mitspieler oder Bot">Versus</button>
       <button class="mode-btn" data-mode="swap" id="tabSwap" title="Kooperativer Board-Swap">Co-Op Swap</button>
     </nav>
+
+    <!-- Einzelspieler-Schwierigkeit (Nur bei Zen sichtbar) -->
+    <section class="zen-bar" id="zenDifficultyBar">
+      <div class="zen-diff-row">
+        <span class="diff-label">Schwierigkeit:</span>
+        <div class="diff-buttons">
+          <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ❤)</button>
+          <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ❤)</button>
+          <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ❤)</button>
+        </div>
+      </div>
+    </section>
 
     <!-- Multiplayer Lobby mit Online- oder Bot-Wahl -->
     <section class="lobby hidden" id="multiplayerLobby">
@@ -67,21 +84,27 @@
       <!-- Bot Bereich (Falls kein Mitspieler vorhanden) -->
       <div class="bot-box hidden" id="botSection">
         <div class="bot-difficulty-row">
-          <span class="diff-label">Schwierigkeit:</span>
+          <span class="diff-label">Bot-Stufe:</span>
           <div class="diff-buttons">
             <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
             <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
             <button class="diff-btn" data-diff="hard" id="diffHard">Schwer</button>
           </div>
         </div>
-        <div class="bot-desc" id="botStatusText">
-          Bot aktiv: Spielt automatisch mit moderatem Tempo gegen dich bzw. tauscht mit dir das Board.
+        <div class="bot-start-row">
+          <button class="btn btn-primary" id="btnStartBotGame">Spiel gegen Bot starten</button>
+          <span class="bot-desc" id="botStatusText">Bereit zum Start.</span>
         </div>
       </div>
     </section>
 
-    <!-- Info / HUD -->
+    <!-- Info / HUD (Herzen, Timer, Versus-Progress) -->
     <section class="hud" id="gameHud">
+      <!-- Herzen / Fehler-Anzeige -->
+      <div class="hearts-wrap" id="heartsWrap" title="Verbleibende Leben">
+        <span class="hearts-icons" id="heartsDisplay">❤❤❤</span>
+      </div>
+
       <!-- Versus Progress -->
       <div class="versus-wrap hidden" id="versusBars">
         <div class="bar-row">
@@ -138,6 +161,40 @@
         <button class="close-btn" id="closeShopBtn">&times;</button>
       </div>
       <div class="theme-list" id="themesContainer"></div>
+    </div>
+  </div>
+
+  <!-- Rangliste & Profil Modal -->
+  <div class="modal hidden" id="leaderboardModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h2>Rangliste (Leaderboard)</h2>
+        <button class="close-btn" id="closeLeaderboardBtn">&times;</button>
+      </div>
+      <div class="player-profile-box">
+        <label for="usernameInput" class="profile-label">Dein Spielername:</label>
+        <div class="name-edit-row">
+          <input type="text" id="usernameInput" maxlength="16" placeholder="Spielername" spellcheck="false">
+          <button class="btn" id="btnSaveUsername">Speichern</button>
+        </div>
+        <div class="my-rank-info" id="myRankInfo">
+          Dein Rang: <strong>Lädt...</strong> &bull; Punkte: <strong id="myRankPoints">0</strong>
+        </div>
+      </div>
+      <div class="leaderboard-table-wrap">
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rang</th>
+              <th>Spieler</th>
+              <th style="text-align: right;">Punkte</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <!-- Dynamische Zeilen -->
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

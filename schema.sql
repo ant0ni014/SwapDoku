@@ -33,14 +33,14 @@ CREATE TABLE IF NOT EXISTS public.unlocked_themes (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.unlocked_themes ENABLE ROW LEVEL SECURITY;
 
--- Profiles: Jeder authentifizierte/anonyme Nutzer darf sein eigenes Profil lesen
-CREATE POLICY "Users can read own profile"
+-- Profiles: Jeder authentifizierte/anonyme Nutzer darf Profile für die Rangliste lesen
+CREATE POLICY "Public leaderboard profiles read"
     ON public.profiles
     FOR SELECT
     TO authenticated, anon
-    USING (auth.uid() = id);
+    USING (true);
 
--- Profiles: Nutzer darf eigenes Profil updaten (z. B. aktives Theme wechseln)
+-- Profiles: Nutzer darf eigenes Profil updaten (z. B. aktives Theme oder Nickname wechseln)
 CREATE POLICY "Users can update own profile"
     ON public.profiles
     FOR UPDATE
