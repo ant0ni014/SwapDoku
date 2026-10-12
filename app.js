@@ -349,11 +349,11 @@ function setupHeartsForDifficulty() {
 }
 
 function renderHearts() {
-  let heartsStr = '';
+  let starsStr = '';
   for (let i = 0; i < state.maxHearts; i++) {
-    heartsStr += (i < state.currentHearts) ? '❤' : '🖤';
+    starsStr += (i < state.currentHearts) ? '★' : '☆';
   }
-  dom.heartsDisplay.textContent = heartsStr;
+  dom.heartsDisplay.textContent = starsStr;
 }
 
 function deductHeart() {
@@ -371,7 +371,7 @@ function handleGameOver() {
   state.isGameOver = true;
   stopBot();
   stopSwapCountdown();
-  toast('Verloren! Keine Herzen mehr übrig.');
+  toast('Keine Versuche mehr übrig!');
 }
 
 // -----------------------------------------------------------------------------
