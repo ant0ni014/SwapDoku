@@ -1157,6 +1157,16 @@ function bindEvents() {
   dom.shopModal.addEventListener('click', e => {
     if (e.target === dom.shopModal) dom.shopModal.classList.add('hidden');
   });
+  // Verhindere Browser-Zoom (Strg + Mausrad, Strg + Plus / Minus)
+  window.addEventListener('wheel', e => {
+    if (e.ctrlKey) e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
+      e.preventDefault();
+    }
+  });
 }
 
 function moveSelection(key) {

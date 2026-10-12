@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
    SwapDoku: Skandinavischer Minimalismus
    Keine Effekthascherei, klare Linien, dezente Akzente, pure Typografie.
-   Optimiert für Desktop, Tablet und Laptop-Screens (Kein Scrollen nötig).
+   Großzügiges, cleanes Design, optimiert für Laptop & Desktop ohne Scrollen.
 ----------------------------------------------------------------------------- */
 
 :root,
@@ -14,7 +14,7 @@
   --border-strong: #27272a;
   --accent: #18181b;
   --select: #e0e7ff;
-  --select-border: #6366f1;
+  --select-border: #4f46e5;
   --highlight: #f1f5f9;
   --user-val: #09090b;
   --err-bg: #fee2e2;
@@ -32,7 +32,7 @@
   --accent: #fafafa;
   --select: #1e293b;
   --select-border: #38bdf8;
-  --highlight: #27272a; /* Deutlich sichtbarere Schattierung */
+  --highlight: #27272a;
   --user-val: #38bdf8;
   --err-bg: #450a0a;
   --err-text: #f87171;
@@ -78,6 +78,12 @@
   margin: 0;
   padding: 0;
   -webkit-tap-highlight-color: transparent;
+  touch-action: pan-x pan-y;
+}
+
+html {
+  touch-action: manipulation;
+  -ms-touch-action: manipulation;
 }
 
 /* Screen-Fitting: Viewport-optimiert, sodass auf Laptops kein Scrollen anfällt */
@@ -91,65 +97,68 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 10px 14px;
-  line-height: 1.35;
+  padding: 12px 20px;
+  line-height: 1.4;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .app {
   width: 100%;
-  max-width: 430px;
+  max-width: 520px;
   max-height: 98vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-/* Header */
+/* Header: Großzügiger, klar und aufgeräumt */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 2px;
 }
 
 .brand h1 {
-  font-size: 1.25rem;
+  font-size: 1.45rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .icon-toggle {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  width: 30px;
-  height: 30px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
 .icon-toggle:hover {
   border-color: var(--border-strong);
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 .pill-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 9999px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
 }
@@ -162,15 +171,15 @@ body {
 .modes {
   display: flex;
   border-bottom: 1px solid var(--border);
-  gap: 14px;
+  gap: 20px;
 }
 
 .mode-btn {
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  padding: 6px 0;
-  font-size: 0.8rem;
+  padding: 6px 2px;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
@@ -186,8 +195,8 @@ body {
 .zen-bar {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  padding: 6px 10px;
+  border-radius: 6px;
+  padding: 6px 12px;
 }
 
 .zen-diff-row {
@@ -201,7 +210,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -218,8 +227,8 @@ body {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 0.72rem;
+  padding: 4px 10px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
@@ -247,17 +256,17 @@ body {
 .bot-difficulty-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .bot-start-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .diff-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -271,8 +280,8 @@ body {
   border: 1px solid var(--border);
   color: var(--muted);
   border-radius: 4px;
-  padding: 3px 7px;
-  font-size: 0.7rem;
+  padding: 4px 10px;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
 }
@@ -284,18 +293,18 @@ body {
 }
 
 .bot-desc {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .lobby-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .divider {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -310,9 +319,9 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 5px 6px;
+  padding: 6px 8px;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   text-transform: uppercase;
   text-align: center;
   color: var(--text);
@@ -327,8 +336,8 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 5px 10px;
-  font-size: 0.75rem;
+  padding: 6px 12px;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -353,14 +362,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   margin-left: auto;
 }
 
@@ -378,15 +387,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 20px;
+  gap: 10px;
+  min-height: 22px;
 }
 
 .stars-wrap {
   display: flex;
   align-items: center;
-  gap: 2px;
-  font-size: 0.85rem;
+  gap: 3px;
+  font-size: 0.95rem;
   letter-spacing: 2px;
   color: var(--text);
 }
@@ -395,26 +404,26 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .bar-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
+  gap: 8px;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
 .bar-row span:first-child {
-  width: 38px;
+  width: 40px;
 }
 
 .bar-track {
   flex: 1;
-  height: 4px;
+  height: 5px;
   background: var(--border);
-  border-radius: 2px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -430,7 +439,7 @@ body {
 }
 
 .bar-pct {
-  width: 28px;
+  width: 32px;
   text-align: right;
 }
 
@@ -438,20 +447,20 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--muted);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 3px 6px;
+  padding: 4px 8px;
 }
 
 .swap-wrap strong {
   color: var(--text);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
 }
 
-/* 9x9 Grid (Laptop Viewport-optimiert) */
+/* 9x9 Grid: Großzügig, clean, perfekt proportioniert */
 .grid-wrap {
   width: 100%;
   display: flex;
@@ -462,8 +471,8 @@ body {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(9, 1fr);
-  width: 100%;
-  max-width: min(410px, 48vh);
+  width: min(500px, 56vh);
+  height: min(500px, 56vh);
   aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 2px solid var(--border-strong);
@@ -501,9 +510,9 @@ body {
   border-bottom: none;
 }
 
-/* Zell-Inhalte */
+/* Zell-Inhalte: Schöne, gut lesbare Ziffern */
 .cell .val {
-  font-size: clamp(1rem, 3.8vh, 1.45rem);
+  font-size: clamp(1.2rem, 4.4vh, 1.7rem);
   font-weight: 500;
   color: var(--user-val);
   line-height: 1;
@@ -552,12 +561,12 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.55rem;
+  font-size: 0.65rem;
   color: var(--muted);
   line-height: 1;
 }
 
-/* Controls (Kompakt auf Laptop) */
+/* Controls: Aufgeräumt & sauber */
 .controls {
   display: flex;
   flex-direction: column;
@@ -567,15 +576,15 @@ body {
 .toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
 }
 
 .tool-btn {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 6px 0;
-  font-size: 0.75rem;
+  padding: 7px 0;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -590,15 +599,15 @@ body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
-  gap: 4px;
+  gap: 6px;
 }
 
 .num {
-  aspect-ratio: 1 / 1.05;
+  aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -629,7 +638,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 14px;
+  padding: 16px;
   z-index: 50;
 }
 
@@ -638,12 +647,12 @@ body {
   border: 1px solid var(--border);
   border-radius: 6px;
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   max-height: 85vh;
-  padding: 14px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   overflow-y: auto;
 }
 
@@ -654,14 +663,14 @@ body {
 }
 
 .modal-top h2 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   color: var(--muted);
   cursor: pointer;
 }
@@ -676,19 +685,19 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 8px;
+  padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--bg);
 }
 
 .theme-name {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 500;
 }
 
 .theme-price {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -697,14 +706,14 @@ body {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .profile-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -718,9 +727,9 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 4px 6px;
+  padding: 6px 8px;
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--text);
   outline: none;
 }
@@ -730,9 +739,9 @@ body {
 }
 
 .my-rank-info {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text);
-  margin-top: 1px;
+  margin-top: 2px;
 }
 
 .leaderboard-table-wrap {
@@ -742,19 +751,19 @@ body {
 .leaderboard-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
 }
 
 .leaderboard-table th {
   text-align: left;
-  padding: 5px 6px;
+  padding: 6px 8px;
   border-bottom: 1px solid var(--border-strong);
   color: var(--text);
   font-weight: 600;
 }
 
 .leaderboard-table td {
-  padding: 6px;
+  padding: 8px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -768,14 +777,14 @@ body {
 /* Toast */
 .toast {
   position: fixed;
-  bottom: 20px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--text);
   color: var(--bg);
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 500;
   z-index: 100;
 }
