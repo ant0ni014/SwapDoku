@@ -1,5 +1,5 @@
 /**
- * SwapDoku: Kernlogik & Realtime-Synchronisation
+ * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine & Theme-Management
  */
 
 const SUPABASE_CONFIG = {
@@ -25,6 +25,7 @@ const state = {
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
+  opponentType: 'online', // 'online' | 'bot'
   
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
@@ -43,7 +44,14 @@ const state = {
   
   // Swap Timer
   swapTimerId: null,
-  swapSecondsLeft: 10
+  swapSecondsLeft: 10,
+
+  // Bot State
+  botIntervalId: null,
+  botBoard: Array(81).fill(0),
+  botInitial: Array(81).fill(0),
+  botSolution: Array(81).fill(0),
+  botSolvedCount: 0
 };
 
 // Sudoku Backtracking Generator
@@ -132,6 +140,8 @@ class SudokuEngine {
 const dom = {
   root: document.documentElement,
   points: document.getElementById('userPoints'),
+  themeToggleBtn: document.getElementById('themeToggleBtn'),
+  themeToggleIcon: document.getElementById('themeToggleIcon'),
   openShop: document.getElementById('openShopBtn'),
   closeShop: document.getElementById('closeShopBtn'),
   shopModal: document.getElementById('themeModal'),
@@ -140,6 +150,11 @@ const dom = {
   tabVersus: document.getElementById('tabVersus'),
   tabSwap: document.getElementById('tabSwap'),
   lobby: document.getElementById('multiplayerLobby'),
+  btnPlayOnline: document.getElementById('btnPlayOnline'),
+  btnPlayBot: document.getElementById('btnPlayBot'),
+  onlineSection: document.getElementById('onlineSection'),
+  botSection: document.getElementById('botSection'),
+  botStatusText: document.getElementById('botStatusText'),
   createRoom: document.getElementById('createRoomBtn'),
   joinRoom: document.getElementById('joinRoomBtn'),
   roomInput: document.getElementById('roomCodeInput'),
@@ -152,8 +167,10 @@ const dom = {
   opponentBar: document.getElementById('opponentProgressBar'),
   playerLabel: document.getElementById('playerProgressLabel'),
   opponentLabel: document.getElementById('opponentProgressLabel'),
+  opponentLabelText: document.getElementById('opponentLabelText'),
   swapBox: document.getElementById('swapTimerBox'),
   swapTimer: document.getElementById('swapTimer'),
+  swapPartnerLabel: document.getElementById('swapPartnerLabel'),
   grid: document.getElementById('sudokuGrid'),
   btnNotes: document.getElementById('btnNotes'),
   btnErase: document.getElementById('btnErase'),
@@ -258,6 +275,7 @@ function updatePointsDisplay() {
 // Spielablauf
 function startNewGame(customBoard = null, customSol = null) {
   stopSwapCountdown();
+  stopBot();
 
   if (customBoard && customSol) {
     state.initialBoard = [...customBoard];
@@ -275,6 +293,11 @@ function startNewGame(customBoard = null, customSol = null) {
 
   updateProgressBars(0, 0);
   render();
+
+  // Bot initialisieren wenn Bot-Modus gewählt ist
+  if (state.opponentType === 'bot' && (state.mode === 'versus' || state.mode === 'swap')) {
+    initBot();
+  }
 
   if (state.mode === 'swap') {
     startSwapCountdown();
@@ -379,7 +402,7 @@ function checkProgress() {
   dom.playerBar.style.width = `${pct}%`;
   dom.playerLabel.textContent = `${pct}%`;
 
-  if (state.mode === 'versus' && state.channel) {
+  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('PROGRESS', { solved, total: 81 });
   }
 
@@ -396,13 +419,14 @@ function updateProgressBars(playerPct, oppPct) {
 }
 
 async function gameWon() {
+  stopBot();
   let pts = 50;
   if (state.mode === 'versus') pts = 100;
   if (state.mode === 'swap') pts = 75;
 
   toast(`Gelöst! +${pts} Punkte`);
 
-  if (state.mode === 'versus' && state.channel) {
+  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
   }
 
@@ -421,7 +445,74 @@ async function addPoints(pts) {
   }
 }
 
-// Modi & Lobby
+// -----------------------------------------------------------------------------
+// BOT ENGINE (Simuliert einen Gegenspieler oder Swap-Partner)
+// -----------------------------------------------------------------------------
+function initBot() {
+  stopBot();
+
+  if (state.mode === 'versus') {
+    // Im Versus löst der Bot dasselbe Board
+    state.botInitial = [...state.initialBoard];
+    state.botBoard = [...state.initialBoard];
+    state.botSolution = [...state.solution];
+  } else if (state.mode === 'swap') {
+    // Im Co-Op Swap hat der Bot ein eigenes Rätsel
+    const botPuzzle = SudokuEngine.generate(34);
+    state.botInitial = [...botPuzzle.initialBoard];
+    state.botBoard = [...botPuzzle.initialBoard];
+    state.botSolution = [...botPuzzle.solution];
+  }
+
+  // Regelmäßiges Lösen einer Zelle alle 1.8 bis 3 Sekunden
+  state.botIntervalId = setInterval(() => {
+    botStep();
+  }, 2200);
+}
+
+function stopBot() {
+  if (state.botIntervalId) {
+    clearInterval(state.botIntervalId);
+    state.botIntervalId = null;
+  }
+}
+
+function botStep() {
+  // Suche leere/ungelöste Zellen auf dem Bot-Board
+  const emptyIndices = [];
+  for (let i = 0; i < 81; i++) {
+    if (state.botBoard[i] === 0 || state.botBoard[i] !== state.botSolution[i]) {
+      emptyIndices.push(i);
+    }
+  }
+
+  if (emptyIndices.length === 0) {
+    // Bot hat fertig
+    stopBot();
+    if (state.mode === 'versus') {
+      toast('Der Bot hat das Rätsel zuerst gelöst!');
+    } else if (state.mode === 'swap') {
+      toast('Der Bot hat seinen Teil gelöst!');
+    }
+    return;
+  }
+
+  // Bot füllt eine zufällige ungelöste Zelle korrekt aus
+  const randIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  state.botBoard[randIdx] = state.botSolution[randIdx];
+
+  const botSolved = SudokuEngine.countSolved(state.botBoard, state.botSolution);
+  const botPct = Math.round((botSolved / 81) * 100);
+
+  if (state.mode === 'versus') {
+    dom.opponentBar.style.width = `${botPct}%`;
+    dom.opponentLabel.textContent = `${botPct}%`;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// MODI & MULTIPLAYER LOBBY
+// -----------------------------------------------------------------------------
 function setMode(mode) {
   state.mode = mode;
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
@@ -433,13 +524,40 @@ function setMode(mode) {
   if (mode === 'zen') {
     dom.tabZen.classList.add('active');
     leaveRoom();
+    stopBot();
   } else if (mode === 'versus') {
     dom.tabVersus.classList.add('active');
   } else {
     dom.tabSwap.classList.add('active');
   }
 
+  updateOpponentLabels();
   startNewGame();
+}
+
+function setOpponentType(type) {
+  state.opponentType = type;
+  dom.btnPlayOnline.classList.toggle('active', type === 'online');
+  dom.btnPlayBot.classList.toggle('active', type === 'bot');
+
+  dom.onlineSection.classList.toggle('hidden', type !== 'online');
+  dom.botSection.classList.toggle('hidden', type !== 'bot');
+
+  if (type === 'bot') {
+    leaveRoom();
+    dom.botStatusText.textContent = state.mode === 'swap' 
+      ? 'Bot aktiv: Du und der Bot tauschen alle 10 Sekunden eure Boards.'
+      : 'Bot aktiv: Der Bot löst zeitgleich dasselbe Rätsel gegen dich.';
+  }
+
+  updateOpponentLabels();
+  startNewGame();
+}
+
+function updateOpponentLabels() {
+  const isBot = state.opponentType === 'bot';
+  dom.opponentLabelText.textContent = isBot ? 'Bot' : 'Gegner';
+  dom.swapPartnerLabel.textContent = isBot ? 'Swap mit Bot in' : 'Swap in';
 }
 
 function createRoom() {
@@ -529,7 +647,9 @@ function setConnectionStatus(status, text) {
   dom.connText.textContent = text;
 }
 
-// Co-Op Swap Countdown
+// -----------------------------------------------------------------------------
+// CO-OP SWAP COUNTDOWN & HANDLING
+// -----------------------------------------------------------------------------
 function startSwapCountdown() {
   stopSwapCountdown();
   state.swapSecondsLeft = 10;
@@ -557,14 +677,33 @@ function doBoardSwap() {
   dom.grid.classList.add('swapping');
   setTimeout(() => dom.grid.classList.remove('swapping'), 300);
 
-  if (state.channel) {
+  if (state.opponentType === 'bot') {
+    // Board-Swap mit dem simulierten Bot
+    const tempBoard = [...state.currentBoard];
+    const tempInitial = [...state.initialBoard];
+    const tempSol = [...state.solution];
+
+    state.currentBoard = [...state.botBoard];
+    state.initialBoard = [...state.botInitial];
+    state.solution = [...state.botSolution];
+
+    state.botBoard = tempBoard;
+    state.botInitial = tempInitial;
+    state.botSolution = tempSol;
+
+    state.selectedIndex = null;
+    render();
+    checkProgress();
+    toast('Board mit Bot getauscht!');
+  } else if (state.channel) {
+    // Online-Swap via Supabase Broadcast
     broadcast('SWAP', {
       currentBoard: state.currentBoard,
       initialBoard: state.initialBoard,
       solution: state.solution
     });
   } else {
-    // Lokaler Demo-Swap
+    // Lokaler Offline-Demo-Swap
     const next = SudokuEngine.generate(34);
     state.solution = next.solution;
     state.initialBoard = next.initialBoard;
@@ -588,9 +727,24 @@ function applyIncomingSwap(payload) {
   toast('Board getauscht');
 }
 
-// Themes
+// -----------------------------------------------------------------------------
+// THEMES & DARK/LIGHT TOGGLE
+// -----------------------------------------------------------------------------
 function setTheme(id) {
   dom.root.setAttribute('data-theme', id);
+  updateThemeToggleIcon(id);
+}
+
+function toggleDarkLight() {
+  const current = dom.root.getAttribute('data-theme') || 'nordic-light';
+  const newTheme = current === 'dark-slate' ? 'nordic-light' : 'dark-slate';
+  activateTheme(newTheme);
+}
+
+function updateThemeToggleIcon(themeId) {
+  if (dom.themeToggleIcon) {
+    dom.themeToggleIcon.textContent = themeId === 'dark-slate' ? '☼' : '☾';
+  }
 }
 
 function renderThemeShop() {
@@ -659,18 +813,30 @@ async function buyTheme(id, cost) {
   }
 }
 
-// UI & Tastatur Events
+// -----------------------------------------------------------------------------
+// UI & TASTATUR EVENTS
+// -----------------------------------------------------------------------------
 function bindEvents() {
+  // Theme Toggle (Hell/Dunkel)
+  dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
+
+  // Modi-Tabs
   dom.tabZen.addEventListener('click', () => setMode('zen'));
   dom.tabVersus.addEventListener('click', () => setMode('versus'));
   dom.tabSwap.addEventListener('click', () => setMode('swap'));
 
+  // Online vs Bot Umschalter
+  dom.btnPlayOnline.addEventListener('click', () => setOpponentType('online'));
+  dom.btnPlayBot.addEventListener('click', () => setOpponentType('bot'));
+
+  // Raum-Lobby
   dom.createRoom.addEventListener('click', createRoom);
   dom.joinRoom.addEventListener('click', () => joinRoom(dom.roomInput.value.trim()));
   dom.roomInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') joinRoom(dom.roomInput.value.trim());
   });
 
+  // Spielsteuerung
   dom.btnErase.addEventListener('click', clearCell);
   dom.btnNewGame.addEventListener('click', () => startNewGame());
   dom.btnNotes.addEventListener('click', () => {

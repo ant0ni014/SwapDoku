@@ -14,12 +14,16 @@
 </head>
 <body>
   <div class="app">
-    <!-- Header: Ruhig & reduziert -->
+    <!-- Header mit Titel, Theme-Umschalter (Hell/Dunkel) & Punkte -->
     <header class="header">
       <div class="brand">
         <h1>SwapDoku</h1>
       </div>
-      <div class="user-meta">
+      <div class="header-actions">
+        <!-- Schneller Dark-/Light-Mode Umschalter -->
+        <button class="icon-toggle" id="themeToggleBtn" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel Modus">
+          <span id="themeToggleIcon">☾</span>
+        </button>
         <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
           <span class="pts-val" id="userPoints">0</span> Pts
         </button>
@@ -28,27 +32,43 @@
 
     <!-- Modi -->
     <nav class="modes">
-      <button class="mode-btn active" data-mode="zen" id="tabZen">Zen</button>
-      <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
-      <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
+      <button class="mode-btn active" data-mode="zen" id="tabZen" title="Klassisches Einzelspieler-Sudoku">Zen</button>
+      <button class="mode-btn" data-mode="versus" id="tabVersus" title="Gegen Mitspieler oder Bot">Versus</button>
+      <button class="mode-btn" data-mode="swap" id="tabSwap" title="Kooperativer Board-Swap">Co-Op Swap</button>
     </nav>
 
-    <!-- Multiplayer Lobby -->
+    <!-- Multiplayer Lobby mit Online- oder Bot-Wahl -->
     <section class="lobby hidden" id="multiplayerLobby">
-      <div class="lobby-row">
-        <button class="btn" id="createRoomBtn">Raum erstellen</button>
-        <span class="divider">oder</span>
-        <div class="join-box">
-          <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
-          <button class="btn" id="joinRoomBtn">Beitreten</button>
+      <!-- Spieler-Typ: Online oder Bot -->
+      <div class="lobby-switch">
+        <button class="sub-tab active" id="btnPlayOnline">Online (Raum)</button>
+        <button class="sub-tab" id="btnPlayBot">Mit Bot spielen</button>
+      </div>
+
+      <!-- Online Bereich (Raum erstellen / beitreten) -->
+      <div class="online-box" id="onlineSection">
+        <div class="lobby-row">
+          <button class="btn" id="createRoomBtn">Raum erstellen</button>
+          <span class="divider">oder</span>
+          <div class="join-box">
+            <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
+            <button class="btn" id="joinRoomBtn">Beitreten</button>
+          </div>
+        </div>
+        <div class="lobby-info">
+          <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
+          <span class="status-indicator">
+            <span class="dot" id="connDot"></span>
+            <span id="connText">Nicht verbunden</span>
+          </span>
         </div>
       </div>
-      <div class="lobby-info">
-        <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
-        <span class="status-indicator">
-          <span class="dot" id="connDot"></span>
-          <span id="connText">Nicht verbunden</span>
-        </span>
+
+      <!-- Bot Bereich (Falls kein Mitspieler vorhanden) -->
+      <div class="bot-box hidden" id="botSection">
+        <div class="bot-desc" id="botStatusText">
+          Bot aktiv: Spielt automatisch mit moderatem Tempo gegen dich bzw. tauscht mit dir das Board.
+        </div>
       </div>
     </section>
 
@@ -62,7 +82,7 @@
           <span class="bar-pct" id="playerProgressLabel">0%</span>
         </div>
         <div class="bar-row">
-          <span>Gegner</span>
+          <span id="opponentLabelText">Gegner</span>
           <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
           <span class="bar-pct" id="opponentProgressLabel">0%</span>
         </div>
@@ -70,7 +90,7 @@
 
       <!-- Swap Timer -->
       <div class="swap-wrap hidden" id="swapTimerBox">
-        <span>Swap in</span>
+        <span id="swapPartnerLabel">Swap in</span>
         <strong id="swapTimer">10s</strong>
       </div>
     </section>
@@ -106,7 +126,7 @@
   <div class="modal hidden" id="themeModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Themes</h2>
+        <h2>Themes & Farben</h2>
         <button class="close-btn" id="closeShopBtn">&times;</button>
       </div>
       <div class="theme-list" id="themesContainer"></div>
