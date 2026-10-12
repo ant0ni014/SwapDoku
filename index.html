@@ -66,6 +66,14 @@
 
       <!-- Bot Bereich (Falls kein Mitspieler vorhanden) -->
       <div class="bot-box hidden" id="botSection">
+        <div class="bot-difficulty-row">
+          <span class="diff-label">Schwierigkeit:</span>
+          <div class="diff-buttons">
+            <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
+            <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
+            <button class="diff-btn" data-diff="hard" id="diffHard">Schwer</button>
+          </div>
+        </div>
         <div class="bot-desc" id="botStatusText">
           Bot aktiv: Spielt automatisch mit moderatem Tempo gegen dich bzw. tauscht mit dir das Board.
         </div>

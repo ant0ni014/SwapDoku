@@ -26,6 +26,7 @@ const state = {
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
   opponentType: 'online', // 'online' | 'bot'
+  botDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
   
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
@@ -50,8 +51,7 @@ const state = {
   botIntervalId: null,
   botBoard: Array(81).fill(0),
   botInitial: Array(81).fill(0),
-  botSolution: Array(81).fill(0),
-  botSolvedCount: 0
+  botSolution: Array(81).fill(0)
 };
 
 // Sudoku Backtracking Generator
@@ -120,12 +120,25 @@ class SudokuEngine {
     return true;
   }
 
-  static countSolved(current, solution) {
-    let count = 0;
+  /**
+   * Berechnet den tatsächlichen Fortschritt der vom Spieler zu lösenden Leerzellen.
+   * Vorgegebene Zahlen starten bei 0 %, das vollständig gelöste Board erreicht 100 %.
+   */
+  static getProgress(current, initial, solution) {
+    let emptyCount = 0;
+    let correctlyFilled = 0;
+
     for (let i = 0; i < 81; i++) {
-      if (current[i] !== 0 && current[i] === solution[i]) count++;
+      if (initial[i] === 0) {
+        emptyCount++;
+        if (current[i] !== 0 && current[i] === solution[i]) {
+          correctlyFilled++;
+        }
+      }
     }
-    return count;
+
+    if (emptyCount === 0) return 100;
+    return Math.round((correctlyFilled / emptyCount) * 100);
   }
 
   static isComplete(current, solution) {
@@ -155,6 +168,9 @@ const dom = {
   onlineSection: document.getElementById('onlineSection'),
   botSection: document.getElementById('botSection'),
   botStatusText: document.getElementById('botStatusText'),
+  diffEasy: document.getElementById('diffEasy'),
+  diffMedium: document.getElementById('diffMedium'),
+  diffHard: document.getElementById('diffHard'),
   createRoom: document.getElementById('createRoomBtn'),
   joinRoom: document.getElementById('joinRoomBtn'),
   roomInput: document.getElementById('roomCodeInput'),
@@ -294,7 +310,6 @@ function startNewGame(customBoard = null, customSol = null) {
   updateProgressBars(0, 0);
   render();
 
-  // Bot initialisieren wenn Bot-Modus gewählt ist
   if (state.opponentType === 'bot' && (state.mode === 'versus' || state.mode === 'swap')) {
     initBot();
   }
@@ -397,13 +412,12 @@ function clearCell() {
 }
 
 function checkProgress() {
-  const solved = SudokuEngine.countSolved(state.currentBoard, state.solution);
-  const pct = Math.round((solved / 81) * 100);
+  const pct = SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution);
   dom.playerBar.style.width = `${pct}%`;
   dom.playerLabel.textContent = `${pct}%`;
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
-    broadcast('PROGRESS', { solved, total: 81 });
+    broadcast('PROGRESS', { progressPct: pct });
   }
 
   if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
@@ -446,28 +460,38 @@ async function addPoints(pts) {
 }
 
 // -----------------------------------------------------------------------------
-// BOT ENGINE (Simuliert einen Gegenspieler oder Swap-Partner)
+// BOT ENGINE (Simuliert einen Gegenspieler oder Swap-Partner mit Schwierigkeitsgrad)
 // -----------------------------------------------------------------------------
+function getBotIntervalMs() {
+  switch (state.botDifficulty) {
+    case 'easy': return 3800;   // ~3.8s pro Zelle (gemütlich)
+    case 'hard': return 1400;   // ~1.4s pro Zelle (schnell/fordernd)
+    case 'medium':
+    default: return 2400;       // ~2.4s pro Zelle (ausgeglichen)
+  }
+}
+
 function initBot() {
   stopBot();
 
   if (state.mode === 'versus') {
-    // Im Versus löst der Bot dasselbe Board
     state.botInitial = [...state.initialBoard];
     state.botBoard = [...state.initialBoard];
     state.botSolution = [...state.solution];
   } else if (state.mode === 'swap') {
-    // Im Co-Op Swap hat der Bot ein eigenes Rätsel
     const botPuzzle = SudokuEngine.generate(34);
     state.botInitial = [...botPuzzle.initialBoard];
     state.botBoard = [...botPuzzle.initialBoard];
     state.botSolution = [...botPuzzle.solution];
   }
 
-  // Regelmäßiges Lösen einer Zelle alle 1.8 bis 3 Sekunden
+  const initialBotPct = SudokuEngine.getProgress(state.botBoard, state.botInitial, state.botSolution);
+  dom.opponentBar.style.width = `${initialBotPct}%`;
+  dom.opponentLabel.textContent = `${initialBotPct}%`;
+
   state.botIntervalId = setInterval(() => {
     botStep();
-  }, 2200);
+  }, getBotIntervalMs());
 }
 
 function stopBot() {
@@ -478,7 +502,6 @@ function stopBot() {
 }
 
 function botStep() {
-  // Suche leere/ungelöste Zellen auf dem Bot-Board
   const emptyIndices = [];
   for (let i = 0; i < 81; i++) {
     if (state.botBoard[i] === 0 || state.botBoard[i] !== state.botSolution[i]) {
@@ -487,7 +510,6 @@ function botStep() {
   }
 
   if (emptyIndices.length === 0) {
-    // Bot hat fertig
     stopBot();
     if (state.mode === 'versus') {
       toast('Der Bot hat das Rätsel zuerst gelöst!');
@@ -497,16 +519,32 @@ function botStep() {
     return;
   }
 
-  // Bot füllt eine zufällige ungelöste Zelle korrekt aus
   const randIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
   state.botBoard[randIdx] = state.botSolution[randIdx];
 
-  const botSolved = SudokuEngine.countSolved(state.botBoard, state.botSolution);
-  const botPct = Math.round((botSolved / 81) * 100);
+  const botPct = SudokuEngine.getProgress(state.botBoard, state.botInitial, state.botSolution);
 
   if (state.mode === 'versus') {
     dom.opponentBar.style.width = `${botPct}%`;
     dom.opponentLabel.textContent = `${botPct}%`;
+  }
+}
+
+function setBotDifficulty(diff) {
+  state.botDifficulty = diff;
+  [dom.diffEasy, dom.diffMedium, dom.diffHard].forEach(b => {
+    b.classList.toggle('active', b.dataset.diff === diff);
+  });
+
+  const diffNames = { easy: 'Einfach (gemütlich)', medium: 'Mittel (ausgeglichen)', hard: 'Schwer (herausfordernd)' };
+  dom.botStatusText.textContent = `Bot-Stufe: ${diffNames[diff]}.`;
+
+  // Laufenden Bot-Timer mit neuem Intervall neu starten
+  if (state.opponentType === 'bot' && state.botIntervalId) {
+    clearInterval(state.botIntervalId);
+    state.botIntervalId = setInterval(() => {
+      botStep();
+    }, getBotIntervalMs());
   }
 }
 
@@ -545,9 +583,8 @@ function setOpponentType(type) {
 
   if (type === 'bot') {
     leaveRoom();
-    dom.botStatusText.textContent = state.mode === 'swap' 
-      ? 'Bot aktiv: Du und der Bot tauschen alle 10 Sekunden eure Boards.'
-      : 'Bot aktiv: Der Bot löst zeitgleich dasselbe Rätsel gegen dich.';
+    const diffNames = { easy: 'Einfach', medium: 'Mittel', hard: 'Schwer' };
+    dom.botStatusText.textContent = `Bot aktiv (${diffNames[state.botDifficulty]}).`;
   }
 
   updateOpponentLabels();
@@ -606,7 +643,9 @@ async function joinRoom(code) {
       startNewGame(payload.initialBoard, payload.solution);
     })
     .on('broadcast', { event: 'PROGRESS' }, ({ payload }) => {
-      const pct = Math.round((payload.solved / payload.total) * 100);
+      const pct = payload.progressPct !== undefined 
+        ? payload.progressPct 
+        : Math.round((payload.solved / payload.total) * 100);
       dom.opponentBar.style.width = `${pct}%`;
       dom.opponentLabel.textContent = `${pct}%`;
     })
@@ -678,7 +717,6 @@ function doBoardSwap() {
   setTimeout(() => dom.grid.classList.remove('swapping'), 300);
 
   if (state.opponentType === 'bot') {
-    // Board-Swap mit dem simulierten Bot
     const tempBoard = [...state.currentBoard];
     const tempInitial = [...state.initialBoard];
     const tempSol = [...state.solution];
@@ -696,14 +734,12 @@ function doBoardSwap() {
     checkProgress();
     toast('Board mit Bot getauscht!');
   } else if (state.channel) {
-    // Online-Swap via Supabase Broadcast
     broadcast('SWAP', {
       currentBoard: state.currentBoard,
       initialBoard: state.initialBoard,
       solution: state.solution
     });
   } else {
-    // Lokaler Offline-Demo-Swap
     const next = SudokuEngine.generate(34);
     state.solution = next.solution;
     state.initialBoard = next.initialBoard;
@@ -828,6 +864,11 @@ function bindEvents() {
   // Online vs Bot Umschalter
   dom.btnPlayOnline.addEventListener('click', () => setOpponentType('online'));
   dom.btnPlayBot.addEventListener('click', () => setOpponentType('bot'));
+
+  // Bot-Schwierigkeitsgrade
+  dom.diffEasy.addEventListener('click', () => setBotDifficulty('easy'));
+  dom.diffMedium.addEventListener('click', () => setBotDifficulty('medium'));
+  dom.diffHard.addEventListener('click', () => setBotDifficulty('hard'));
 
   // Raum-Lobby
   dom.createRoom.addEventListener('click', createRoom);
