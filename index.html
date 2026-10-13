@@ -105,9 +105,30 @@
             </div>
           </div>
         </main>
+
+        <!-- Steuerleiste & Ziffernleiste direkt unter dem Board (1-reihig, sanft abgerundet) -->
+        <section class="controls">
+          <div class="toolbar">
+            <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
+            <button class="tool-btn" id="btnErase">Löschen</button>
+            <button class="tool-btn" id="btnNewGame">Neu</button>
+          </div>
+
+          <div class="numpad" id="numpad">
+            <button class="num" data-num="1">1</button>
+            <button class="num" data-num="2">2</button>
+            <button class="num" data-num="3">3</button>
+            <button class="num" data-num="4">4</button>
+            <button class="num" data-num="5">5</button>
+            <button class="num" data-num="6">6</button>
+            <button class="num" data-num="7">7</button>
+            <button class="num" data-num="8">8</button>
+            <button class="num" data-num="9">9</button>
+          </div>
+        </section>
       </section>
 
-      <!-- Rechte Spalte / Sidebar: Modi, Einstellungen, Toolbar, 3x3 Numpad & Footer -->
+      <!-- Rechte Spalte / Sidebar: Modi, Einstellungen & Footer -->
       <aside class="sidebar-section">
         <div class="meta-section">
           <!-- Modi mit Info-Buttons -->
@@ -176,35 +197,12 @@
           </section>
         </div>
 
-        <!-- Steuerleiste & Tastatur -->
-        <div class="actions-section">
-          <section class="controls">
-            <div class="toolbar">
-              <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
-              <button class="tool-btn" id="btnErase">Löschen</button>
-              <button class="tool-btn" id="btnNewGame">Neu</button>
-            </div>
-
-            <div class="numpad" id="numpad">
-              <button class="num" data-num="1">1</button>
-              <button class="num" data-num="2">2</button>
-              <button class="num" data-num="3">3</button>
-              <button class="num" data-num="4">4</button>
-              <button class="num" data-num="5">5</button>
-              <button class="num" data-num="6">6</button>
-              <button class="num" data-num="7">7</button>
-              <button class="num" data-num="8">8</button>
-              <button class="num" data-num="9">9</button>
-            </div>
-          </section>
-
-          <!-- Footer: Impressum & Datenschutz Links -->
-          <footer class="app-footer">
-            <a href="#" id="openImpressumLink">Impressum</a>
-            <span class="footer-sep">&bull;</span>
-            <a href="#" id="openDatenschutzLink">Datenschutz</a>
-          </footer>
-        </div>
+        <!-- Footer: Impressum & Datenschutz Links -->
+        <footer class="app-footer">
+          <a href="#" id="openImpressumLink">Impressum</a>
+          <span class="footer-sep">&bull;</span>
+          <a href="#" id="openDatenschutzLink">Datenschutz</a>
+        </footer>
       </aside>
 
     </div>

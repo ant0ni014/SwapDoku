@@ -135,18 +135,18 @@ body {
   color: var(--text);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: border-color 0.15s ease, transform 0.15s ease;
+  transition: border-color 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
 }
 
 .icon-toggle:hover {
   border-color: var(--border-strong);
-  transform: scale(1.04);
+  transform: translateY(-1px);
 }
 
 .icon-toggle.active {
@@ -159,15 +159,20 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 4px 10px;
-  border-radius: 9999px;
+  padding: 5px 10px;
+  border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
 .pill-btn:hover {
   border-color: var(--border-strong);
+  transform: translateY(-1px);
 }
 
 /* Modi-Tabs mit Regel-Hilfe */
@@ -206,7 +211,7 @@ body {
   color: var(--muted);
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
   display: flex;
@@ -214,6 +219,7 @@ body {
   justify-content: center;
   cursor: pointer;
   margin-bottom: 4px;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
 .info-help-btn:hover {
@@ -246,12 +252,18 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--muted);
-  border-radius: 4px;
-  padding: 5px 6px;
+  border-radius: 8px;
+  padding: 6px 8px;
   font-size: 0.74rem;
   font-weight: 500;
   cursor: pointer;
   text-align: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.diff-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .diff-btn.active {
@@ -264,7 +276,7 @@ body {
 .lobby {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 8px 10px;
   display: flex;
   flex-direction: column;
@@ -284,13 +296,20 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
-  padding: 3px 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
   cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.sub-tab:hover {
+  color: var(--text);
 }
 
 .sub-tab.active {
   color: var(--text);
   font-weight: 600;
+  background: var(--highlight);
 }
 
 .lobby-row {
@@ -314,14 +333,15 @@ body {
   width: 100%;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 5px 6px;
+  border-radius: 8px;
+  padding: 6px 8px;
   font-family: inherit;
   font-size: 0.8rem;
   text-transform: uppercase;
   text-align: center;
   color: var(--text);
   outline: none;
+  transition: border-color 0.15s ease;
 }
 
 .join-box input:focus {
@@ -331,13 +351,14 @@ body {
 .btn {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 5px 10px;
+  border-radius: 8px;
+  padding: 6px 12px;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
   white-space: nowrap;
+  transition: border-color 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
 }
 
 .btn:hover {
@@ -511,7 +532,7 @@ body {
   color: var(--muted);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 3px 6px;
 }
 
@@ -543,7 +564,10 @@ body {
   aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 2px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
   user-select: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
   transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
 }
 
@@ -569,7 +593,7 @@ body {
   z-index: 10;
   background: rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(3px);
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .pause-card {
@@ -689,29 +713,42 @@ body {
   line-height: 1;
 }
 
-/* Controls: Toolbar & Numpad */
+/* Controls: Toolbar & Ziffernleiste direkt unter dem Board */
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
 }
 
 .toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
+  width: 100%;
 }
 
 .tool-btn {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 6px 0;
-  font-size: 0.75rem;
+  border-radius: 8px;
+  height: 34px;
+  padding: 0 4px;
+  font-size: 0.78rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.tool-btn:hover {
+  border-color: var(--border-strong);
 }
 
 .tool-btn.active {
@@ -720,35 +757,50 @@ body {
   border-color: var(--text);
 }
 
+/* 1-reihiges Zahlenfeld: kein Taschenrechner-Look, ausgewogene 8px Radien, kein Vibecoding */
 .numpad {
   display: grid;
+  grid-template-columns: repeat(9, 1fr);
   gap: 6px;
+  width: 100%;
 }
 
 .num {
+  height: 42px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 1.18rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.1s ease, border-color 0.1s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
 }
 
-.num:hover, .num:active {
+.num:hover {
   background: var(--highlight);
   border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.num:active {
+  transform: translateY(0);
 }
 
 /* Ausgegraute Zahl wenn komplett belegt */
 .num.completed {
-  opacity: 0.25;
+  opacity: 0.22;
   background: var(--num-completed);
+  border-color: transparent;
+  box-shadow: none;
   pointer-events: none;
   cursor: default;
+  transform: none;
 }
 
 /* Footer: Impressum & Datenschutz */
@@ -782,16 +834,16 @@ body {
 
 @media (min-width: 768px) {
   .app {
-    max-width: 920px;
-    gap: 14px;
+    max-width: 880px;
+    gap: 12px;
   }
 
   .game-layout {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    gap: 40px;
+    gap: 36px;
     width: 100%;
   }
 
@@ -799,55 +851,46 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex: 0 0 auto;
+    width: min(450px, 56vh);
   }
 
   .hud {
-    width: min(490px, 64vh);
-    max-width: min(490px, 64vh);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .grid-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
   }
 
   .grid-container {
-    width: min(490px, 64vh);
-    height: min(490px, 64vh);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+  }
+
+  .controls {
+    width: 100%;
+    max-width: 100%;
   }
 
   .sidebar-section {
-    width: 320px;
-    max-width: 340px;
+    width: 290px;
+    max-width: 320px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
+    padding-top: 32px;
   }
 
   .meta-section {
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
-
-  .actions-section {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  /* Auf Desktop: 3x3 Nummernblock für intuitive Bedienung */
-  .numpad {
-    grid-template-columns: repeat(3, 1fr);
-    grid-gap: 8px;
-  }
-
-  .num {
-    height: 44px;
-    font-size: 1.25rem;
-    border-radius: 6px;
-  }
-
-  .tool-btn {
-    padding: 8px 0;
-    font-size: 0.78rem;
   }
 }
 
@@ -857,7 +900,7 @@ body {
   }
 
   .app {
-    max-width: 480px;
+    max-width: 460px;
     gap: 6px;
   }
 
@@ -888,36 +931,43 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
   }
 
   .hud {
-    width: min(440px, 50vh);
+    width: min(420px, 48vh);
+    max-width: min(420px, 48vh);
   }
 
   .grid-container {
-    width: min(440px, 50vh);
-    height: min(440px, 50vh);
+    width: min(420px, 48vh);
+    height: min(420px, 48vh);
   }
 
-  .actions-section {
-    order: 3;
-    width: 100%;
-    max-width: min(440px, 50vh);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+  .controls {
+    width: min(420px, 48vh);
+    max-width: min(420px, 48vh);
+    margin-top: 4px;
+    gap: 5px;
   }
 
-  /* Auf Mobile: 1x9 Zahlenreihe */
   .numpad {
-    grid-template-columns: repeat(9, 1fr);
     gap: 4px;
   }
 
   .num {
-    aspect-ratio: 1 / 1;
-    font-size: 1.1rem;
+    height: 38px;
+    font-size: 1.08rem;
+  }
+
+  .tool-btn {
+    height: 32px;
+    font-size: 0.74rem;
+  }
+
+  .app-footer {
+    order: 3;
+    padding: 6px 0 10px 0;
   }
 }
 
@@ -1007,7 +1057,7 @@ body {
   align-items: center;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   background: var(--bg);
 }
 
@@ -1094,7 +1144,7 @@ body {
   flex: 1;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 6px 8px;
   font-family: inherit;
   font-size: 0.8rem;
@@ -1112,7 +1162,7 @@ body {
   gap: 6px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 8px;
   text-align: center;
 }
@@ -1221,7 +1271,7 @@ body {
 .auth-field input {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 6px 8px;
   font-family: inherit;
   font-size: 0.8rem;
@@ -1236,7 +1286,7 @@ body {
 .auth-msg {
   font-size: 0.72rem;
   padding: 6px 8px;
-  border-radius: 4px;
+  border-radius: 8px;
   text-align: center;
 }
 
@@ -1275,10 +1325,11 @@ body {
   background: var(--text);
   color: var(--bg);
   padding: 8px 16px;
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 500;
   z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .hidden {
