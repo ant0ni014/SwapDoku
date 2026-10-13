@@ -776,11 +776,9 @@ body {
   color: var(--text);
 }
 
-/* Ausgewählte Zelle mit Fokus-Rahmen */
+/* Ausgewählte Zelle (ohne störende Umrandung, rein über Hintergrundfarbe hervorgehoben) */
 .cell.selected {
   background-color: var(--select) !important;
-  box-shadow: inset 0 0 0 2px var(--select-border);
-  z-index: 2;
 }
 
 .cell.selected .val {
