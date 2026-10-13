@@ -1,190 +1,237 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="nordic-light">
+<html lang="de" data-theme="dark-slate">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SwapDoku — Minimal Sudoku</title>
+  <title>SWAPDOKU — Luxury Minimalist Sudoku</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div class="app">
-    <!-- Header mit Titel, Ambient-Sound, Theme-Umschalter, Rangliste, Account & Punkte -->
+    
+    <!-- Luxury Architectural Header -->
     <header class="header">
       <div class="brand">
-        <h1>SwapDoku</h1>
+        <span class="brand-badge">ATELIER</span>
+        <h1 class="brand-title">SWAP<span>DOKU</span></h1>
       </div>
+
       <div class="header-actions">
-        <!-- Ambient Sound / Musik Button -->
-        <button class="icon-toggle" id="audioToggleBtn" title="Ambient-Sound an/aus" aria-label="Entspannte Musik">
-          <span id="audioToggleIcon">♪</span>
+        <!-- Ambient Sound Toggle -->
+        <button class="icon-toggle" id="audioToggleBtn" title="Ambient Sound an/aus" aria-label="Sound">
+          <span id="audioToggleIcon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+          </span>
         </button>
-        <!-- Schneller Dark-/Light-Mode Umschalter -->
-        <button class="icon-toggle" id="themeToggleBtn" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel Modus">
-          <span id="themeToggleIcon">☾</span>
+
+        <!-- Theme Contrast Toggle -->
+        <button class="icon-toggle" id="themeToggleBtn" title="Farbschema wechseln" aria-label="Farbschema">
+          <span id="themeToggleIcon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
         </button>
-        <!-- Rangliste Button -->
+
+        <!-- Leaderboard -->
         <button class="icon-toggle" id="openLeaderboardBtn" title="Rangliste öffnen" aria-label="Rangliste">
-          <span style="font-size: 0.8rem; font-weight: 600;">#1</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+            <path d="M4 22h16"></path>
+            <path d="M10 14.66V17c0 .55-.45 1-1 1H7v4h10v-4h-2c-.55 0-1-.45-1-1v-2.34c2.31-.93 4-3.19 4-5.66V4H6v5c0 2.47 1.69 4.73 4 5.66z"></path>
+          </svg>
         </button>
-        <!-- Account Button -->
+
+        <!-- Account / Profil -->
         <button class="icon-toggle" id="openAccountBtn" title="Account & Profil" aria-label="Account">
-          <span style="font-size: 0.8rem;">👤</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
         </button>
-        <!-- Punkte-Pill -->
-        <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
-          <span class="pts-val" id="userPoints">0</span> Pts
+
+        <!-- Points Pill -->
+        <button class="pill-btn" id="openShopBtn" title="Paletten & Sync-Points">
+          <span class="pts-val" id="userPoints">0</span>
+          <span class="pts-unit">PTS</span>
         </button>
       </div>
     </header>
 
-    <!-- Haupt-Layout: 2-Spalten auf Desktop/Laptop, 1-Spalte auf Mobile -->
+    <!-- Master Layout: 2-Spalten (Desktop/Laptop) | 1-Spalte (Mobile) -->
     <div class="game-layout">
       
-      <!-- Linke Spalte / Hauptbereich: HUD & 9x9 Sudoku Board -->
+      <!-- Linke Spalte: Board & HUD (Exakte, unveränderliche Größe!) -->
       <section class="board-section">
-        <!-- Info / HUD (Zentrierte Sterne, Zeit-Stoppuhr, Pause-Button, Versus-Progress) -->
+        <!-- HUD: Strikes & Timer & Pause (Immer feste Höhe) -->
         <div class="hud" id="gameHud">
           <div class="hud-main-row">
-            <!-- Sterne / Fehler-Anzeige -->
+            <!-- Fehlerversuche: Luxuriöse Diamanten ◆ ◆ ◆ -->
             <div class="stars-wrap" id="heartsWrap" title="Verbleibende Versuche">
-              <span class="stars-icons" id="heartsDisplay">★★★</span>
+              <span class="strikes-label">VERSUCHE</span>
+              <span class="stars-icons" id="heartsDisplay">◆ ◆ ◆</span>
             </div>
 
-            <!-- Laufzeit-Timer & Pausieren-Button -->
+            <!-- Timer & Pause -->
             <div class="timer-pause-group">
-              <div class="game-timer-wrap" id="gameTimerWrap" title="Spielzeit">
-                <span class="timer-icon">⏱</span>
+              <div class="game-timer-wrap" id="gameTimerWrap" title="Verstrichene Spielzeit">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
                 <span id="gameTimerDisplay">00:00</span>
               </div>
-              <button class="icon-toggle pause-btn" id="btnPauseGame" title="Spiel pausieren (P)" aria-label="Spiel pausieren">
-                <span id="pauseBtnIcon">⏸</span>
+              <button class="icon-toggle pause-btn" id="btnPauseGame" title="Pausieren (P)" aria-label="Pause">
+                <span id="pauseBtnIcon">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                    <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                  </svg>
+                </span>
               </button>
             </div>
           </div>
-
-          <!-- Versus Progress (Nur im Versus-Modus) -->
-          <div class="versus-wrap hidden" id="versusBars">
-            <div class="bar-row">
-              <span>Du</span>
-              <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
-              <span class="bar-pct" id="playerProgressLabel">0%</span>
-            </div>
-            <div class="bar-row">
-              <span id="opponentLabelText">Gegner</span>
-              <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
-              <span class="bar-pct" id="opponentProgressLabel">0%</span>
-            </div>
-          </div>
-
-          <!-- Swap Countdown Timer (Nur im Co-Op Swap) -->
-          <div class="swap-wrap hidden" id="swapTimerBox">
-            <span id="swapPartnerLabel">Swap in</span>
-            <strong id="swapTimer">10s</strong>
-          </div>
         </div>
 
-        <!-- 9x9 Sudoku Feld mit Pause-Overlay -->
+        <!-- 9x9 Sudoku Feld (Feste, rock-solid Geometrie) -->
         <main class="grid-wrap">
-          <div class="grid-container">
+          <div class="grid-container" id="gridContainer">
             <div class="sudoku-grid" id="sudokuGrid"></div>
 
-            <!-- Pause-Overlay: deckt das Spielfeld während der Pause blicksicher ab -->
+            <!-- Blicksicheres Pause-Overlay -->
             <div class="pause-overlay hidden" id="pauseOverlay">
               <div class="pause-card">
-                <div class="pause-icon">⏸</div>
-                <h3>Spiel pausiert</h3>
+                <div class="pause-icon">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1"></rect>
+                    <rect x="14" y="4" width="4" height="16" rx="1"></rect>
+                  </svg>
+                </div>
+                <h3>PAUSIERT</h3>
                 <p>Die Zeit ist angehalten.</p>
-                <button class="btn btn-primary" id="btnResumeGame">Fortsetzen</button>
+                <button class="btn btn-primary" id="btnResumeGame">FORTSETZEN</button>
               </div>
             </div>
           </div>
         </main>
       </section>
 
-      <!-- Rechte Spalte / Sidebar: Modi, Einstellungen, Toolbar, 3x3 Numpad & Footer -->
+      <!-- Rechte Spalte: Sidebar & Kontrollpanel -->
       <aside class="sidebar-section">
         <div class="meta-section">
-          <!-- Modi mit Info-Buttons -->
+          <!-- Modi-Tabs -->
           <div class="modes-wrap">
             <nav class="modes">
-              <button class="mode-btn active" data-mode="zen" id="tabZen">Einzelspieler</button>
-              <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
-              <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
+              <button class="mode-btn active" data-mode="zen" id="tabZen">EINZELSPIEL</button>
+              <button class="mode-btn" data-mode="versus" id="tabVersus">VERSUS</button>
+              <button class="mode-btn" data-mode="swap" id="tabSwap">CO-OP SWAP</button>
             </nav>
-            <!-- Hilfeknopf für den aktuellen Modus -->
-            <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
+            <button class="info-help-btn" id="helpModeBtn" title="Regeln & Modus-Info">?</button>
           </div>
 
-          <!-- Einzelspieler-Schwierigkeit -->
-          <section class="zen-bar" id="zenDifficultyBar">
-            <div class="zen-diff-row">
+          <!-- Modus-Spezifischer Bereich (Feste Höhe gegen Layout-Shifts!) -->
+          <div class="mode-content-slot">
+            <!-- Einzelspieler: Schwierigkeit -->
+            <section class="zen-bar" id="zenDifficultyBar">
               <div class="diff-buttons">
-                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ★)</button>
-                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ★)</button>
-                <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ★)</button>
+                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">EINFACH <span>5◆</span></button>
+                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">MITTEL <span>3◆</span></button>
+                <button class="diff-btn" data-diff="hard" id="zenDiffHard">SCHWER <span>1◆</span></button>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <!-- Multiplayer Lobby mit Online- oder Bot-Wahl -->
-          <section class="lobby hidden" id="multiplayerLobby">
-            <!-- Spieler-Typ: Online oder Bot -->
-            <div class="lobby-switch">
-              <button class="sub-tab active" id="btnPlayOnline">Online (Raum)</button>
-              <button class="sub-tab" id="btnPlayBot">Mit Bot spielen</button>
-            </div>
+            <!-- Multiplayer Lobby: Online / Bot -->
+            <section class="lobby hidden" id="multiplayerLobby">
+              <div class="lobby-switch">
+                <button class="sub-tab active" id="btnPlayOnline">ONLINE</button>
+                <button class="sub-tab" id="btnPlayBot">VS BOT</button>
+              </div>
 
-            <!-- Online Bereich (Raum erstellen / beitreten) -->
-            <div class="online-box" id="onlineSection">
-              <div class="lobby-row">
-                <button class="btn" id="createRoomBtn">Raum erstellen</button>
-                <span class="divider">oder</span>
-                <div class="join-box">
-                  <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
-                  <button class="btn" id="joinRoomBtn">Beitreten</button>
+              <!-- Online Bereich -->
+              <div class="online-box" id="onlineSection">
+                <div class="lobby-row">
+                  <button class="btn btn-sm" id="createRoomBtn">ERSTELLEN</button>
+                  <span class="divider">/</span>
+                  <div class="join-box">
+                    <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
+                    <button class="btn btn-sm" id="joinRoomBtn">JOIN</button>
+                  </div>
+                </div>
+                <div class="lobby-info">
+                  <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
+                  <span class="status-indicator">
+                    <span class="dot" id="connDot"></span>
+                    <span id="connText">Bereit</span>
+                  </span>
                 </div>
               </div>
-              <div class="lobby-info">
-                <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
-                <span class="status-indicator">
-                  <span class="dot" id="connDot"></span>
-                  <span id="connText">Nicht verbunden</span>
-                </span>
-              </div>
-            </div>
 
-            <!-- Bot Bereich -->
-            <div class="bot-box hidden" id="botSection">
-              <div class="bot-difficulty-row">
-                <span class="diff-label">Bot-Stufe:</span>
-                <div class="diff-buttons">
-                  <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
-                  <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
-                  <button class="diff-btn" data-diff="hard" id="diffHard">Schwer</button>
+              <!-- Bot Bereich -->
+              <div class="bot-box hidden" id="botSection">
+                <div class="bot-difficulty-row">
+                  <div class="diff-buttons">
+                    <button class="diff-btn" data-diff="easy" id="diffEasy">LEICHT</button>
+                    <button class="diff-btn active" data-diff="medium" id="diffMedium">MITTEL</button>
+                    <button class="diff-btn" data-diff="hard" id="diffHard">STARK</button>
+                  </div>
+                </div>
+                <div class="bot-start-row">
+                  <button class="btn btn-primary btn-block" id="btnStartBotGame">MATCH STARTEN</button>
                 </div>
               </div>
-              <div class="bot-start-row">
-                <button class="btn btn-primary" id="btnStartBotGame">Spiel gegen Bot starten</button>
-              </div>
+            </section>
+          </div>
+
+          <!-- Versus Progress Bars (Hier in der Sidebar, damit das Board stabil bleibt!) -->
+          <div class="versus-wrap hidden" id="versusBars">
+            <div class="bar-row">
+              <span class="bar-user-label">DU</span>
+              <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
+              <span class="bar-pct" id="playerProgressLabel">0%</span>
             </div>
-          </section>
+            <div class="bar-row">
+              <span class="bar-user-label" id="opponentLabelText">GEGNER</span>
+              <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
+              <span class="bar-pct" id="opponentProgressLabel">0%</span>
+            </div>
+          </div>
+
+          <!-- Swap Countdown Timer -->
+          <div class="swap-wrap hidden" id="swapTimerBox">
+            <span id="swapPartnerLabel">BOARD-SWAP IN</span>
+            <strong id="swapTimer">10s</strong>
+          </div>
         </div>
 
-        <!-- Steuerleiste & Tastatur -->
+        <!-- Steuerleiste & 3x3 Keypad -->
         <div class="actions-section">
           <section class="controls">
             <div class="toolbar">
-              <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
-              <button class="tool-btn" id="btnErase">Löschen</button>
-              <button class="tool-btn" id="btnNewGame">Neu</button>
+              <button class="tool-btn" id="btnNotes">NOTIZEN: AUS</button>
+              <button class="tool-btn" id="btnErase">LÖSCHEN</button>
+              <button class="tool-btn" id="btnNewGame">NEU</button>
             </div>
 
+            <!-- Taktiler 3x3 Nummernblock -->
             <div class="numpad" id="numpad">
               <button class="num" data-num="1">1</button>
               <button class="num" data-num="2">2</button>
@@ -198,11 +245,11 @@
             </div>
           </section>
 
-          <!-- Footer: Impressum & Datenschutz Links -->
+          <!-- Footer -->
           <footer class="app-footer">
-            <a href="#" id="openImpressumLink">Impressum</a>
+            <a href="#" id="openImpressumLink">IMPRESSUM</a>
             <span class="footer-sep">&bull;</span>
-            <a href="#" id="openDatenschutzLink">Datenschutz</a>
+            <a href="#" id="openDatenschutzLink">DATENSCHUTZ</a>
           </footer>
         </div>
       </aside>
@@ -210,11 +257,11 @@
     </div>
   </div>
 
-  <!-- Modal: Spielregeln & Erklärung -->
+  <!-- Modal: Spielregeln -->
   <div class="modal hidden" id="rulesModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2 id="rulesModalTitle">Spielregeln</h2>
+        <h2 id="rulesModalTitle">SPIELREGELN</h2>
         <button class="close-btn" id="closeRulesBtn">&times;</button>
       </div>
       <div class="modal-content-text" id="rulesModalText"></div>
@@ -225,69 +272,66 @@
   <div class="modal hidden" id="themeModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Themes & Farben</h2>
+        <h2>FARBPALETTEN</h2>
         <button class="close-btn" id="closeShopBtn">&times;</button>
       </div>
       <div class="theme-list" id="themesContainer"></div>
     </div>
   </div>
 
-  <!-- Modal: Rangliste (Leaderboard) -->
+  <!-- Modal: Leaderboard -->
   <div class="modal hidden" id="leaderboardModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Rangliste</h2>
+        <h2>RANGLISTE</h2>
         <button class="close-btn" id="closeLeaderboardBtn">&times;</button>
       </div>
       <div class="my-rank-info" id="myRankInfo">
-        Dein Rang: <strong>Lädt...</strong> &bull; Punkte: <strong id="myRankPoints">0</strong>
+        DEIN RANG: <strong>--</strong> &bull; PUNKTE: <strong id="myRankPoints">0</strong>
       </div>
       <div class="leaderboard-table-wrap">
         <table class="leaderboard-table">
           <thead>
             <tr>
-              <th>Rang</th>
-              <th>Spieler</th>
-              <th style="text-align: right;">Punkte</th>
+              <th>RANG</th>
+              <th>SPIELER</th>
+              <th style="text-align: right;">SYNC-POINTS</th>
             </tr>
           </thead>
-          <tbody id="leaderboardBody">
-            <!-- Dynamische Zeilen -->
-          </tbody>
+          <tbody id="leaderboardBody"></tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Account & Profil mit Authentifizierung -->
+  <!-- Modal: Account & Auth -->
   <div class="modal hidden" id="accountModal">
     <div class="modal-card account-card">
       <div class="modal-top">
-        <h2>Account & Profil</h2>
+        <h2>PROFIL & KONTO</h2>
         <button class="close-btn" id="closeAccountBtn">&times;</button>
       </div>
       <div class="account-body">
         
-        <!-- Spieler-Profil Übersicht -->
         <div class="account-profile-box">
           <div class="account-row">
-            <label for="usernameInput" class="profile-label">Spielername:</label>
+            <label for="usernameInput" class="profile-label">SPIELERNAME</label>
             <div class="name-edit-row">
               <input type="text" id="usernameInput" maxlength="16" placeholder="Dein Spielername" spellcheck="false">
-              <button class="btn" id="btnSaveUsername">Speichern</button>
+              <button class="btn btn-sm" id="btnSaveUsername">SPEICHERN</button>
             </div>
           </div>
           <div class="account-stats">
             <div class="stat-item">
-              <span class="stat-label">Sync-Points</span>
+              <span class="stat-label">SYNC-POINTS</span>
               <span class="stat-val" id="accountPointsVal">0</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Aktives Theme</span>
-              <span class="stat-val" id="accountThemeVal">Nordic Light</span>
+              <span class="stat-label">PALETTE</span>
+              <span class="stat-val" id="accountThemeVal">Onyx Atelier</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Status</span>
+              <span class="stat-label">STATUS</span>
               <span class="stat-val" id="accountAuthStatus">Gast</span>
             </div>
           </div>
@@ -295,32 +339,32 @@
 
         <div class="account-divider"></div>
 
-        <!-- Eingeloggt-Ansicht -->
+        <!-- Wenn eingeloggt -->
         <div class="auth-logged-box hidden" id="authLoggedInSection">
           <div class="auth-user-info">
-            <span class="logged-label">Angemeldet als</span>
+            <span class="logged-label">ANGEMELDET MIT</span>
             <strong class="logged-email" id="authLoggedInEmail">user@beispiel.de</strong>
           </div>
-          <button class="btn btn-secondary" id="btnLogout">Abmelden</button>
+          <button class="btn btn-secondary btn-sm" id="btnLogout">ABMELDEN</button>
         </div>
 
-        <!-- Gast / Anmelde- & Registrier-Bereich -->
+        <!-- Wenn Gast / Login & Registrierung -->
         <div class="auth-guest-box" id="authGuestSection">
           <div class="auth-tabs">
-            <button class="auth-tab-btn active" id="tabAuthLogin" data-mode="login">Anmelden</button>
-            <button class="auth-tab-btn" id="tabAuthRegister" data-mode="register">Registrieren</button>
+            <button class="auth-tab-btn active" id="tabAuthLogin" data-mode="login">ANMELDEN</button>
+            <button class="auth-tab-btn" id="tabAuthRegister" data-mode="register">REGISTRIEREN</button>
           </div>
 
           <form class="auth-form" id="authForm" onsubmit="return false;">
             <div class="auth-field">
-              <label for="authEmail">E-Mail</label>
+              <label for="authEmail">E-MAIL</label>
               <input type="email" id="authEmail" placeholder="name@beispiel.de" autocomplete="email" required>
             </div>
             <div class="auth-field">
-              <label for="authPassword">Passwort</label>
+              <label for="authPassword">PASSWORT</label>
               <input type="password" id="authPassword" placeholder="Mindestens 6 Zeichen" autocomplete="current-password" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-block" id="btnAuthSubmit">Anmelden</button>
+            <button type="submit" class="btn btn-primary btn-block" id="btnAuthSubmit">ANMELDEN</button>
             <div class="auth-msg hidden" id="authStatusMsg"></div>
           </form>
         </div>
@@ -333,7 +377,7 @@
   <div class="modal hidden" id="impressumModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Impressum</h2>
+        <h2>IMPRESSUM</h2>
         <button class="close-btn" id="closeImpressumBtn">&times;</button>
       </div>
       <div class="legal-content">
@@ -358,7 +402,7 @@
   <div class="modal hidden" id="datenschutzModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Datenschutzerklärung</h2>
+        <h2>DATENSCHUTZ</h2>
         <button class="close-btn" id="closeDatenschutzBtn">&times;</button>
       </div>
       <div class="legal-content">

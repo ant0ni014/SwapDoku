@@ -8,10 +8,10 @@ const SUPABASE_CONFIG = {
 };
 
 const THEMES = [
-  { id: 'nordic-light', name: 'Nordic Light', cost: 0 },
-  { id: 'dark-slate', name: 'Dark Slate', cost: 100 },
-  { id: 'matcha-paper', name: 'Matcha Paper', cost: 200 },
-  { id: 'nordic-frost', name: 'Nordic Frost', cost: 300 }
+  { id: 'dark-slate', name: 'Onyx Atelier', cost: 0 },
+  { id: 'nordic-light', name: 'Platinum Gallery', cost: 0 },
+  { id: 'matcha-paper', name: 'Matcha Silk', cost: 150 },
+  { id: 'nordic-frost', name: 'Cobalt Frost', cost: 250 }
 ];
 
 const state = {
@@ -21,8 +21,8 @@ const state = {
   profile: {
     username: 'Spieler',
     sync_points: 0,
-    active_theme: 'nordic-light',
-    unlocked_themes: ['nordic-light']
+    active_theme: 'dark-slate',
+    unlocked_themes: ['dark-slate', 'nordic-light']
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
@@ -486,7 +486,9 @@ function pauseGame() {
   pauseStopwatch();
   if (dom.grid) dom.grid.classList.add('paused');
   if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('hidden');
-  if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '▶';
+  if (dom.pauseBtnIcon) {
+    dom.pauseBtnIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+  }
   if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel fortsetzen (P)');
   state.selectedIndex = null;
   render();
@@ -499,7 +501,9 @@ function resumeGame() {
   resumeStopwatch();
   if (dom.grid) dom.grid.classList.remove('paused');
   if (dom.pauseOverlay) dom.pauseOverlay.classList.add('hidden');
-  if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
+  if (dom.pauseBtnIcon) {
+    dom.pauseBtnIcon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>`;
+  }
   if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel pausieren (P)');
   toast('Spiel fortgesetzt');
 }
@@ -552,6 +556,9 @@ function startAmbientSound() {
 
     state.audioPlaying = true;
     dom.audioToggleBtn.classList.add('active');
+    if (dom.audioToggleIcon) {
+      dom.audioToggleIcon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+    }
     toast('Entspannte Ambient-Musik an');
   } catch (err) {
     console.warn('Audio-Init:', err);
@@ -567,6 +574,9 @@ function stopAmbientSound() {
   }
   state.audioPlaying = false;
   dom.audioToggleBtn.classList.remove('active');
+  if (dom.audioToggleIcon) {
+    dom.audioToggleIcon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+  }
   toast('Ambient-Musik aus');
 }
 
@@ -590,11 +600,11 @@ function setupHeartsForDifficulty() {
 }
 
 function renderHearts() {
-  let starsStr = '';
+  let diamondsStr = '';
   for (let i = 0; i < state.maxHearts; i++) {
-    starsStr += (i < state.currentHearts) ? '★' : '☆';
+    diamondsStr += (i < state.currentHearts) ? '◆ ' : '◇ ';
   }
-  dom.heartsDisplay.textContent = starsStr;
+  dom.heartsDisplay.textContent = diamondsStr.trim();
 }
 
 function deductHeart() {
@@ -1467,7 +1477,11 @@ function toggleDarkLight() {
 
 function updateThemeToggleIcon(themeId) {
   if (dom.themeToggleIcon) {
-    dom.themeToggleIcon.textContent = themeId === 'dark-slate' ? '☼' : '☾';
+    if (themeId === 'dark-slate' || themeId === 'nordic-frost') {
+      dom.themeToggleIcon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+    } else {
+      dom.themeToggleIcon.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+    }
   }
 }
 
