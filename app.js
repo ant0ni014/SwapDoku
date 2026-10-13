@@ -1,5 +1,5 @@
 /**
- * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine, Gamification & Rangliste
+ * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine, Gamification, Rangliste & Audio
  */
 
 const SUPABASE_CONFIG = {
@@ -26,15 +26,24 @@ const state = {
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
-  zenDifficulty: 'medium', // 'easy' (5 ❤), 'medium' (3 ❤), 'hard' (1 ❤)
+  zenDifficulty: 'medium', // 'easy' (5 ★), 'medium' (3 ★), 'hard' (1 ★)
   opponentType: 'online', // 'online' | 'bot'
   botDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
   botRunning: false,
   
-  // Herzen / Fehlerbegrenzung
+  // Sterne / Fehlerbegrenzung
   maxHearts: 3,
   currentHearts: 3,
   isGameOver: false,
+
+  // Spielzeit-Timer
+  gameSeconds: 0,
+  gameTimerInterval: null,
+
+  // Ambient Audio
+  audioPlaying: false,
+  audioContext: null,
+  audioGainNode: null,
 
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
@@ -174,9 +183,12 @@ class SudokuEngine {
 const dom = {
   root: document.documentElement,
   points: document.getElementById('userPoints'),
+  audioToggleBtn: document.getElementById('audioToggleBtn'),
+  audioToggleIcon: document.getElementById('audioToggleIcon'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
   themeToggleIcon: document.getElementById('themeToggleIcon'),
   openLeaderboardBtn: document.getElementById('openLeaderboardBtn'),
+  openAccountBtn: document.getElementById('openAccountBtn'),
   openShop: document.getElementById('openShopBtn'),
   closeShop: document.getElementById('closeShopBtn'),
   shopModal: document.getElementById('themeModal'),
@@ -188,6 +200,22 @@ const dom = {
   myRankInfo: document.getElementById('myRankInfo'),
   myRankPoints: document.getElementById('myRankPoints'),
   leaderboardBody: document.getElementById('leaderboardBody'),
+  accountModal: document.getElementById('accountModal'),
+  closeAccountBtn: document.getElementById('closeAccountBtn'),
+  accountPointsVal: document.getElementById('accountPointsVal'),
+  accountThemeVal: document.getElementById('accountThemeVal'),
+  accountAuthStatus: document.getElementById('accountAuthStatus'),
+  rulesModal: document.getElementById('rulesModal'),
+  closeRulesBtn: document.getElementById('closeRulesBtn'),
+  rulesModalTitle: document.getElementById('rulesModalTitle'),
+  rulesModalText: document.getElementById('rulesModalText'),
+  helpModeBtn: document.getElementById('helpModeBtn'),
+  impressumModal: document.getElementById('impressumModal'),
+  closeImpressumBtn: document.getElementById('closeImpressumBtn'),
+  openImpressumLink: document.getElementById('openImpressumLink'),
+  datenschutzModal: document.getElementById('datenschutzModal'),
+  closeDatenschutzBtn: document.getElementById('closeDatenschutzBtn'),
+  openDatenschutzLink: document.getElementById('openDatenschutzLink'),
   tabZen: document.getElementById('tabZen'),
   tabVersus: document.getElementById('tabVersus'),
   tabSwap: document.getElementById('tabSwap'),
@@ -200,7 +228,6 @@ const dom = {
   btnPlayBot: document.getElementById('btnPlayBot'),
   onlineSection: document.getElementById('onlineSection'),
   botSection: document.getElementById('botSection'),
-  botStatusText: document.getElementById('botStatusText'),
   btnStartBotGame: document.getElementById('btnStartBotGame'),
   diffEasy: document.getElementById('diffEasy'),
   diffMedium: document.getElementById('diffMedium'),
@@ -215,6 +242,7 @@ const dom = {
   gameHud: document.getElementById('gameHud'),
   heartsWrap: document.getElementById('heartsWrap'),
   heartsDisplay: document.getElementById('heartsDisplay'),
+  gameTimerDisplay: document.getElementById('gameTimerDisplay'),
   versusBars: document.getElementById('versusBars'),
   playerBar: document.getElementById('playerProgressBar'),
   opponentBar: document.getElementById('opponentProgressBar'),
@@ -327,10 +355,108 @@ function saveLocalState() {
 
 function updatePointsDisplay() {
   dom.points.textContent = state.profile.sync_points;
+  if (dom.accountPointsVal) dom.accountPointsVal.textContent = state.profile.sync_points;
+  if (dom.accountThemeVal) {
+    const activeObj = THEMES.find(t => t.id === state.profile.active_theme);
+    dom.accountThemeVal.textContent = activeObj ? activeObj.name : state.profile.active_theme;
+  }
 }
 
 // -----------------------------------------------------------------------------
-// HERZEN & LEBEN LOGIK
+// TIMER- & ZEITMESSUNG
+// -----------------------------------------------------------------------------
+function startStopwatch() {
+  stopStopwatch();
+  state.gameSeconds = 0;
+  updateStopwatchDisplay();
+
+  state.gameTimerInterval = setInterval(() => {
+    state.gameSeconds++;
+    updateStopwatchDisplay();
+  }, 1000);
+}
+
+function stopStopwatch() {
+  if (state.gameTimerInterval) {
+    clearInterval(state.gameTimerInterval);
+    state.gameTimerInterval = null;
+  }
+}
+
+function updateStopwatchDisplay() {
+  const mins = Math.floor(state.gameSeconds / 60);
+  const secs = state.gameSeconds % 60;
+  dom.gameTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+// -----------------------------------------------------------------------------
+// ENTSPANNTER AMBIENT-SOUND (WEB AUDIO SYNTHESIZER)
+// -----------------------------------------------------------------------------
+function toggleAmbientSound() {
+  if (state.audioPlaying) {
+    stopAmbientSound();
+  } else {
+    startAmbientSound();
+  }
+}
+
+function startAmbientSound() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    
+    if (!state.audioContext) {
+      state.audioContext = new AudioContext();
+    }
+    
+    if (state.audioContext.state === 'suspended') {
+      state.audioContext.resume();
+    }
+
+    // Sanfte Zen-Harmonien (C-Dur / Pentatonik Pad)
+    const freqs = [130.81, 164.81, 196.00, 261.63, 329.63]; // C3, E3, G3, C4, E4
+    state.audioGainNode = state.audioContext.createGain();
+    state.audioGainNode.gain.setValueAtTime(0.05, state.audioContext.currentTime);
+    state.audioGainNode.connect(state.audioContext.destination);
+
+    state.activeOscillators = [];
+    freqs.forEach(freq => {
+      const osc = state.audioContext.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, state.audioContext.currentTime);
+
+      const filter = state.audioContext.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, state.audioContext.currentTime);
+
+      osc.connect(filter);
+      filter.connect(state.audioGainNode);
+      osc.start();
+      state.activeOscillators.push(osc);
+    });
+
+    state.audioPlaying = true;
+    dom.audioToggleBtn.classList.add('active');
+    toast('Entspannte Ambient-Musik an');
+  } catch (err) {
+    console.warn('Audio-Init:', err);
+  }
+}
+
+function stopAmbientSound() {
+  if (state.activeOscillators) {
+    state.activeOscillators.forEach(osc => {
+      try { osc.stop(); osc.disconnect(); } catch (_) {}
+    });
+    state.activeOscillators = [];
+  }
+  state.audioPlaying = false;
+  dom.audioToggleBtn.classList.remove('active');
+  toast('Ambient-Musik aus');
+}
+
+// -----------------------------------------------------------------------------
+// STERNE & LEBEN LOGIK
 // -----------------------------------------------------------------------------
 function setupHeartsForDifficulty() {
   if (state.mode === 'zen') {
@@ -371,6 +497,7 @@ function handleGameOver() {
   state.isGameOver = true;
   stopBot();
   stopSwapCountdown();
+  stopStopwatch();
   toast('Keine Versuche mehr übrig!');
 }
 
@@ -389,6 +516,7 @@ function getCluesForZenDifficulty() {
 function startNewGame(customBoard = null, customSol = null) {
   stopSwapCountdown();
   stopBot();
+  stopStopwatch();
   state.botRunning = false;
   setupHeartsForDifficulty();
 
@@ -410,13 +538,10 @@ function startNewGame(customBoard = null, customSol = null) {
   updateProgressBars(0, 0);
   render();
   updateNumpadCompletedState();
+  startStopwatch();
 
   if (state.mode === 'swap' && state.opponentType !== 'bot') {
     startSwapCountdown();
-  }
-
-  if (state.opponentType === 'bot') {
-    dom.botStatusText.textContent = 'Bereit. Klicke auf "Spiel gegen Bot starten".';
   }
 }
 
@@ -567,11 +692,12 @@ function updateProgressBars(playerPct, oppPct) {
 
 async function gameWon() {
   stopBot();
+  stopStopwatch();
   let pts = 50;
   if (state.mode === 'versus') pts = 100;
   if (state.mode === 'swap') pts = 75;
 
-  toast(`Gelöst! +${pts} Punkte`);
+  toast(`Gelöst in ${dom.gameTimerDisplay.textContent}! (+${pts} Pts)`);
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
@@ -593,7 +719,7 @@ async function addPoints(pts) {
 }
 
 // -----------------------------------------------------------------------------
-// BOT ENGINE (Simuliert einen Gegenspieler oder Swap-Partner mit Schwierigkeitsgrad)
+// BOT ENGINE
 // -----------------------------------------------------------------------------
 function getBotIntervalMs() {
   switch (state.botDifficulty) {
@@ -607,7 +733,7 @@ function getBotIntervalMs() {
 function startBotMatch() {
   stopBot();
   state.botRunning = true;
-  dom.botStatusText.textContent = `Bot läuft (${state.botDifficulty}).`;
+  toast('Spiel gegen Bot gestartet!');
 
   if (state.mode === 'versus') {
     state.botInitial = [...state.initialBoard];
@@ -672,9 +798,6 @@ function setBotDifficulty(diff) {
   [dom.diffEasy, dom.diffMedium, dom.diffHard].forEach(b => {
     b.classList.toggle('active', b.dataset.diff === diff);
   });
-
-  const diffNames = { easy: 'Einfach', medium: 'Mittel', hard: 'Schwer' };
-  dom.botStatusText.textContent = `Bot-Stufe: ${diffNames[diff]}. Klicke auf Start.`;
 
   if (state.botRunning) {
     stopBot();
@@ -907,10 +1030,51 @@ function applyIncomingSwap(payload) {
 }
 
 // -----------------------------------------------------------------------------
-// RANGLISTE & SPIELERNAME
+// SPIELREGELN ERKLÄRUNGS-MODAL
+// -----------------------------------------------------------------------------
+function showModeRules() {
+  if (state.mode === 'zen') {
+    dom.rulesModalTitle.textContent = 'Einzelspieler — Regeln';
+    dom.rulesModalText.innerHTML = `
+      <p><strong>Ziel:</strong> Fülle das gesamte 9x9-Gitter so aus, dass in jeder Zeile, Spalte und jedem 3x3-Block jede Zahl von 1 bis 9 genau einmal vorkommt.</p>
+      <ul>
+        <li><strong>Einfach:</strong> 5 Versuche (★). Viele Startzahlen.</li>
+        <li><strong>Mittel:</strong> 3 Versuche (★). Ausgeglichene Herausforderung.</li>
+        <li><strong>Schwer:</strong> Nur 1 Versuch (★)! Keine Fehler erlaubt.</li>
+      </ul>
+      <p>Bei jedem gelösten Board erhältst du <strong>+50 Sync-Points</strong>.</p>
+    `;
+  } else if (state.mode === 'versus') {
+    dom.rulesModalTitle.textContent = 'Versus-Modus — Regeln';
+    dom.rulesModalText.innerHTML = `
+      <p><strong>Ziel:</strong> Du und dein Gegner (online per 4-stelligem Raumcode oder ein lokaler Bot) lösen zeitgleich <strong>dasselbe Rätsel</strong>.</p>
+      <ul>
+        <li>Der Fortschrittsbalken oben zeigt live, wer wie weit ist.</li>
+        <li>Wer zuerst alle Felder korrekt ausgefüllt hat, gewinnt die Partie.</li>
+      </ul>
+      <p>Der Sieger erhält <strong>+100 Sync-Points</strong>.</p>
+    `;
+  } else if (state.mode === 'swap') {
+    dom.rulesModalTitle.textContent = 'Co-Op Swap — Regeln';
+    dom.rulesModalText.innerHTML = `
+      <p><strong>Die kooperative Herausforderung:</strong></p>
+      <ul>
+        <li>Zwei Spieler (oder du und der Bot) starten mit <strong>zwei unterschiedlichen Rätseln</strong>.</li>
+        <li>Ein <strong>10-Sekunden-Timer</strong> läuft synchron ab.</li>
+        <li>Sobald der Timer 0 erreicht, werden beide Boards über das Netzwerk ausgetauscht!</li>
+        <li>Du übernimmst genau das Board deines Partners an der Stelle, wo er gerade war.</li>
+        <li>Löst gemeinsam beide Rätsel unter Zeitdruck.</li>
+      </ul>
+      <p>Belohnung nach erfolgreichem Abschluss: <strong>+75 Sync-Points</strong> für beide!</p>
+    `;
+  }
+  dom.rulesModal.classList.remove('hidden');
+}
+
+// -----------------------------------------------------------------------------
+// RANGLISTE & ACCOUNT
 // -----------------------------------------------------------------------------
 async function openLeaderboard() {
-  dom.usernameInput.value = state.profile.username;
   dom.myRankPoints.textContent = state.profile.sync_points;
   dom.leaderboardModal.classList.remove('hidden');
   await loadLeaderboardData();
@@ -918,6 +1082,16 @@ async function openLeaderboard() {
 
 function closeLeaderboard() {
   dom.leaderboardModal.classList.add('hidden');
+}
+
+function openAccount() {
+  dom.usernameInput.value = state.profile.username;
+  updatePointsDisplay();
+  dom.accountModal.classList.remove('hidden');
+}
+
+function closeAccount() {
+  dom.accountModal.classList.add('hidden');
 }
 
 async function saveUsername() {
@@ -929,7 +1103,7 @@ async function saveUsername() {
 
   state.profile.username = newName;
   saveLocalState();
-  toast('Name gespeichert');
+  toast('Spielername gespeichert');
 
   if (!state.isOffline && state.supabase && state.user) {
     try {
@@ -958,7 +1132,7 @@ async function loadLeaderboardData() {
     } catch (_) {}
   }
 
-  // Fallback / Lokale Demonstration falls offline oder nur 1 User
+  // Lokale Daten ergänzen falls leer
   if (list.length === 0) {
     list = [
       { id: 'bot-1', username: 'SudokuMaster', sync_points: 350 },
@@ -969,7 +1143,6 @@ async function loadLeaderboardData() {
     ];
   }
 
-  // Eigene Person hervorheben und Rang ermitteln
   const currentUserId = state.user?.id || 'local-me';
   let myRank = '-';
 
@@ -1055,6 +1228,7 @@ function activateTheme(id) {
   setTheme(id);
   saveLocalState();
   renderThemeShop();
+  updatePointsDisplay();
 
   if (!state.isOffline && state.supabase && state.user) {
     state.supabase.from('profiles').update({ active_theme: id }).eq('id', state.user.id);
@@ -1084,15 +1258,51 @@ async function buyTheme(id, cost) {
 // UI & TASTATUR EVENTS
 // -----------------------------------------------------------------------------
 function bindEvents() {
+  // Audio Toggle
+  dom.audioToggleBtn.addEventListener('click', toggleAmbientSound);
+
   // Theme Toggle (Hell/Dunkel)
   dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
 
   // Rangliste
   dom.openLeaderboardBtn.addEventListener('click', openLeaderboard);
   dom.closeLeaderboardBtn.addEventListener('click', closeLeaderboard);
-  dom.btnSaveUsername.addEventListener('click', saveUsername);
   dom.leaderboardModal.addEventListener('click', e => {
     if (e.target === dom.leaderboardModal) closeLeaderboard();
+  });
+
+  // Account
+  dom.openAccountBtn.addEventListener('click', openAccount);
+  dom.closeAccountBtn.addEventListener('click', closeAccount);
+  dom.btnSaveUsername.addEventListener('click', saveUsername);
+  dom.accountModal.addEventListener('click', e => {
+    if (e.target === dom.accountModal) closeAccount();
+  });
+
+  // Spielregeln Info Button
+  dom.helpModeBtn.addEventListener('click', showModeRules);
+  dom.closeRulesBtn.addEventListener('click', () => dom.rulesModal.classList.add('hidden'));
+  dom.rulesModal.addEventListener('click', e => {
+    if (e.target === dom.rulesModal) dom.rulesModal.classList.add('hidden');
+  });
+
+  // Impressum & Datenschutz
+  dom.openImpressumLink.addEventListener('click', e => {
+    e.preventDefault();
+    dom.impressumModal.classList.remove('hidden');
+  });
+  dom.closeImpressumBtn.addEventListener('click', () => dom.impressumModal.classList.add('hidden'));
+  dom.impressumModal.addEventListener('click', e => {
+    if (e.target === dom.impressumModal) dom.impressumModal.classList.add('hidden');
+  });
+
+  dom.openDatenschutzLink.addEventListener('click', e => {
+    e.preventDefault();
+    dom.datenschutzModal.classList.remove('hidden');
+  });
+  dom.closeDatenschutzBtn.addEventListener('click', () => dom.datenschutzModal.classList.add('hidden'));
+  dom.datenschutzModal.addEventListener('click', e => {
+    if (e.target === dom.datenschutzModal) dom.datenschutzModal.classList.add('hidden');
   });
 
   // Modi-Tabs
@@ -1157,6 +1367,7 @@ function bindEvents() {
   dom.shopModal.addEventListener('click', e => {
     if (e.target === dom.shopModal) dom.shopModal.classList.add('hidden');
   });
+
   // Verhindere Browser-Zoom (Strg + Mausrad, Strg + Plus / Minus)
   window.addEventListener('wheel', e => {
     if (e.ctrlKey) e.preventDefault();

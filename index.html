@@ -14,12 +14,16 @@
 </head>
 <body>
   <div class="app">
-    <!-- Header mit Titel, Theme-Umschalter, Rangliste & Punkte -->
+    <!-- Header mit Titel, Ambient-Sound, Theme-Umschalter, Rangliste, Account & Punkte -->
     <header class="header">
       <div class="brand">
         <h1>SwapDoku</h1>
       </div>
       <div class="header-actions">
+        <!-- Ambient Sound / Musik Button -->
+        <button class="icon-toggle" id="audioToggleBtn" title="Ambient-Sound an/aus" aria-label="Entspannte Musik">
+          <span id="audioToggleIcon">♪</span>
+        </button>
         <!-- Schneller Dark-/Light-Mode Umschalter -->
         <button class="icon-toggle" id="themeToggleBtn" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel Modus">
           <span id="themeToggleIcon">☾</span>
@@ -28,6 +32,10 @@
         <button class="icon-toggle" id="openLeaderboardBtn" title="Rangliste öffnen" aria-label="Rangliste">
           <span style="font-size: 0.8rem; font-weight: 600;">#1</span>
         </button>
+        <!-- Account Button -->
+        <button class="icon-toggle" id="openAccountBtn" title="Account & Profil" aria-label="Account">
+          <span style="font-size: 0.8rem;">👤</span>
+        </button>
         <!-- Punkte-Pill -->
         <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
           <span class="pts-val" id="userPoints">0</span> Pts
@@ -35,17 +43,20 @@
       </div>
     </header>
 
-    <!-- Modi -->
-    <nav class="modes">
-      <button class="mode-btn active" data-mode="zen" id="tabZen" title="Klassisches Einzelspieler-Sudoku">Zen</button>
-      <button class="mode-btn" data-mode="versus" id="tabVersus" title="Gegen Mitspieler oder Bot">Versus</button>
-      <button class="mode-btn" data-mode="swap" id="tabSwap" title="Kooperativer Board-Swap">Co-Op Swap</button>
-    </nav>
+    <!-- Modi mit Info-Buttons -->
+    <div class="modes-wrap">
+      <nav class="modes">
+        <button class="mode-btn active" data-mode="zen" id="tabZen">Einzelspieler</button>
+        <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
+        <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
+      </nav>
+      <!-- Hilfeknopf für den aktuellen Modus -->
+      <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
+    </div>
 
-    <!-- Einzelspieler-Schwierigkeit (Nur bei Zen sichtbar) -->
+    <!-- Einzelspieler-Schwierigkeit (Zentriert) -->
     <section class="zen-bar" id="zenDifficultyBar">
       <div class="zen-diff-row">
-        <span class="diff-label">Schwierigkeit:</span>
         <div class="diff-buttons">
           <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ★)</button>
           <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ★)</button>
@@ -81,7 +92,7 @@
         </div>
       </div>
 
-      <!-- Bot Bereich (Falls kein Mitspieler vorhanden) -->
+      <!-- Bot Bereich -->
       <div class="bot-box hidden" id="botSection">
         <div class="bot-difficulty-row">
           <span class="diff-label">Bot-Stufe:</span>
@@ -93,16 +104,21 @@
         </div>
         <div class="bot-start-row">
           <button class="btn btn-primary" id="btnStartBotGame">Spiel gegen Bot starten</button>
-          <span class="bot-desc" id="botStatusText">Bereit zum Start.</span>
         </div>
       </div>
     </section>
 
-    <!-- Info / HUD (Sterne, Timer, Versus-Progress) -->
+    <!-- Info / HUD (Zentrierte Sterne, Zeit-Stoppuhr, Versus-Progress) -->
     <section class="hud" id="gameHud">
-      <!-- Sterne / Fehler-Anzeige -->
+      <!-- Zentrierte Sterne / Fehler-Anzeige -->
       <div class="stars-wrap" id="heartsWrap" title="Verbleibende Versuche">
         <span class="stars-icons" id="heartsDisplay">★★★</span>
+      </div>
+
+      <!-- Laufzeit-Timer (Wie lange gebraucht) -->
+      <div class="game-timer-wrap" id="gameTimerWrap" title="Spielzeit">
+        <span class="timer-icon">⏱</span>
+        <span id="gameTimerDisplay">00:00</span>
       </div>
 
       <!-- Versus Progress -->
@@ -119,7 +135,7 @@
         </div>
       </div>
 
-      <!-- Swap Timer -->
+      <!-- Swap Countdown Timer -->
       <div class="swap-wrap hidden" id="swapTimerBox">
         <span id="swapPartnerLabel">Swap in</span>
         <strong id="swapTimer">10s</strong>
@@ -151,9 +167,27 @@
         <button class="num" data-num="9">9</button>
       </div>
     </section>
+
+    <!-- Footer: Impressum & Datenschutz Links -->
+    <footer class="app-footer">
+      <a href="#" id="openImpressumLink">Impressum</a>
+      <span class="footer-sep">&bull;</span>
+      <a href="#" id="openDatenschutzLink">Datenschutz</a>
+    </footer>
   </div>
 
-  <!-- Theme Modal -->
+  <!-- Modal: Spielregeln & Erklärung -->
+  <div class="modal hidden" id="rulesModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h2 id="rulesModalTitle">Spielregeln</h2>
+        <button class="close-btn" id="closeRulesBtn">&times;</button>
+      </div>
+      <div class="modal-content-text" id="rulesModalText"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Theme Shop -->
   <div class="modal hidden" id="themeModal">
     <div class="modal-card">
       <div class="modal-top">
@@ -164,22 +198,15 @@
     </div>
   </div>
 
-  <!-- Rangliste & Profil Modal -->
+  <!-- Modal: Rangliste (Leaderboard) -->
   <div class="modal hidden" id="leaderboardModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Rangliste (Leaderboard)</h2>
+        <h2>Rangliste</h2>
         <button class="close-btn" id="closeLeaderboardBtn">&times;</button>
       </div>
-      <div class="player-profile-box">
-        <label for="usernameInput" class="profile-label">Dein Spielername:</label>
-        <div class="name-edit-row">
-          <input type="text" id="usernameInput" maxlength="16" placeholder="Spielername" spellcheck="false">
-          <button class="btn" id="btnSaveUsername">Speichern</button>
-        </div>
-        <div class="my-rank-info" id="myRankInfo">
-          Dein Rang: <strong>Lädt...</strong> &bull; Punkte: <strong id="myRankPoints">0</strong>
-        </div>
+      <div class="my-rank-info" id="myRankInfo">
+        Dein Rang: <strong>Lädt...</strong> &bull; Punkte: <strong id="myRankPoints">0</strong>
       </div>
       <div class="leaderboard-table-wrap">
         <table class="leaderboard-table">
@@ -194,6 +221,93 @@
             <!-- Dynamische Zeilen -->
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Account & Profil -->
+  <div class="modal hidden" id="accountModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h2>Dein Account</h2>
+        <button class="close-btn" id="closeAccountBtn">&times;</button>
+      </div>
+      <div class="account-body">
+        <div class="account-row">
+          <label for="usernameInput" class="profile-label">Spielername:</label>
+          <div class="name-edit-row">
+            <input type="text" id="usernameInput" maxlength="16" placeholder="Dein Spielername" spellcheck="false">
+            <button class="btn" id="btnSaveUsername">Speichern</button>
+          </div>
+        </div>
+        <div class="account-stats">
+          <div class="stat-item">
+            <span class="stat-label">Sync-Points</span>
+            <span class="stat-val" id="accountPointsVal">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Aktives Theme</span>
+            <span class="stat-val" id="accountThemeVal">Nordic Light</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Status</span>
+            <span class="stat-val" id="accountAuthStatus">Anonym (Aktiv)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Impressum -->
+  <div class="modal hidden" id="impressumModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h2>Impressum</h2>
+        <button class="close-btn" id="closeImpressumBtn">&times;</button>
+      </div>
+      <div class="legal-content">
+        <h3>Angaben gemäß § 5 TMG</h3>
+        <p>
+          <strong>Antonio Famog</strong><br>
+          Wittmannstraße 10<br>
+          81829 München<br>
+          Deutschland
+        </p>
+        <h3>Kontakt</h3>
+        <p>E-Mail: kontakt@swapdoku.local</p>
+        <h3>Haftung für Inhalte</h3>
+        <p>Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+        <h3>Urheberrecht</h3>
+        <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Datenschutzerklärung -->
+  <div class="modal hidden" id="datenschutzModal">
+    <div class="modal-card">
+      <div class="modal-top">
+        <h2>Datenschutzerklärung</h2>
+        <button class="close-btn" id="closeDatenschutzBtn">&times;</button>
+      </div>
+      <div class="legal-content">
+        <h3>1. Datenschutz auf einen Blick</h3>
+        <p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p>
+        
+        <h3>2. Verantwortliche Stelle</h3>
+        <p>
+          Antonio Famog<br>
+          Wittmannstraße 10<br>
+          81829 München<br>
+          Deutschland
+        </p>
+
+        <h3>3. Datenerfassung auf dieser Website</h3>
+        <p><strong>Lokale Speicherung (Local Storage):</strong> Die Anwendung speichert Spielstände, Theme-Einstellungen und Punktestände lokal in Ihrem Webbrowser.</p>
+        <p><strong>Echtzeit-Synchronisation (Supabase BaaS):</strong> Für Multiplayer-Spiele und die Rangliste werden anonyme Benutzersitzungen sowie der selbst gewählte Spielername und der Punktestand auf Supabase (PostgreSQL-Datenbank) verarbeitet. Es werden keine Passwörter oder privaten E-Mail-Adressen erhoben.</p>
+
+        <h3>4. Ihre Rechte</h3>
+        <p>Sie haben jederzeit das Recht auf unentgeltliche Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten Daten sowie ein Recht auf Berichtigung oder Löschung dieser Daten.</p>
       </div>
     </div>
   </div>
