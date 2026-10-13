@@ -1,5 +1,5 @@
 /**
- * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine, Gamification, Rangliste & Audio
+ * SwapDoku: Kernlogik, Realtime-Synchronisation, Bot-Engine, Gamification, Rangliste & Lofi Audio
  */
 
 const SUPABASE_CONFIG = {
@@ -9,12 +9,326 @@ const SUPABASE_CONFIG = {
 
 const THEMES = [
   { id: 'nordic-light', name: 'Nordic Light', cost: 0 },
-  { id: 'dark-slate', name: 'Dark Slate', cost: 100 },
-  { id: 'matcha-paper', name: 'Matcha Paper', cost: 200 },
-  { id: 'nordic-frost', name: 'Nordic Frost', cost: 300 }
+  { id: 'dark-slate', name: 'Dark Slate', cost: 0 },
+  { id: 'matcha-paper', name: 'Matcha Paper', cost: 0 },
+  { id: 'nordic-frost', name: 'Nordic Frost', cost: 0 }
 ];
 
+// =============================================================================
+// I18N SPRACHPAKETE (DEUTSCH & ENGLISCH)
+// =============================================================================
+const I18N = {
+  de: {
+    // Header & Toggles
+    langTitle: 'Sprache wechseln (DE / EN)',
+    audioTitle: 'Lofi Ambient-Musik an/aus',
+    themeToggleTitle: 'Dark/Light Modus umschalten',
+    accountTitle: 'Account & Profil',
+    themesBtn: 'Themes',
+    
+    // HUD
+    heartsTitle: 'Verbleibende Versuche',
+    timerTitle: 'Spielzeit',
+    playTitle: 'Starten (P)',
+    pauseTitle: 'Pausieren (P)',
+    resumeTitle: 'Fortsetzen (P)',
+    playerLabel: 'Du',
+    opponentLabel: 'Gegner',
+    botLabel: 'Bot',
+    swapIn: 'Swap in',
+    swapWithBotIn: 'Swap mit Bot in',
+    
+    // Modi & Schwierigkeitsgrade
+    modeZen: 'Einzelspieler',
+    modeVersus: 'Versus',
+    modeSwap: 'Co-Op Swap',
+    modeHelpTitle: 'Spielregeln & Modus-Info',
+    
+    zenEasy: 'Einfach (5 ✦)',
+    zenMedium: 'Mittel (3 ✦)',
+    zenHard: 'Schwer (1 ✦)',
+    
+    versusDiffLabel: 'Rätsel:',
+    versusEasy: 'Einfach',
+    versusMedium: 'Mittel',
+    versusHard: 'Schwer',
+    
+    botSpeedLabel: 'Bot-Stufe:',
+    diffEasy: 'Einfach',
+    diffMedium: 'Mittel',
+    diffHard: 'Schwer',
+    btnStartBotGame: 'Spiel gegen Bot starten',
+    
+    // Lobby
+    btnPlayOnline: 'Online-Raum',
+    btnPlayBot: 'Mit Bot spielen',
+    createRoomBtn: 'Raum erstellen',
+    joinRoomBtn: 'Beitreten',
+    roomInputPlaceholder: 'Code eingeben',
+    roomCodeLabel: 'Raum-Code:',
+    leaveRoom: 'Verlassen',
+    statusConnecting: 'Verbinde...',
+    statusConnected: 'Verbunden',
+    statusDisconnected: 'Nicht verbunden',
+    statusPlayers: 'Spieler',
+    
+    // Controls
+    notesOff: 'Notizen: Aus',
+    notesOn: 'Notizen: An',
+    erase: 'Löschen',
+    newGame: 'Neu',
+    
+    // Pause Overlay
+    pauseOverlayTitle: 'Spiel pausiert',
+    pauseOverlayDesc: 'Die Zeit ist angehalten.',
+    resumeBtn: 'Fortsetzen',
+    
+    // Footer
+    imprintLink: 'Impressum',
+    privacyLink: 'Datenschutz',
+    
+    // Modals
+    themeModalTitle: 'Themes & Farben',
+    themeFree: 'Kostenlos',
+    themeActive: 'Aktiv',
+    themeSelect: 'Aktivieren',
+    
+    leadModalTitle: 'Rangliste',
+    leadTabEasy: 'Einfach',
+    leadTabMedium: 'Mittel',
+    leadTabHard: 'Schwer',
+    myRankLabel: 'Deine Bestzeit:',
+    thRank: 'Rang',
+    thPlayer: 'Spieler',
+    thBestTime: 'Beste Zeit',
+    
+    accountModalTitle: 'Account & Profil',
+    usernameLabel: 'Spielername:',
+    usernamePlaceholder: 'Dein Spielername',
+    saveBtn: 'Speichern',
+    bestTimeLabel: 'Bestzeit (Mittel)',
+    activeThemeLabel: 'Aktives Theme',
+    statusLabel: 'Status',
+    statusGuest: 'Gast',
+    statusLoggedIn: 'Angemeldet',
+    loggedInAs: 'Angemeldet als',
+    logoutBtn: 'Abmelden',
+    tabLogin: 'Anmelden',
+    tabRegister: 'Registrieren',
+    emailLabel: 'E-Mail',
+    passwordLabel: 'Passwort',
+    passwordPlaceholder: 'Mindestens 6 Zeichen',
+    btnSubmitLogin: 'Anmelden',
+    btnSubmitRegister: 'Konto registrieren',
+    
+    // Rules Modal
+    rulesModalTitleZen: 'Einzelspieler — Regeln',
+    rulesModalZen: `
+      <p><strong>Ziel:</strong> Fülle das gesamte 9x9-Gitter so aus, dass in jeder Zeile, Spalte und jedem 3x3-Block jede Zahl von 1 bis 9 genau einmal vorkommt.</p>
+      <ul>
+        <li><strong>Einfach:</strong> 5 Versuche (✦). Viele Startzahlen.</li>
+        <li><strong>Mittel:</strong> 3 Versuche (✦). Ausgeglichene Herausforderung.</li>
+        <li><strong>Schwer:</strong> Nur 1 Versuch (✦)! Keine Fehler erlaubt.</li>
+      </ul>
+      <p>Starte durch Antippen eines Feldes, einer Zahl oder des Play-Buttons.</p>
+    `,
+    rulesModalTitleVersus: 'Versus-Modus — Regeln',
+    rulesModalVersus: `
+      <p><strong>Ziel:</strong> Du und dein Gegner (online per 4-stelligem Raumcode oder ein lokaler Bot) lösen zeitgleich <strong>dasselbe Rätsel</strong>.</p>
+      <ul>
+        <li>Der Fortschrittsbalken oben zeigt live, wer wie weit ist.</li>
+        <li>Wähle die Rätselschwierigkeit (Einfach, Mittel, Schwer) und die Bot-Geschwindigkeit.</li>
+        <li>Wer zuerst alle Felder korrekt ausgefüllt hat, gewinnt die Partie.</li>
+      </ul>
+    `,
+    rulesModalTitleSwap: 'Co-Op Swap — Regeln',
+    rulesModalSwap: `
+      <p><strong>Die kooperative Herausforderung:</strong></p>
+      <ul>
+        <li>Zwei Boards im Spiel: <strong>Board A (Blau)</strong> und <strong>Board B (Rot)</strong>.</li>
+        <li>Ein <strong>10-Sekunden-Timer</strong> läuft ab.</li>
+        <li>Sobald der Timer 0 erreicht, tauscht ihr die Boards!</li>
+        <li>Du übernimmst direkt das andere Board an der Stelle, wo dein Partner aufgehört hat.</li>
+        <li>Löst gemeinsam beide Rätsel unter Zeitdruck.</li>
+      </ul>
+    `,
+    
+    // Toasts
+    toastGameStarted: 'Spiel gestartet! Viel Erfolg.',
+    toastGamePaused: 'Spiel pausiert',
+    toastGameResumed: 'Spiel fortgesetzt',
+    toastMusicOn: 'Lofi Ambient-Musik an',
+    toastMusicOff: 'Lofi Ambient-Musik aus',
+    toastBoardSwapped: 'Board getauscht! Du spielst jetzt Board ',
+    toastGameOver: 'Keine Versuche mehr übrig!',
+    toastGameWon: 'Hervorragend gelöst in ',
+    toastNewBestTime: 'Neue Bestzeit aufgestellt! 🎉',
+    toastEnterCode: '4-stelligen Code eingeben',
+    toastSynced: 'Board synchronisiert',
+    toastOpponentWon: 'Gegner war schneller',
+    toastBotWon: 'Der Bot hat das Rätsel zuerst gelöst!',
+    toastBotPartDone: 'Der Bot hat seinen Teil gelöst!',
+    toastBotStarted: 'Spiel gegen Bot gestartet!',
+    toastThemeApplied: 'Theme aktiviert'
+  },
+  
+  en: {
+    // Header & Toggles
+    langTitle: 'Switch Language (DE / EN)',
+    audioTitle: 'Lofi Ambient Music on/off',
+    themeToggleTitle: 'Toggle Dark/Light Mode',
+    accountTitle: 'Account & Profile',
+    themesBtn: 'Themes',
+    
+    // HUD
+    heartsTitle: 'Remaining attempts',
+    timerTitle: 'Time elapsed',
+    playTitle: 'Start (P)',
+    pauseTitle: 'Pause (P)',
+    resumeTitle: 'Resume (P)',
+    playerLabel: 'You',
+    opponentLabel: 'Opponent',
+    botLabel: 'Bot',
+    swapIn: 'Swap in',
+    swapWithBotIn: 'Swap with Bot in',
+    
+    // Modes & Difficulties
+    modeZen: 'Singleplayer',
+    modeVersus: 'Versus',
+    modeSwap: 'Co-Op Swap',
+    modeHelpTitle: 'Game Rules & Info',
+    
+    zenEasy: 'Easy (5 ✦)',
+    zenMedium: 'Medium (3 ✦)',
+    zenHard: 'Hard (1 ✦)',
+    
+    versusDiffLabel: 'Puzzle:',
+    versusEasy: 'Easy',
+    versusMedium: 'Medium',
+    versusHard: 'Hard',
+    
+    botSpeedLabel: 'Bot Speed:',
+    diffEasy: 'Easy',
+    diffMedium: 'Medium',
+    diffHard: 'Hard',
+    btnStartBotGame: 'Start match vs Bot',
+    
+    // Lobby
+    btnPlayOnline: 'Online Room',
+    btnPlayBot: 'Play vs Bot',
+    createRoomBtn: 'Create Room',
+    joinRoomBtn: 'Join',
+    roomInputPlaceholder: 'Enter code',
+    roomCodeLabel: 'Room Code:',
+    leaveRoom: 'Leave',
+    statusConnecting: 'Connecting...',
+    statusConnected: 'Connected',
+    statusDisconnected: 'Not connected',
+    statusPlayers: 'Players',
+    
+    // Controls
+    notesOff: 'Notes: Off',
+    notesOn: 'Notes: On',
+    erase: 'Erase',
+    newGame: 'New',
+    
+    // Pause Overlay
+    pauseOverlayTitle: 'Game Paused',
+    pauseOverlayDesc: 'Time is stopped.',
+    resumeBtn: 'Resume',
+    
+    // Footer
+    imprintLink: 'Imprint',
+    privacyLink: 'Privacy Policy',
+    
+    // Modals
+    themeModalTitle: 'Themes & Colors',
+    themeFree: 'Free',
+    themeActive: 'Active',
+    themeSelect: 'Select',
+    
+    leadModalTitle: 'Leaderboard',
+    leadTabEasy: 'Easy',
+    leadTabMedium: 'Medium',
+    leadTabHard: 'Hard',
+    myRankLabel: 'Your Best Time:',
+    thRank: 'Rank',
+    thPlayer: 'Player',
+    thBestTime: 'Best Time',
+    
+    accountModalTitle: 'Account & Profile',
+    usernameLabel: 'Player Name:',
+    usernamePlaceholder: 'Your player name',
+    saveBtn: 'Save',
+    bestTimeLabel: 'Best Time (Medium)',
+    activeThemeLabel: 'Active Theme',
+    statusLabel: 'Status',
+    statusGuest: 'Guest',
+    statusLoggedIn: 'Signed In',
+    loggedInAs: 'Signed in as',
+    logoutBtn: 'Log Out',
+    tabLogin: 'Sign In',
+    tabRegister: 'Register',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    passwordPlaceholder: 'At least 6 characters',
+    btnSubmitLogin: 'Sign In',
+    btnSubmitRegister: 'Register Account',
+    
+    // Rules Modal
+    rulesModalTitleZen: 'Singleplayer — Rules',
+    rulesModalZen: `
+      <p><strong>Goal:</strong> Fill the 9x9 grid so every row, column, and 3x3 box contains digits 1 to 9 exactly once.</p>
+      <ul>
+        <li><strong>Easy:</strong> 5 attempts (✦). Generous starting clues.</li>
+        <li><strong>Medium:</strong> 3 attempts (✦). Balanced challenge.</li>
+        <li><strong>Hard:</strong> Only 1 attempt (✦)! No mistakes allowed.</li>
+      </ul>
+      <p>Start simply by tapping any cell, number, or the Play button.</p>
+    `,
+    rulesModalTitleVersus: 'Versus Mode — Rules',
+    rulesModalVersus: `
+      <p><strong>Goal:</strong> Compete live against another player or a bot on the <strong>exact same puzzle</strong>.</p>
+      <ul>
+        <li>Live progress bars at the top track who is leading.</li>
+        <li>Choose puzzle difficulty (Easy, Medium, Hard) and bot speed.</li>
+        <li>First player to solve the entire board wins!</li>
+      </ul>
+    `,
+    rulesModalTitleSwap: 'Co-Op Swap — Rules',
+    rulesModalSwap: `
+      <p><strong>Cooperative Challenge:</strong></p>
+      <ul>
+        <li>Two boards in play: <strong>Board A (Blue)</strong> and <strong>Board B (Red)</strong>.</li>
+        <li>A <strong>10-second countdown</strong> ticks down.</li>
+        <li>When it hits 0, the boards swap instantly!</li>
+        <li>You take over your partner's board exactly where they left off.</li>
+        <li>Work together to complete both puzzles under pressure.</li>
+      </ul>
+    `,
+    
+    // Toasts
+    toastGameStarted: 'Game started! Good luck.',
+    toastGamePaused: 'Game paused',
+    toastGameResumed: 'Game resumed',
+    toastMusicOn: 'Lofi Ambient music on',
+    toastMusicOff: 'Lofi Ambient music off',
+    toastBoardSwapped: 'Board swapped! You are now playing Board ',
+    toastGameOver: 'No attempts left!',
+    toastGameWon: 'Solved successfully in ',
+    toastNewBestTime: 'New personal best time! 🎉',
+    toastEnterCode: 'Enter 4-character code',
+    toastSynced: 'Board synchronized',
+    toastOpponentWon: 'Opponent was faster',
+    toastBotWon: 'Bot solved the puzzle first!',
+    toastBotPartDone: 'Bot finished their board!',
+    toastBotStarted: 'Match vs Bot started!',
+    toastThemeApplied: 'Theme applied'
+  }
+};
+
 const state = {
+  currentLang: localStorage.getItem('swapdoku_lang') || 'de',
   supabase: null,
   user: null,
   isOffline: false,
@@ -22,33 +336,44 @@ const state = {
     username: 'Spieler',
     sync_points: 0,
     active_theme: 'nordic-light',
-    unlocked_themes: ['nordic-light']
+    unlocked_themes: ['nordic-light', 'dark-slate', 'matcha-paper', 'nordic-frost']
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
-  zenDifficulty: 'medium', // 'easy' (5 ★), 'medium' (3 ★), 'hard' (1 ★)
+  zenDifficulty: 'medium', // 'easy' (5 ✦), 'medium' (3 ✦), 'hard' (1 ✦)
+  versusDifficulty: 'medium', // 'easy', 'medium', 'hard'
   opponentType: 'online', // 'online' | 'bot'
   botDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
   botRunning: false,
   
+  // Start- & Pauselogik (Spiel wartet auf erste Aktion)
+  gameStarted: false,
+  isPaused: false,
+  gameSeconds: 0,
+  gameTimerInterval: null,
+
   // Sterne / Fehlerbegrenzung
   maxHearts: 3,
   currentHearts: 3,
   isGameOver: false,
 
-  // Spielzeit-Timer & Pause
-  gameSeconds: 0,
-  gameTimerInterval: null,
-  isPaused: false,
+  // Co-Op Swap Farbmarkierung
+  activeBoard: 'A', // 'A' (Blau) | 'B' (Rot)
+
+  // Ranglisten Filter
+  leadDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
 
   // Auth & Benutzerkonto
   authMode: 'login', // 'login' | 'register'
   authEmail: null,
 
-  // Ambient Audio
+  // Lofi Ambient Synth
   audioPlaying: false,
   audioContext: null,
-  audioGainNode: null,
+  audioMasterGain: null,
+  ambientChordTimer: null,
+  ambientChordIndex: 0,
+  activeVoices: [],
 
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
@@ -76,7 +401,9 @@ const state = {
   botSolution: Array(81).fill(0)
 };
 
-// Sudoku Backtracking Generator
+// =============================================================================
+// SUDOKU GENERATOR (AUSGEGLICHEN, KEINE LEEREN 3x3 BLÖCKE)
+// =============================================================================
 class SudokuEngine {
   static generate(clues = 34) {
     const board = Array(81).fill(0);
@@ -86,12 +413,48 @@ class SudokuEngine {
 
     const puzzle = [...solution];
     let toRemove = 81 - clues;
+
+    // Wir tracken Clues pro Zeile, Spalte und 3x3-Block, damit kein Bereich leer bleibt
+    const rowCounts = Array(9).fill(9);
+    const colCounts = Array(9).fill(9);
+    const boxCounts = Array(9).fill(9);
+
+    const minPerUnit = clues >= 38 ? 3 : 2;
+
     const indices = Array.from({ length: 81 }, (_, i) => i).sort(() => Math.random() - 0.5);
 
     for (const idx of indices) {
       if (toRemove <= 0) break;
-      puzzle[idx] = 0;
-      toRemove--;
+      const r = Math.floor(idx / 9);
+      const c = idx % 9;
+      const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+
+      if (rowCounts[r] > minPerUnit && colCounts[c] > minPerUnit && boxCounts[b] > minPerUnit) {
+        puzzle[idx] = 0;
+        rowCounts[r]--;
+        colCounts[c]--;
+        boxCounts[b]--;
+        toRemove--;
+      }
+    }
+
+    // Falls noch Zahlen zu entfernen sind, sanfte Entspannung (mindestens 2 Clues pro 3x3 Block garantiert!)
+    if (toRemove > 0) {
+      for (const idx of indices) {
+        if (toRemove <= 0) break;
+        if (puzzle[idx] === 0) continue;
+        const r = Math.floor(idx / 9);
+        const c = idx % 9;
+        const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+
+        if (boxCounts[b] > 2 && rowCounts[r] > 1 && colCounts[c] > 1) {
+          puzzle[idx] = 0;
+          rowCounts[r]--;
+          colCounts[c]--;
+          boxCounts[b]--;
+          toRemove--;
+        }
+      }
     }
 
     return { solution, initialBoard: puzzle };
@@ -184,10 +547,13 @@ class SudokuEngine {
   }
 }
 
-// DOM Referenzen
+// =============================================================================
+// DOM REFERENZEN
+// =============================================================================
 const dom = {
   root: document.documentElement,
-  points: document.getElementById('userPoints'),
+  langToggleBtn: document.getElementById('langToggleBtn'),
+  langLabel: document.getElementById('langLabel'),
   audioToggleBtn: document.getElementById('audioToggleBtn'),
   audioToggleIcon: document.getElementById('audioToggleIcon'),
   themeToggleBtn: document.getElementById('themeToggleBtn'),
@@ -195,21 +561,52 @@ const dom = {
   openLeaderboardBtn: document.getElementById('openLeaderboardBtn'),
   openAccountBtn: document.getElementById('openAccountBtn'),
   openShop: document.getElementById('openShopBtn'),
+  themeBtnText: document.getElementById('themeBtnText'),
   closeShop: document.getElementById('closeShopBtn'),
   shopModal: document.getElementById('themeModal'),
   themesList: document.getElementById('themesContainer'),
+  
+  // Leaderboard Modal
   leaderboardModal: document.getElementById('leaderboardModal'),
   closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
-  usernameInput: document.getElementById('usernameInput'),
-  btnSaveUsername: document.getElementById('btnSaveUsername'),
+  leadModalTitle: document.getElementById('leadModalTitle'),
+  leadTabEasy: document.getElementById('leadTabEasy'),
+  leadTabMedium: document.getElementById('leadTabMedium'),
+  leadTabHard: document.getElementById('leadTabHard'),
   myRankInfo: document.getElementById('myRankInfo'),
-  myRankPoints: document.getElementById('myRankPoints'),
+  myRankLabel: document.getElementById('myRankLabel'),
+  myRankTime: document.getElementById('myRankTime'),
+  thRank: document.getElementById('thRank'),
+  thPlayer: document.getElementById('thPlayer'),
+  thBestTime: document.getElementById('thBestTime'),
   leaderboardBody: document.getElementById('leaderboardBody'),
+  
+  // Account Modal
   accountModal: document.getElementById('accountModal'),
   closeAccountBtn: document.getElementById('closeAccountBtn'),
-  accountPointsVal: document.getElementById('accountPointsVal'),
+  accountModalTitle: document.getElementById('accountModalTitle'),
+  usernameLabel: document.getElementById('usernameLabel'),
+  usernameInput: document.getElementById('usernameInput'),
+  btnSaveUsername: document.getElementById('btnSaveUsername'),
+  accountBestTimeLabel: document.getElementById('accountBestTimeLabel'),
+  accountBestTimeVal: document.getElementById('accountBestTimeVal'),
+  accountThemeLabel: document.getElementById('accountThemeLabel'),
   accountThemeVal: document.getElementById('accountThemeVal'),
+  accountStatusLabel: document.getElementById('accountStatusLabel'),
   accountAuthStatus: document.getElementById('accountAuthStatus'),
+  authLoggedInSection: document.getElementById('authLoggedInSection'),
+  authLoggedInEmail: document.getElementById('authLoggedInEmail'),
+  btnLogout: document.getElementById('btnLogout'),
+  authGuestSection: document.getElementById('authGuestSection'),
+  tabAuthLogin: document.getElementById('tabAuthLogin'),
+  tabAuthRegister: document.getElementById('tabAuthRegister'),
+  authForm: document.getElementById('authForm'),
+  authEmail: document.getElementById('authEmail'),
+  authPassword: document.getElementById('authPassword'),
+  btnAuthSubmit: document.getElementById('btnAuthSubmit'),
+  authStatusMsg: document.getElementById('authStatusMsg'),
+
+  // Regeln & Legal Modals
   rulesModal: document.getElementById('rulesModal'),
   closeRulesBtn: document.getElementById('closeRulesBtn'),
   rulesModalTitle: document.getElementById('rulesModalTitle'),
@@ -221,6 +618,8 @@ const dom = {
   datenschutzModal: document.getElementById('datenschutzModal'),
   closeDatenschutzBtn: document.getElementById('closeDatenschutzBtn'),
   openDatenschutzLink: document.getElementById('openDatenschutzLink'),
+
+  // Modi & Schwierigkeitsgrade
   tabZen: document.getElementById('tabZen'),
   tabVersus: document.getElementById('tabVersus'),
   tabSwap: document.getElementById('tabSwap'),
@@ -228,15 +627,24 @@ const dom = {
   zenDiffEasy: document.getElementById('zenDiffEasy'),
   zenDiffMedium: document.getElementById('zenDiffMedium'),
   zenDiffHard: document.getElementById('zenDiffHard'),
+  
+  // Versus Rätsel & Bot
+  versusDiffLabel: document.getElementById('versusDiffLabel'),
+  versusDiffEasy: document.getElementById('versusDiffEasy'),
+  versusDiffMedium: document.getElementById('versusDiffMedium'),
+  versusDiffHard: document.getElementById('versusDiffHard'),
+  botSpeedLabel: document.getElementById('botSpeedLabel'),
+  diffEasy: document.getElementById('diffEasy'),
+  diffMedium: document.getElementById('diffMedium'),
+  diffHard: document.getElementById('diffHard'),
+  btnStartBotGame: document.getElementById('btnStartBotGame'),
+
+  // Lobby
   lobby: document.getElementById('multiplayerLobby'),
   btnPlayOnline: document.getElementById('btnPlayOnline'),
   btnPlayBot: document.getElementById('btnPlayBot'),
   onlineSection: document.getElementById('onlineSection'),
   botSection: document.getElementById('botSection'),
-  btnStartBotGame: document.getElementById('btnStartBotGame'),
-  diffEasy: document.getElementById('diffEasy'),
-  diffMedium: document.getElementById('diffMedium'),
-  diffHard: document.getElementById('diffHard'),
   createRoom: document.getElementById('createRoomBtn'),
   joinRoom: document.getElementById('joinRoomBtn'),
   roomInput: document.getElementById('roomCodeInput'),
@@ -244,48 +652,171 @@ const dom = {
   currentRoom: document.getElementById('currentRoomCode'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
+
+  // HUD & Grid
   gameHud: document.getElementById('gameHud'),
   heartsWrap: document.getElementById('heartsWrap'),
   heartsDisplay: document.getElementById('heartsDisplay'),
+  gameTimerWrap: document.getElementById('gameTimerWrap'),
   gameTimerDisplay: document.getElementById('gameTimerDisplay'),
+  btnPauseGame: document.getElementById('btnPauseGame'),
+  pauseBtnIcon: document.getElementById('pauseBtnIcon'),
   versusBars: document.getElementById('versusBars'),
+  playerLabelText: document.getElementById('playerLabelText'),
   playerBar: document.getElementById('playerProgressBar'),
   opponentBar: document.getElementById('opponentProgressBar'),
   playerLabel: document.getElementById('playerProgressLabel'),
   opponentLabel: document.getElementById('opponentProgressLabel'),
   opponentLabelText: document.getElementById('opponentLabelText'),
   swapBox: document.getElementById('swapTimerBox'),
+  swapBoardBadge: document.getElementById('swapBoardBadge'),
   swapTimer: document.getElementById('swapTimer'),
   swapPartnerLabel: document.getElementById('swapPartnerLabel'),
   grid: document.getElementById('sudokuGrid'),
-  btnPauseGame: document.getElementById('btnPauseGame'),
-  pauseBtnIcon: document.getElementById('pauseBtnIcon'),
   pauseOverlay: document.getElementById('pauseOverlay'),
+  pauseOverlayTitle: document.getElementById('pauseOverlayTitle'),
+  pauseOverlayDesc: document.getElementById('pauseOverlayDesc'),
   btnResumeGame: document.getElementById('btnResumeGame'),
+
+  // Steuerung & Ziffern
   btnNotes: document.getElementById('btnNotes'),
   btnErase: document.getElementById('btnErase'),
   btnNewGame: document.getElementById('btnNewGame'),
   numpad: document.getElementById('numpad'),
-  toast: document.getElementById('toast'),
-
-  // Auth & Account Modal
-  authLoggedInSection: document.getElementById('authLoggedInSection'),
-  authLoggedInEmail: document.getElementById('authLoggedInEmail'),
-  btnLogout: document.getElementById('btnLogout'),
-  authGuestSection: document.getElementById('authGuestSection'),
-  tabAuthLogin: document.getElementById('tabAuthLogin'),
-  tabAuthRegister: document.getElementById('tabAuthRegister'),
-  authForm: document.getElementById('authForm'),
-  authEmail: document.getElementById('authEmail'),
-  authPassword: document.getElementById('authPassword'),
-  btnAuthSubmit: document.getElementById('btnAuthSubmit'),
-  authStatusMsg: document.getElementById('authStatusMsg')
+  toast: document.getElementById('toast')
 };
 
-// Initialisierung
+// =============================================================================
+// I18N HELPER & LOGIK
+// =============================================================================
+function t(key) {
+  const dict = I18N[state.currentLang] || I18N.de;
+  return dict[key] || key;
+}
+
+function toggleLanguage() {
+  const next = state.currentLang === 'de' ? 'en' : 'de';
+  setLanguage(next);
+}
+
+function setLanguage(lang) {
+  state.currentLang = lang;
+  localStorage.setItem('swapdoku_lang', lang);
+  if (dom.langLabel) dom.langLabel.textContent = lang.toUpperCase();
+  applyLanguageToDOM();
+}
+
+function applyLanguageToDOM() {
+  const lang = state.currentLang;
+  const d = I18N[lang] || I18N.de;
+
+  // Header
+  if (dom.langToggleBtn) dom.langToggleBtn.setAttribute('title', d.langTitle);
+  if (dom.audioToggleBtn) dom.audioToggleBtn.setAttribute('title', d.audioTitle);
+  if (dom.themeToggleBtn) dom.themeToggleBtn.setAttribute('title', d.themeToggleTitle);
+  if (dom.openAccountBtn) dom.openAccountBtn.setAttribute('title', d.accountTitle);
+  if (dom.themeBtnText) dom.themeBtnText.textContent = d.themesBtn;
+
+  // HUD Tooltips & Labels
+  if (dom.heartsWrap) dom.heartsWrap.setAttribute('title', d.heartsTitle);
+  if (dom.gameTimerWrap) dom.gameTimerWrap.setAttribute('title', d.timerTitle);
+  updatePauseBtnTitle();
+  if (dom.playerLabelText) dom.playerLabelText.textContent = d.playerLabel;
+  updateOpponentLabels();
+
+  // Modi Tabs
+  if (dom.tabZen) dom.tabZen.textContent = d.modeZen;
+  if (dom.tabVersus) dom.tabVersus.textContent = d.modeVersus;
+  if (dom.tabSwap) dom.tabSwap.textContent = d.modeSwap;
+  if (dom.helpModeBtn) dom.helpModeBtn.setAttribute('title', d.modeHelpTitle);
+
+  // Zen Schwierigkeiten
+  if (dom.zenDiffEasy) dom.zenDiffEasy.textContent = d.zenEasy;
+  if (dom.zenDiffMedium) dom.zenDiffMedium.textContent = d.zenMedium;
+  if (dom.zenDiffHard) dom.zenDiffHard.textContent = d.zenHard;
+
+  // Versus Rätsel & Bot
+  if (dom.versusDiffLabel) dom.versusDiffLabel.textContent = d.versusDiffLabel;
+  if (dom.versusDiffEasy) dom.versusDiffEasy.textContent = d.versusEasy;
+  if (dom.versusDiffMedium) dom.versusDiffMedium.textContent = d.versusMedium;
+  if (dom.versusDiffHard) dom.versusDiffHard.textContent = d.versusHard;
+
+  if (dom.botSpeedLabel) dom.botSpeedLabel.textContent = d.botSpeedLabel;
+  if (dom.diffEasy) dom.diffEasy.textContent = d.diffEasy;
+  if (dom.diffMedium) dom.diffMedium.textContent = d.diffMedium;
+  if (dom.diffHard) dom.diffHard.textContent = d.diffHard;
+  if (dom.btnStartBotGame) dom.btnStartBotGame.textContent = d.btnStartBotGame;
+
+  // Lobby
+  if (dom.btnPlayOnline) dom.btnPlayOnline.textContent = d.btnPlayOnline;
+  if (dom.btnPlayBot) dom.btnPlayBot.textContent = d.btnPlayBot;
+  if (dom.createRoom) dom.createRoom.textContent = d.createRoomBtn;
+  if (dom.joinRoom) dom.joinRoom.textContent = d.joinRoomBtn;
+  if (dom.roomInput) dom.roomInput.setAttribute('placeholder', d.roomInputPlaceholder);
+
+  // Steuerung
+  if (dom.btnNotes) dom.btnNotes.textContent = state.notesActive ? d.notesOn : d.notesOff;
+  if (dom.btnErase) dom.btnErase.textContent = d.erase;
+  if (dom.btnNewGame) dom.btnNewGame.textContent = d.newGame;
+
+  // Pause Overlay
+  if (dom.pauseOverlayTitle) dom.pauseOverlayTitle.textContent = d.pauseOverlayTitle;
+  if (dom.pauseOverlayDesc) dom.pauseOverlayDesc.textContent = d.pauseOverlayDesc;
+  if (dom.btnResumeGame) dom.btnResumeGame.textContent = d.resumeBtn;
+
+  // Leaderboard Modal
+  if (dom.leadModalTitle) dom.leadModalTitle.textContent = d.leadModalTitle;
+  if (dom.leadTabEasy) dom.leadTabEasy.textContent = d.leadTabEasy;
+  if (dom.leadTabMedium) dom.leadTabMedium.textContent = d.leadTabMedium;
+  if (dom.leadTabHard) dom.leadTabHard.textContent = d.leadTabHard;
+  if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankLabel;
+  if (dom.thRank) dom.thRank.textContent = d.thRank;
+  if (dom.thPlayer) dom.thPlayer.textContent = d.thPlayer;
+  if (dom.thBestTime) dom.thBestTime.textContent = d.thBestTime;
+
+  // Account Modal
+  if (dom.accountModalTitle) dom.accountModalTitle.textContent = d.accountModalTitle;
+  if (dom.usernameLabel) dom.usernameLabel.textContent = d.usernameLabel;
+  if (dom.usernameInput) dom.usernameInput.setAttribute('placeholder', d.usernamePlaceholder);
+  if (dom.btnSaveUsername) dom.btnSaveUsername.textContent = d.saveBtn;
+  if (dom.accountBestTimeLabel) dom.accountBestTimeLabel.textContent = d.bestTimeLabel;
+  if (dom.accountThemeLabel) dom.accountThemeLabel.textContent = d.activeThemeLabel;
+  if (dom.accountStatusLabel) dom.accountStatusLabel.textContent = d.statusLabel;
+  if (dom.btnLogout) dom.btnLogout.textContent = d.logoutBtn;
+  if (dom.tabAuthLogin) dom.tabAuthLogin.textContent = d.tabLogin;
+  if (dom.tabAuthRegister) dom.tabAuthRegister.textContent = d.tabRegister;
+  if (dom.authPassword) dom.authPassword.setAttribute('placeholder', d.passwordPlaceholder);
+  if (dom.btnAuthSubmit) dom.btnAuthSubmit.textContent = state.authMode === 'login' ? d.btnSubmitLogin : d.btnSubmitRegister;
+
+  // Footer Links
+  if (dom.openImpressumLink) dom.openImpressumLink.textContent = d.imprintLink;
+  if (dom.openDatenschutzLink) dom.openDatenschutzLink.textContent = d.privacyLink;
+
+  renderHearts();
+  renderThemeShop();
+  updateAccountUI();
+}
+
+function updatePauseBtnTitle() {
+  if (!dom.btnPauseGame) return;
+  const d = I18N[state.currentLang] || I18N.de;
+  if (!state.gameStarted) {
+    dom.btnPauseGame.setAttribute('title', d.playTitle);
+  } else if (state.isPaused) {
+    dom.btnPauseGame.setAttribute('title', d.resumeTitle);
+  } else {
+    dom.btnPauseGame.setAttribute('title', d.pauseTitle);
+  }
+}
+
+// =============================================================================
+// INITIALISIERUNG
+// =============================================================================
 async function init() {
   buildGrid();
+  loadLocalState();
   bindEvents();
+  setLanguage(state.currentLang);
   await initAuth();
   startNewGame();
 }
@@ -314,6 +845,9 @@ function buildGrid() {
   }
 }
 
+// =============================================================================
+// AUTHENTIFIZIERUNG & LOKALER SPEICHER
+// =============================================================================
 async function initAuth() {
   try {
     const savedLocalEmail = localStorage.getItem('swapdoku_auth_email');
@@ -321,45 +855,19 @@ async function initAuth() {
       state.authEmail = savedLocalEmail;
     }
 
-    if (!window.supabase || SUPABASE_CONFIG.url.includes('xyzcompany')) {
-      state.isOffline = true;
-      loadLocalState();
-      updatePointsDisplay();
-      updateAccountUI();
-      return;
-    }
-
-    state.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
-    const { data: sessionData } = await state.supabase.auth.getSession();
-    let session = sessionData?.session;
-
-    if (!session) {
-      const { data: authData, error } = await state.supabase.auth.signInAnonymously();
-      if (error) throw error;
-      session = authData.session;
-    }
-
-    state.user = session.user;
-    if (session.user?.email) {
-      state.authEmail = session.user.email;
-    }
-    await syncProfileFromDB();
-
-    state.supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (newSession?.user) {
-        state.user = newSession.user;
-        state.authEmail = newSession.user.email || null;
+    if (window.supabase && SUPABASE_CONFIG.url && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
+      state.supabase = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+      const { data: { session } } = await state.supabase.auth.getSession();
+      if (session) {
+        state.user = session.user;
+        state.authEmail = session.user.email || null;
         await syncProfileFromDB();
-      } else if (event === 'SIGNED_OUT') {
-        state.user = null;
-        state.authEmail = null;
       }
-      updateAccountUI();
-    });
+    } else {
+      state.isOffline = true;
+    }
   } catch (e) {
     state.isOffline = true;
-    loadLocalState();
-    updatePointsDisplay();
   }
   updateAccountUI();
 }
@@ -367,18 +875,12 @@ async function initAuth() {
 async function syncProfileFromDB() {
   if (!state.supabase || !state.user) return;
   try {
-    const { data } = await state.supabase.from('profiles').select('username, sync_points, active_theme').eq('id', state.user.id).single();
+    const { data } = await state.supabase.from('profiles').select('username, active_theme').eq('id', state.user.id).single();
     if (data) {
       state.profile.username = data.username || 'Spieler';
-      state.profile.sync_points = data.sync_points || 0;
       state.profile.active_theme = data.active_theme || 'nordic-light';
     }
-    const { data: themes } = await state.supabase.from('unlocked_themes').select('theme_id').eq('user_id', state.user.id);
-    if (themes) {
-      state.profile.unlocked_themes = themes.map(t => t.theme_id);
-    }
     setTheme(state.profile.active_theme);
-    updatePointsDisplay();
     updateAccountUI();
   } catch (_) {}
 }
@@ -409,26 +911,29 @@ function saveLocalState() {
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
     accounts[state.authEmail] = {
       username: state.profile.username,
-      sync_points: state.profile.sync_points,
-      active_theme: state.profile.active_theme,
-      unlocked_themes: state.profile.unlocked_themes
+      active_theme: state.profile.active_theme
     };
     localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(accounts));
   }
 }
 
-function updatePointsDisplay() {
-  dom.points.textContent = state.profile.sync_points;
-  if (dom.accountPointsVal) dom.accountPointsVal.textContent = state.profile.sync_points;
-  if (dom.accountThemeVal) {
-    const activeObj = THEMES.find(t => t.id === state.profile.active_theme);
-    dom.accountThemeVal.textContent = activeObj ? activeObj.name : state.profile.active_theme;
+// =============================================================================
+// TIMER, READY-STATE & PAUSE ENGINE
+// =============================================================================
+function ensureGameStarted() {
+  if (state.gameStarted || state.isGameOver) return;
+  state.gameStarted = true;
+  startStopwatch(false);
+  dom.pauseBtnIcon.textContent = '⏸';
+  updatePauseBtnTitle();
+
+  if (state.mode === 'versus' && state.opponentType === 'bot' && !state.botRunning) {
+    startBotMatch();
+  } else if (state.mode === 'swap') {
+    startSwapCountdown();
   }
 }
 
-// -----------------------------------------------------------------------------
-// TIMER-, PAUSE- & ZEITMESSUNG
-// -----------------------------------------------------------------------------
 function startStopwatch(reset = true) {
   stopStopwatch();
   if (reset) {
@@ -465,14 +970,22 @@ function stopStopwatch() {
   }
 }
 
+function formatTime(totalSeconds) {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
 function updateStopwatchDisplay() {
-  const mins = Math.floor(state.gameSeconds / 60);
-  const secs = state.gameSeconds % 60;
-  dom.gameTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  dom.gameTimerDisplay.textContent = formatTime(state.gameSeconds);
 }
 
 function togglePause() {
   if (state.isGameOver) return;
+  if (!state.gameStarted) {
+    ensureGameStarted();
+    return;
+  }
   if (state.isPaused) {
     resumeGame();
   } else {
@@ -481,16 +994,16 @@ function togglePause() {
 }
 
 function pauseGame() {
-  if (state.isPaused || state.isGameOver) return;
+  if (state.isPaused || state.isGameOver || !state.gameStarted) return;
   state.isPaused = true;
   pauseStopwatch();
   if (dom.grid) dom.grid.classList.add('paused');
   if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('hidden');
   if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '▶';
-  if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel fortsetzen (P)');
+  updatePauseBtnTitle();
   state.selectedIndex = null;
   render();
-  toast('Spiel pausiert');
+  toast(t('toastGamePaused'));
 }
 
 function resumeGame() {
@@ -500,13 +1013,13 @@ function resumeGame() {
   if (dom.grid) dom.grid.classList.remove('paused');
   if (dom.pauseOverlay) dom.pauseOverlay.classList.add('hidden');
   if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
-  if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel pausieren (P)');
-  toast('Spiel fortgesetzt');
+  updatePauseBtnTitle();
+  toast(t('toastGameResumed'));
 }
 
-// -----------------------------------------------------------------------------
-// ENTSPANNTER AMBIENT-SOUND (WEB AUDIO SYNTHESIZER)
-// -----------------------------------------------------------------------------
+// =============================================================================
+// PROCEDURAL LOFI CHILL AMBIENT SYNTHESIZER (WEB AUDIO API)
+// =============================================================================
 function toggleAmbientSound() {
   if (state.audioPlaying) {
     stopAmbientSound();
@@ -517,62 +1030,101 @@ function toggleAmbientSound() {
 
 function startAmbientSound() {
   try {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
     
     if (!state.audioContext) {
-      state.audioContext = new AudioContext();
+      state.audioContext = new AudioContextClass();
     }
     
     if (state.audioContext.state === 'suspended') {
       state.audioContext.resume();
     }
 
-    // Sanfte Zen-Harmonien (C-Dur / Pentatonik Pad)
-    const freqs = [130.81, 164.81, 196.00, 261.63, 329.63]; // C3, E3, G3, C4, E4
-    state.audioGainNode = state.audioContext.createGain();
-    state.audioGainNode.gain.setValueAtTime(0.05, state.audioContext.currentTime);
-    state.audioGainNode.connect(state.audioContext.destination);
+    state.audioMasterGain = state.audioContext.createGain();
+    state.audioMasterGain.gain.setValueAtTime(0.06, state.audioContext.currentTime);
+    state.audioMasterGain.connect(state.audioContext.destination);
 
-    state.activeOscillators = [];
-    freqs.forEach(freq => {
-      const osc = state.audioContext.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, state.audioContext.currentTime);
+    // Warm Rhodes / Lofi Akkordprogression (Fmaj7 -> Em7 -> Dm7 -> Cmaj7)
+    const CHORDS = [
+      [174.61, 220.00, 261.63, 329.63], // Fmaj7
+      [164.81, 196.00, 246.94, 293.66], // Em7
+      [146.83, 174.61, 220.00, 261.63], // Dm7
+      [130.81, 164.81, 196.00, 246.94]  // Cmaj7
+    ];
 
-      const filter = state.audioContext.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(450, state.audioContext.currentTime);
+    state.ambientChordIndex = 0;
+    playLofiChord(CHORDS[state.ambientChordIndex]);
 
-      osc.connect(filter);
-      filter.connect(state.audioGainNode);
-      osc.start();
-      state.activeOscillators.push(osc);
-    });
+    state.ambientChordTimer = setInterval(() => {
+      if (!state.audioPlaying) return;
+      state.ambientChordIndex = (state.ambientChordIndex + 1) % CHORDS.length;
+      playLofiChord(CHORDS[state.ambientChordIndex]);
+    }, 4800);
 
     state.audioPlaying = true;
     dom.audioToggleBtn.classList.add('active');
-    toast('Entspannte Ambient-Musik an');
+    toast(t('toastMusicOn'));
   } catch (err) {
-    console.warn('Audio-Init:', err);
+    console.warn('Lofi-Audio Init:', err);
   }
+}
+
+function playLofiChord(notes) {
+  if (!state.audioContext || !state.audioPlaying) return;
+
+  const now = state.audioContext.currentTime;
+  const duration = 4.7;
+
+  // Lofi Filter
+  const filter = state.audioContext.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.setValueAtTime(420, now);
+  filter.Q.setValueAtTime(0.7, now);
+  filter.connect(state.audioMasterGain);
+
+  notes.forEach((freq, idx) => {
+    const osc = state.audioContext.createOscillator();
+    const gain = state.audioContext.createGain();
+
+    osc.type = (idx % 2 === 0) ? 'triangle' : 'sine';
+    // Subtiles Detune für warmen Tape/Vinyl Schwebungseffekt
+    const detune = (Math.random() - 0.5) * 8;
+    osc.frequency.setValueAtTime(freq + detune * 0.05, now);
+
+    // Sanfte Lofi Hüllkurve (weicher Attack, langes Ausklingen)
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.035, now + 1.2);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(gain);
+    gain.connect(filter);
+
+    osc.start(now);
+    osc.stop(now + duration);
+    state.activeVoices.push(osc);
+  });
 }
 
 function stopAmbientSound() {
-  if (state.activeOscillators) {
-    state.activeOscillators.forEach(osc => {
+  if (state.ambientChordTimer) {
+    clearInterval(state.ambientChordTimer);
+    state.ambientChordTimer = null;
+  }
+  if (state.activeVoices) {
+    state.activeVoices.forEach(osc => {
       try { osc.stop(); osc.disconnect(); } catch (_) {}
     });
-    state.activeOscillators = [];
+    state.activeVoices = [];
   }
   state.audioPlaying = false;
   dom.audioToggleBtn.classList.remove('active');
-  toast('Ambient-Musik aus');
+  toast(t('toastMusicOff'));
 }
 
-// -----------------------------------------------------------------------------
-// STERNE & LEBEN LOGIK
-// -----------------------------------------------------------------------------
+// =============================================================================
+// STERNE & LEBENSZEICHEN (✦ AKTIV, ✧ VERLOREN)
+// =============================================================================
 function setupHeartsForDifficulty() {
   if (state.mode === 'zen') {
     switch (state.zenDifficulty) {
@@ -590,11 +1142,11 @@ function setupHeartsForDifficulty() {
 }
 
 function renderHearts() {
-  let starsStr = '';
+  let str = '';
   for (let i = 0; i < state.maxHearts; i++) {
-    starsStr += (i < state.currentHearts) ? '★' : '☆';
+    str += (i < state.currentHearts) ? '✦' : '✧';
   }
-  dom.heartsDisplay.textContent = starsStr;
+  dom.heartsDisplay.textContent = str;
 }
 
 function deductHeart() {
@@ -613,16 +1165,25 @@ function handleGameOver() {
   stopBot();
   stopSwapCountdown();
   stopStopwatch();
-  toast('Keine Versuche mehr übrig!');
+  toast(t('toastGameOver'));
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // SPIELABLAUF & RENDERING
-// -----------------------------------------------------------------------------
+// =============================================================================
 function getCluesForZenDifficulty() {
   switch (state.zenDifficulty) {
-    case 'easy': return 40;   // Viele Vorgaben
-    case 'hard': return 28;   // Wenige Vorgaben
+    case 'easy': return 40;   // Großzügig
+    case 'hard': return 28;   // Anspruchsvoll
+    case 'medium':
+    default: return 34;
+  }
+}
+
+function getCluesForVersusDifficulty() {
+  switch (state.versusDifficulty) {
+    case 'easy': return 40;
+    case 'hard': return 28;
     case 'medium':
     default: return 34;
   }
@@ -633,15 +1194,38 @@ function startNewGame(customBoard = null, customSol = null) {
   stopSwapCountdown();
   stopBot();
   stopStopwatch();
-  state.botRunning = false;
+  
+  state.gameStarted = false;
+  state.isGameOver = false;
+  state.gameSeconds = 0;
+  updateStopwatchDisplay();
+  dom.pauseBtnIcon.textContent = '▶';
+  updatePauseBtnTitle();
+
   setupHeartsForDifficulty();
+
+  // Co-Op Swap Board A (Blau) als Startboard setzen
+  if (state.mode === 'swap') {
+    state.activeBoard = 'A';
+    dom.grid.classList.add('board-theme-a');
+    dom.grid.classList.remove('board-theme-b');
+    dom.swapBoardBadge.textContent = 'Board A';
+    dom.swapBoardBadge.className = 'board-badge badge-blue';
+  } else {
+    dom.grid.classList.remove('board-theme-a', 'board-theme-b');
+  }
 
   if (customBoard && customSol) {
     state.initialBoard = [...customBoard];
     state.currentBoard = [...customBoard];
     state.solution = [...customSol];
   } else {
-    const clues = state.mode === 'zen' ? getCluesForZenDifficulty() : 34;
+    let clues = 34;
+    if (state.mode === 'zen') {
+      clues = getCluesForZenDifficulty();
+    } else if (state.mode === 'versus') {
+      clues = getCluesForVersusDifficulty();
+    }
     const { solution, initialBoard } = SudokuEngine.generate(clues);
     state.solution = solution;
     state.initialBoard = [...initialBoard];
@@ -654,11 +1238,6 @@ function startNewGame(customBoard = null, customSol = null) {
   updateProgressBars(0, 0);
   render();
   updateNumpadCompletedState();
-  startStopwatch();
-
-  if (state.mode === 'swap' && state.opponentType !== 'bot') {
-    startSwapCountdown();
-  }
 }
 
 function render() {
@@ -680,46 +1259,41 @@ function render() {
       valSpan.style.display = 'block';
       notesDiv.style.display = 'none';
 
-      // Fehler markieren falls benutzerdefinierte Zahl falsch ist
       if (!isGiven && val !== state.solution[i]) {
         cell.classList.add('error');
       }
     } else {
       valSpan.textContent = '';
       valSpan.style.display = 'none';
-      notesDiv.style.display = 'grid';
 
-      const noteSpans = notesDiv.children;
-      for (let n = 1; n <= 9; n++) {
-        noteSpans[n - 1].textContent = state.notes[i].has(n) ? n : '';
+      const cellNotes = state.notes[i];
+      if (cellNotes.size > 0) {
+        notesDiv.style.display = 'grid';
+        for (let n = 1; n <= 9; n++) {
+          const noteSpan = notesDiv.children[n - 1];
+          noteSpan.textContent = cellNotes.has(n) ? n : '';
+        }
+      } else {
+        notesDiv.style.display = 'none';
       }
     }
-  }
 
-  highlightRelated();
-}
+    // Zeilen-, Spalten- und Block-Highlight
+    if (state.selectedIndex !== null && state.selectedIndex !== i) {
+      const selR = Math.floor(state.selectedIndex / 9);
+      const selC = state.selectedIndex % 9;
+      const selB = Math.floor(selR / 3) * 3 + Math.floor(selC / 3);
 
-function selectCell(index) {
-  if (state.isPaused || state.isGameOver) return;
-  state.selectedIndex = index;
-  render();
-}
+      const r = Math.floor(i / 9);
+      const c = i % 9;
+      const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
 
-function highlightRelated() {
-  if (state.selectedIndex === null) return;
-  const cells = dom.grid.children;
-  const row = Math.floor(state.selectedIndex / 9);
-  const col = state.selectedIndex % 9;
-  const currentVal = state.currentBoard[state.selectedIndex];
-
-  for (let i = 0; i < 81; i++) {
-    if (i === state.selectedIndex) continue;
-    const r = Math.floor(i / 9);
-    const c = i % 9;
-    const sameBox = Math.floor(r / 3) === Math.floor(row / 3) && Math.floor(c / 3) === Math.floor(col / 3);
-
-    if (r === row || c === col || sameBox || (currentVal !== 0 && state.currentBoard[i] === currentVal)) {
-      cells[i].classList.add('highlighted');
+      const selVal = state.currentBoard[state.selectedIndex];
+      if (val !== 0 && val === selVal) {
+        cell.classList.add('same-num');
+      } else if (selR === r || selC === c || selB === b) {
+        cell.classList.add('highlight');
+      }
     }
   }
 }
@@ -727,25 +1301,24 @@ function highlightRelated() {
 function updateNumpadCompletedState() {
   const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
   const numButtons = dom.numpad.querySelectorAll('.num');
-
   numButtons.forEach(btn => {
     const digit = parseInt(btn.dataset.num, 10);
-    if (completedDigits.has(digit)) {
-      btn.classList.add('completed');
-    } else {
-      btn.classList.remove('completed');
-    }
+    btn.classList.toggle('completed', completedDigits.has(digit));
   });
+}
+
+function selectCell(idx) {
+  if (state.isPaused || state.isGameOver) return;
+  ensureGameStarted();
+  state.selectedIndex = idx;
+  render();
 }
 
 function handleNumberInput(num) {
   if (state.isPaused || state.isGameOver) return;
+  ensureGameStarted();
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
-
-  // Prüfen, ob Zahl bereits vollständig belegt ist
-  const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
-  if (completedDigits.has(num)) return;
 
   if (state.notesActive) {
     if (state.notes[idx].has(num)) {
@@ -755,7 +1328,6 @@ function handleNumberInput(num) {
     }
     state.currentBoard[idx] = 0;
   } else {
-    // Zahl eintragen & auf Fehler prüfen
     const wasEmpty = state.currentBoard[idx] === 0;
     const isCorrect = (num === state.solution[idx]);
 
@@ -775,6 +1347,7 @@ function handleNumberInput(num) {
 
 function clearCell() {
   if (state.isPaused || state.isGameOver) return;
+  ensureGameStarted();
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
@@ -809,47 +1382,42 @@ function updateProgressBars(playerPct, oppPct) {
 async function gameWon() {
   stopBot();
   stopStopwatch();
-  let pts = 50;
-  if (state.mode === 'versus') pts = 100;
-  if (state.mode === 'swap') pts = 75;
 
-  toast(`Gelöst in ${dom.gameTimerDisplay.textContent}! (+${pts} Pts)`);
+  const formattedTime = dom.gameTimerDisplay.textContent;
+  const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : 'medium');
+
+  // Zeit in Bestenliste aufnehmen
+  const isBest = recordBestTime(currentDiff, state.gameSeconds);
+
+  if (isBest) {
+    toast(`${t('toastGameWon')}${formattedTime}! ${t('toastNewBestTime')}`);
+  } else {
+    toast(`${t('toastGameWon')}${formattedTime}!`);
+  }
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
   }
 
-  await addPoints(pts);
+  updateAccountUI();
 }
 
-async function addPoints(pts) {
-  state.profile.sync_points += pts;
-  updatePointsDisplay();
-  saveLocalState();
-
-  if (!state.isOffline && state.supabase && state.user) {
-    try {
-      await state.supabase.rpc('add_sync_points', { points_to_add: pts });
-    } catch (_) {}
-  }
-}
-
-// -----------------------------------------------------------------------------
+// =============================================================================
 // BOT ENGINE
-// -----------------------------------------------------------------------------
+// =============================================================================
 function getBotIntervalMs() {
   switch (state.botDifficulty) {
-    case 'easy': return 3800;   // ~3.8s pro Zelle
-    case 'hard': return 1400;   // ~1.4s pro Zelle
+    case 'easy': return 3800;   // ~3.8s
+    case 'hard': return 1400;   // ~1.4s
     case 'medium':
-    default: return 2400;       // ~2.4s pro Zelle
+    default: return 2400;       // ~2.4s
   }
 }
 
 function startBotMatch() {
   stopBot();
   state.botRunning = true;
-  toast('Spiel gegen Bot gestartet!');
+  toast(t('toastBotStarted'));
 
   if (state.mode === 'versus') {
     state.botInitial = [...state.initialBoard];
@@ -881,7 +1449,7 @@ function stopBot() {
 }
 
 function botStep() {
-  if (state.isPaused) return;
+  if (state.isPaused || !state.gameStarted) return;
   const emptyIndices = [];
   for (let i = 0; i < 81; i++) {
     if (state.botBoard[i] === 0 || state.botBoard[i] !== state.botSolution[i]) {
@@ -892,9 +1460,9 @@ function botStep() {
   if (emptyIndices.length === 0) {
     stopBot();
     if (state.mode === 'versus') {
-      toast('Der Bot hat das Rätsel zuerst gelöst!');
+      toast(t('toastBotWon'));
     } else if (state.mode === 'swap') {
-      toast('Der Bot hat seinen Teil gelöst!');
+      toast(t('toastBotPartDone'));
     }
     return;
   }
@@ -922,9 +1490,17 @@ function setBotDifficulty(diff) {
   }
 }
 
-// -----------------------------------------------------------------------------
+function setVersusDifficulty(diff) {
+  state.versusDifficulty = diff;
+  [dom.versusDiffEasy, dom.versusDiffMedium, dom.versusDiffHard].forEach(b => {
+    b.classList.toggle('active', b.dataset.diff === diff);
+  });
+  startNewGame();
+}
+
+// =============================================================================
 // MODI & MULTIPLAYER LOBBY
-// -----------------------------------------------------------------------------
+// =============================================================================
 function setMode(mode) {
   state.mode = mode;
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
@@ -974,8 +1550,9 @@ function setOpponentType(type) {
 
 function updateOpponentLabels() {
   const isBot = state.opponentType === 'bot';
-  dom.opponentLabelText.textContent = isBot ? 'Bot' : 'Gegner';
-  dom.swapPartnerLabel.textContent = isBot ? 'Swap mit Bot in' : 'Swap in';
+  const d = I18N[state.currentLang] || I18N.de;
+  if (dom.opponentLabelText) dom.opponentLabelText.textContent = isBot ? d.botLabel : d.opponentLabel;
+  if (dom.swapPartnerLabel) dom.swapPartnerLabel.textContent = isBot ? d.swapWithBotIn : d.swapIn;
 }
 
 function createRoom() {
@@ -986,7 +1563,7 @@ function createRoom() {
 
 async function joinRoom(code) {
   if (!code || code.length !== 4) {
-    toast('4-stelligen Code eingeben');
+    toast(t('toastEnterCode'));
     return;
   }
 
@@ -994,7 +1571,7 @@ async function joinRoom(code) {
   state.roomCode = code.toUpperCase();
   dom.currentRoom.textContent = state.roomCode;
   dom.roomDisplay.classList.remove('hidden');
-  setConnectionStatus('connecting', 'Verbinde...');
+  setConnectionStatus('connecting', t('statusConnecting'));
 
   if (state.isOffline || !state.supabase) {
     setConnectionStatus('connected', `Demo ${state.roomCode}`);
@@ -1008,7 +1585,7 @@ async function joinRoom(code) {
   state.channel.on('presence', { event: 'sync' }, () => {
     const pres = state.channel.presenceState();
     state.peersCount = Object.keys(pres).length;
-    setConnectionStatus('connected', `${state.peersCount} Spieler`);
+    setConnectionStatus('connected', `${state.peersCount} ${t('statusPlayers')}`);
 
     if (state.isHost && state.peersCount === 2 && state.mode === 'versus') {
       broadcast('SYNC_BOARD', {
@@ -1020,7 +1597,7 @@ async function joinRoom(code) {
 
   state.channel
     .on('broadcast', { event: 'SYNC_BOARD' }, ({ payload }) => {
-      toast('Board synchronisiert');
+      toast(t('toastSynced'));
       startNewGame(payload.initialBoard, payload.solution);
     })
     .on('broadcast', { event: 'PROGRESS' }, ({ payload }) => {
@@ -1034,12 +1611,12 @@ async function joinRoom(code) {
       applyIncomingSwap(payload);
     })
     .on('broadcast', { event: 'GAME_OVER' }, () => {
-      toast('Gegner war schneller');
+      toast(t('toastOpponentWon'));
     });
 
   state.channel.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
-      setConnectionStatus('connected', 'Verbunden');
+      setConnectionStatus('connected', t('statusConnected'));
       await state.channel.track({ user: state.user?.id });
     }
   });
@@ -1059,7 +1636,7 @@ function leaveRoom() {
   state.roomCode = null;
   state.isHost = false;
   dom.roomDisplay.classList.add('hidden');
-  setConnectionStatus('disconnected', 'Nicht verbunden');
+  setConnectionStatus('disconnected', t('statusDisconnected'));
 }
 
 function setConnectionStatus(status, text) {
@@ -1067,16 +1644,16 @@ function setConnectionStatus(status, text) {
   dom.connText.textContent = text;
 }
 
-// -----------------------------------------------------------------------------
-// CO-OP SWAP COUNTDOWN & HANDLING
-// -----------------------------------------------------------------------------
+// =============================================================================
+// CO-OP SWAP COUNTDOWN & FARBIGE BOARDS
+// =============================================================================
 function startSwapCountdown() {
   stopSwapCountdown();
   state.swapSecondsLeft = 10;
   dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
   state.swapTimerId = setInterval(() => {
-    if (state.isPaused) return;
+    if (state.isPaused || !state.gameStarted) return;
     state.swapSecondsLeft--;
     dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
@@ -1096,7 +1673,14 @@ function stopSwapCountdown() {
 
 function doBoardSwap() {
   dom.grid.classList.add('swapping');
-  setTimeout(() => dom.grid.classList.remove('swapping'), 300);
+  setTimeout(() => dom.grid.classList.remove('swapping'), 320);
+
+  // Board Farbe umschalten (A <-> B)
+  state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
+  dom.grid.classList.toggle('board-theme-a', state.activeBoard === 'A');
+  dom.grid.classList.toggle('board-theme-b', state.activeBoard === 'B');
+  dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
+  dom.swapBoardBadge.className = `board-badge ${state.activeBoard === 'A' ? 'badge-blue' : 'badge-red'}`;
 
   if (state.opponentType === 'bot') {
     const tempBoard = [...state.currentBoard];
@@ -1115,12 +1699,13 @@ function doBoardSwap() {
     render();
     checkProgress();
     updateNumpadCompletedState();
-    toast('Board mit Bot getauscht!');
+    toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
   } else if (state.channel) {
     broadcast('SWAP', {
       currentBoard: state.currentBoard,
       initialBoard: state.initialBoard,
-      solution: state.solution
+      solution: state.solution,
+      activeBoard: state.activeBoard
     });
   } else {
     const next = SudokuEngine.generate(34);
@@ -1128,13 +1713,19 @@ function doBoardSwap() {
     state.initialBoard = next.initialBoard;
     state.currentBoard = [...next.initialBoard];
     render();
-    toast('Board getauscht');
+    toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
   }
 }
 
 function applyIncomingSwap(payload) {
   dom.grid.classList.add('swapping');
-  setTimeout(() => dom.grid.classList.remove('swapping'), 300);
+  setTimeout(() => dom.grid.classList.remove('swapping'), 320);
+
+  state.activeBoard = payload.activeBoard || (state.activeBoard === 'A' ? 'B' : 'A');
+  dom.grid.classList.toggle('board-theme-a', state.activeBoard === 'A');
+  dom.grid.classList.toggle('board-theme-b', state.activeBoard === 'B');
+  dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
+  dom.swapBoardBadge.className = `board-badge ${state.activeBoard === 'A' ? 'badge-blue' : 'badge-red'}`;
 
   state.currentBoard = [...payload.currentBoard];
   state.initialBoard = [...payload.initialBoard];
@@ -1144,64 +1735,165 @@ function applyIncomingSwap(payload) {
   render();
   checkProgress();
   updateNumpadCompletedState();
-  toast('Board getauscht');
+  toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
 }
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // SPIELREGELN ERKLÄRUNGS-MODAL
-// -----------------------------------------------------------------------------
+// =============================================================================
 function showModeRules() {
+  const d = I18N[state.currentLang] || I18N.de;
   if (state.mode === 'zen') {
-    dom.rulesModalTitle.textContent = 'Einzelspieler — Regeln';
-    dom.rulesModalText.innerHTML = `
-      <p><strong>Ziel:</strong> Fülle das gesamte 9x9-Gitter so aus, dass in jeder Zeile, Spalte und jedem 3x3-Block jede Zahl von 1 bis 9 genau einmal vorkommt.</p>
-      <ul>
-        <li><strong>Einfach:</strong> 5 Versuche (★). Viele Startzahlen.</li>
-        <li><strong>Mittel:</strong> 3 Versuche (★). Ausgeglichene Herausforderung.</li>
-        <li><strong>Schwer:</strong> Nur 1 Versuch (★)! Keine Fehler erlaubt.</li>
-      </ul>
-      <p>Bei jedem gelösten Board erhältst du <strong>+50 Sync-Points</strong>.</p>
-    `;
+    dom.rulesModalTitle.textContent = d.rulesModalTitleZen;
+    dom.rulesModalText.innerHTML = d.rulesModalZen;
   } else if (state.mode === 'versus') {
-    dom.rulesModalTitle.textContent = 'Versus-Modus — Regeln';
-    dom.rulesModalText.innerHTML = `
-      <p><strong>Ziel:</strong> Du und dein Gegner (online per 4-stelligem Raumcode oder ein lokaler Bot) lösen zeitgleich <strong>dasselbe Rätsel</strong>.</p>
-      <ul>
-        <li>Der Fortschrittsbalken oben zeigt live, wer wie weit ist.</li>
-        <li>Wer zuerst alle Felder korrekt ausgefüllt hat, gewinnt die Partie.</li>
-      </ul>
-      <p>Der Sieger erhält <strong>+100 Sync-Points</strong>.</p>
-    `;
+    dom.rulesModalTitle.textContent = d.rulesModalTitleVersus;
+    dom.rulesModalText.innerHTML = d.rulesModalVersus;
   } else if (state.mode === 'swap') {
-    dom.rulesModalTitle.textContent = 'Co-Op Swap — Regeln';
-    dom.rulesModalText.innerHTML = `
-      <p><strong>Die kooperative Herausforderung:</strong></p>
-      <ul>
-        <li>Zwei Spieler (oder du und der Bot) starten mit <strong>zwei unterschiedlichen Rätseln</strong>.</li>
-        <li>Ein <strong>10-Sekunden-Timer</strong> läuft synchron ab.</li>
-        <li>Sobald der Timer 0 erreicht, werden beide Boards über das Netzwerk ausgetauscht!</li>
-        <li>Du übernimmst genau das Board deines Partners an der Stelle, wo er gerade war.</li>
-        <li>Löst gemeinsam beide Rätsel unter Zeitdruck.</li>
-      </ul>
-      <p>Belohnung nach erfolgreichem Abschluss: <strong>+75 Sync-Points</strong> für beide!</p>
-    `;
+    dom.rulesModalTitle.textContent = d.rulesModalTitleSwap;
+    dom.rulesModalText.innerHTML = d.rulesModalSwap;
   }
   dom.rulesModal.classList.remove('hidden');
 }
 
-// -----------------------------------------------------------------------------
-// RANGLISTE & ACCOUNT
-// -----------------------------------------------------------------------------
-async function openLeaderboard() {
-  dom.myRankPoints.textContent = state.profile.sync_points;
+// =============================================================================
+// RANGLISTE (NACH SCHWIERIGKEITSGRAD & ZEIT GEFILTERT)
+// =============================================================================
+function getLeaderboardSeed(diff) {
+  switch (diff) {
+    case 'easy':
+      return [
+        { id: 'bot-1', username: 'SudokuMaster', time: 114 },
+        { id: 'bot-2', username: 'NordicSolver', time: 138 },
+        { id: 'bot-3', username: 'ZenSeeker', time: 165 },
+        { id: 'bot-4', username: 'GridRunner', time: 198 },
+        { id: 'bot-5', username: 'ChillBrain', time: 240 }
+      ];
+    case 'hard':
+      return [
+        { id: 'bot-1', username: 'SudokuMaster', time: 345 },
+        { id: 'bot-2', username: 'ZenMaster', time: 412 },
+        { id: 'bot-3', username: 'GridRunner', time: 489 },
+        { id: 'bot-4', username: 'LogicKing', time: 540 },
+        { id: 'bot-5', username: 'DeepFocus', time: 615 }
+      ];
+    case 'medium':
+    default:
+      return [
+        { id: 'bot-1', username: 'SudokuMaster', time: 192 },
+        { id: 'bot-2', username: 'ZenSeeker', time: 228 },
+        { id: 'bot-3', username: 'NordicSolver', time: 275 },
+        { id: 'bot-4', username: 'GridRunner', time: 330 },
+        { id: 'bot-5', username: 'PuzzleMind', time: 384 }
+      ];
+  }
+}
+
+function loadSavedLeaderboards() {
+  const saved = localStorage.getItem('swapdoku_leaderboards_v2');
+  if (saved) {
+    try { return JSON.parse(saved); } catch (_) {}
+  }
+  return {
+    easy: getLeaderboardSeed('easy'),
+    medium: getLeaderboardSeed('medium'),
+    hard: getLeaderboardSeed('hard')
+  };
+}
+
+function saveLeaderboards(data) {
+  localStorage.setItem('swapdoku_leaderboards_v2', JSON.stringify(data));
+}
+
+function recordBestTime(diff, seconds) {
+  const boards = loadSavedLeaderboards();
+  const currentDiffList = boards[diff] || getLeaderboardSeed(diff);
+  const myName = state.profile.username || 'Spieler';
+
+  let existing = currentDiffList.find(e => e.id === 'player-me' || e.username === myName);
+  let isNewBest = false;
+
+  if (existing) {
+    if (seconds < existing.time) {
+      existing.time = seconds;
+      existing.username = myName;
+      isNewBest = true;
+    }
+  } else {
+    currentDiffList.push({
+      id: 'player-me',
+      username: myName,
+      time: seconds
+    });
+    isNewBest = true;
+  }
+
+  currentDiffList.sort((a, b) => a.time - b.time);
+  boards[diff] = currentDiffList;
+  saveLeaderboards(boards);
+  return isNewBest;
+}
+
+function getMyBestTimeForDiff(diff) {
+  const boards = loadSavedLeaderboards();
+  const list = boards[diff] || [];
+  const myName = state.profile.username || 'Spieler';
+  const entry = list.find(e => e.id === 'player-me' || e.username === myName);
+  return entry ? formatTime(entry.time) : '--:--';
+}
+
+function openLeaderboard() {
   dom.leaderboardModal.classList.remove('hidden');
-  await loadLeaderboardData();
+  renderLeaderboard();
 }
 
 function closeLeaderboard() {
   dom.leaderboardModal.classList.add('hidden');
 }
 
+function switchLeaderboardTab(diff) {
+  state.leadDifficulty = diff;
+  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard].forEach(b => {
+    b.classList.toggle('active', b.dataset.diff === diff);
+  });
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const diff = state.leadDifficulty;
+  const boards = loadSavedLeaderboards();
+  const list = (boards[diff] || getLeaderboardSeed(diff)).slice().sort((a, b) => a.time - b.time);
+
+  const myName = state.profile.username || 'Spieler';
+  let myRank = '-';
+  let myTime = '--:--';
+
+  dom.leaderboardBody.innerHTML = '';
+
+  list.forEach((entry, idx) => {
+    const isMe = entry.id === 'player-me' || entry.username === myName;
+    const rank = idx + 1;
+    if (isMe) {
+      myRank = rank;
+      myTime = formatTime(entry.time);
+    }
+
+    const tr = document.createElement('tr');
+    if (isMe) tr.className = 'my-row';
+    tr.innerHTML = `
+      <td>#${rank}</td>
+      <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">${formatTime(entry.time)}</td>
+    `;
+    dom.leaderboardBody.appendChild(tr);
+  });
+
+  dom.myRankTime.textContent = myTime;
+}
+
+// =============================================================================
+// ACCOUNT & PROFIL MODAL
+// =============================================================================
 function openAccount() {
   updateAccountUI();
   clearAuthMsg();
@@ -1213,8 +1905,12 @@ function closeAccount() {
 }
 
 function updateAccountUI() {
+  const d = I18N[state.currentLang] || I18N.de;
   if (dom.usernameInput) dom.usernameInput.value = state.profile.username || '';
-  if (dom.accountPointsVal) dom.accountPointsVal.textContent = state.profile.sync_points;
+  
+  const bestMed = getMyBestTimeForDiff('medium');
+  if (dom.accountBestTimeVal) dom.accountBestTimeVal.textContent = bestMed;
+
   const activeObj = THEMES.find(t => t.id === state.profile.active_theme);
   if (dom.accountThemeVal) dom.accountThemeVal.textContent = activeObj ? activeObj.name : state.profile.active_theme;
 
@@ -1223,25 +1919,26 @@ function updateAccountUI() {
     if (dom.authLoggedInSection) dom.authLoggedInSection.classList.remove('hidden');
     if (dom.authGuestSection) dom.authGuestSection.classList.add('hidden');
     if (dom.authLoggedInEmail) dom.authLoggedInEmail.textContent = currentEmail;
-    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = 'Angemeldet';
+    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = d.statusLoggedIn;
   } else {
     if (dom.authLoggedInSection) dom.authLoggedInSection.classList.add('hidden');
     if (dom.authGuestSection) dom.authGuestSection.classList.remove('hidden');
-    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = 'Gast';
+    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = d.statusGuest;
   }
 }
 
 function switchAuthMode(mode) {
   state.authMode = mode;
+  const d = I18N[state.currentLang] || I18N.de;
   if (mode === 'login') {
     dom.tabAuthLogin.classList.add('active');
     dom.tabAuthRegister.classList.remove('active');
-    dom.btnAuthSubmit.textContent = 'Anmelden';
+    dom.btnAuthSubmit.textContent = d.btnSubmitLogin;
     dom.authPassword.setAttribute('autocomplete', 'current-password');
   } else {
     dom.tabAuthLogin.classList.remove('active');
     dom.tabAuthRegister.classList.add('active');
-    dom.btnAuthSubmit.textContent = 'Konto registrieren';
+    dom.btnAuthSubmit.textContent = d.btnSubmitRegister;
     dom.authPassword.setAttribute('autocomplete', 'new-password');
   }
   clearAuthMsg();
@@ -1265,17 +1962,16 @@ async function handleAuthSubmit() {
   const password = dom.authPassword.value;
 
   if (!email || !email.includes('@')) {
-    showAuthMsg('Bitte eine gültige E-Mail-Adresse angeben.');
+    showAuthMsg(state.currentLang === 'de' ? 'Bitte eine gültige E-Mail-Adresse angeben.' : 'Please enter a valid email address.');
     return;
   }
   if (!password || password.length < 6) {
-    showAuthMsg('Das Passwort muss mindestens 6 Zeichen lang sein.');
+    showAuthMsg(state.currentLang === 'de' ? 'Das Passwort muss mindestens 6 Zeichen lang sein.' : 'Password must be at least 6 characters.');
     return;
   }
 
   clearAuthMsg();
   dom.btnAuthSubmit.disabled = true;
-  dom.btnAuthSubmit.textContent = 'Wird verarbeitet...';
 
   try {
     if (state.authMode === 'login') {
@@ -1287,7 +1983,8 @@ async function handleAuthSubmit() {
     showAuthMsg(err.message || 'Authentifizierungsfehler');
   } finally {
     dom.btnAuthSubmit.disabled = false;
-    dom.btnAuthSubmit.textContent = state.authMode === 'login' ? 'Anmelden' : 'Konto registrieren';
+    const d = I18N[state.currentLang] || I18N.de;
+    dom.btnAuthSubmit.textContent = state.authMode === 'login' ? d.btnSubmitLogin : d.btnSubmitRegister;
   }
 }
 
@@ -1295,35 +1992,31 @@ async function loginUser(email, password) {
   if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
     const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      showAuthMsg(error.message === 'Invalid login credentials' ? 'Ungültige Anmeldedaten.' : error.message);
+      showAuthMsg(error.message === 'Invalid login credentials' ? (state.currentLang === 'de' ? 'Ungültige Anmeldedaten.' : 'Invalid login credentials.') : error.message);
       return;
     }
     state.user = data.user;
     state.authEmail = data.user.email;
     await syncProfileFromDB();
-    toast('Erfolgreich angemeldet!');
+    toast(state.currentLang === 'de' ? 'Erfolgreich angemeldet!' : 'Signed in successfully!');
     updateAccountUI();
     dom.authEmail.value = '';
     dom.authPassword.value = '';
   } else {
+    // Lokale Simulation
     state.authEmail = email;
     localStorage.setItem('swapdoku_auth_email', email);
     const saved = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
-    if (saved[email]) {
-      state.profile.username = saved[email].username || state.profile.username;
-      state.profile.sync_points = saved[email].sync_points ?? state.profile.sync_points;
-      state.profile.active_theme = saved[email].active_theme || state.profile.active_theme;
-    } else {
+    if (!saved[email]) {
       saved[email] = {
         username: state.profile.username,
-        sync_points: state.profile.sync_points,
         active_theme: state.profile.active_theme
       };
       localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(saved));
+    } else {
+      state.profile = { ...state.profile, ...saved[email] };
     }
-    setTheme(state.profile.active_theme);
-    updatePointsDisplay();
-    toast('Erfolgreich angemeldet!');
+    toast(state.currentLang === 'de' ? 'Erfolgreich angemeldet!' : 'Signed in successfully!');
     updateAccountUI();
     dom.authEmail.value = '';
     dom.authPassword.value = '';
@@ -1337,14 +2030,9 @@ async function registerUser(email, password) {
       showAuthMsg(error.message);
       return;
     }
-    if (data.session) {
-      state.user = data.session.user;
-      state.authEmail = data.user.email;
-      await syncProfileFromDB();
-      toast('Konto erfolgreich erstellt!');
-    } else {
-      showAuthMsg('Konto erstellt! Bitte Bestätigungs-E-Mail prüfen falls aktiviert.', 'success');
-    }
+    state.user = data.user;
+    state.authEmail = data.user.email;
+    toast(state.currentLang === 'de' ? 'Konto erfolgreich registriert!' : 'Account registered successfully!');
     updateAccountUI();
     dom.authEmail.value = '';
     dom.authPassword.value = '';
@@ -1354,11 +2042,10 @@ async function registerUser(email, password) {
     const saved = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
     saved[email] = {
       username: state.profile.username,
-      sync_points: state.profile.sync_points,
       active_theme: state.profile.active_theme
     };
     localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(saved));
-    toast('Konto erfolgreich erstellt!');
+    toast(state.currentLang === 'de' ? 'Konto erfolgreich erstellt!' : 'Account created successfully!');
     updateAccountUI();
     dom.authEmail.value = '';
     dom.authPassword.value = '';
@@ -1367,93 +2054,37 @@ async function registerUser(email, password) {
 
 async function logoutUser() {
   if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
-    try {
-      await state.supabase.auth.signOut();
-    } catch (_) {}
+    try { await state.supabase.auth.signOut(); } catch (_) {}
   }
   state.user = null;
   state.authEmail = null;
   localStorage.removeItem('swapdoku_auth_email');
-  toast('Erfolgreich abgemeldet');
+  toast(state.currentLang === 'de' ? 'Erfolgreich abgemeldet' : 'Logged out successfully');
   updateAccountUI();
 }
 
 async function saveUsername() {
   const newName = dom.usernameInput.value.trim();
   if (!newName) {
-    toast('Name darf nicht leer sein');
+    toast(state.currentLang === 'de' ? 'Name darf nicht leer sein' : 'Name cannot be empty');
     return;
   }
 
   state.profile.username = newName;
   saveLocalState();
-  toast('Spielername gespeichert');
+  toast(state.currentLang === 'de' ? 'Spielername gespeichert' : 'Player name saved');
 
   if (!state.isOffline && state.supabase && state.user) {
     try {
       await state.supabase.from('profiles').update({ username: newName }).eq('id', state.user.id);
     } catch (_) {}
   }
-  await loadLeaderboardData();
+  renderLeaderboard();
 }
 
-async function loadLeaderboardData() {
-  dom.leaderboardBody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted)">Lade Rangliste...</td></tr>';
-
-  let list = [];
-
-  if (!state.isOffline && state.supabase) {
-    try {
-      const { data, error } = await state.supabase
-        .from('profiles')
-        .select('id, username, sync_points')
-        .order('sync_points', { ascending: false })
-        .limit(20);
-
-      if (!error && data) {
-        list = data;
-      }
-    } catch (_) {}
-  }
-
-  // Lokale Daten ergänzen falls leer
-  if (list.length === 0) {
-    list = [
-      { id: 'bot-1', username: 'SudokuMaster', sync_points: 350 },
-      { id: 'bot-2', username: 'ZenSeeker', sync_points: 225 },
-      { id: state.user?.id || 'local-me', username: state.profile.username, sync_points: state.profile.sync_points },
-      { id: 'bot-3', username: 'NordicSolver', sync_points: 100 },
-      { id: 'bot-4', username: 'GridRunner', sync_points: 50 }
-    ];
-  }
-
-  const currentUserId = state.user?.id || 'local-me';
-  let myRank = '-';
-
-  list.sort((a, b) => b.sync_points - a.sync_points);
-
-  dom.leaderboardBody.innerHTML = '';
-  list.forEach((entry, idx) => {
-    const isMe = entry.id === currentUserId || entry.username === state.profile.username;
-    const rank = idx + 1;
-    if (isMe) myRank = rank;
-
-    const tr = document.createElement('tr');
-    if (isMe) tr.className = 'my-row';
-    tr.innerHTML = `
-      <td>#${rank}</td>
-      <td>${entry.username || 'Spieler'} ${isMe ? '(Du)' : ''}</td>
-      <td style="text-align: right;">${entry.sync_points}</td>
-    `;
-    dom.leaderboardBody.appendChild(tr);
-  });
-
-  dom.myRankInfo.innerHTML = `Dein Rang: <strong>Platz ${myRank}</strong> &bull; Punkte: <strong>${state.profile.sync_points}</strong>`;
-}
-
-// -----------------------------------------------------------------------------
-// THEMES & DARK/LIGHT TOGGLE
-// -----------------------------------------------------------------------------
+// =============================================================================
+// THEMES & KOSTENLOSER THEME SHOP
+// =============================================================================
 function setTheme(id) {
   dom.root.setAttribute('data-theme', id);
   updateThemeToggleIcon(id);
@@ -1472,18 +2103,18 @@ function updateThemeToggleIcon(themeId) {
 }
 
 function renderThemeShop() {
+  const d = I18N[state.currentLang] || I18N.de;
   dom.themesList.innerHTML = '';
+
   THEMES.forEach(t => {
-    const isOwned = state.profile.unlocked_themes.includes(t.id);
     const isActive = state.profile.active_theme === t.id;
-    const canAfford = state.profile.sync_points >= t.cost;
 
     const row = document.createElement('div');
     row.className = 'theme-row';
     row.innerHTML = `
       <div>
         <div class="theme-name">${t.name}</div>
-        <div class="theme-price">${t.cost === 0 ? 'Standard' : t.cost + ' Pts'}</div>
+        <div class="theme-price">${d.themeFree}</div>
       </div>
     `;
 
@@ -1491,15 +2122,11 @@ function renderThemeShop() {
     btn.className = 'btn';
 
     if (isActive) {
-      btn.textContent = 'Aktiv';
+      btn.textContent = d.themeActive;
       btn.disabled = true;
-    } else if (isOwned) {
-      btn.textContent = 'Aktivieren';
-      btn.onclick = () => activateTheme(t.id);
     } else {
-      btn.textContent = 'Kaufen';
-      btn.disabled = !canAfford;
-      btn.onclick = () => buyTheme(t.id, t.cost);
+      btn.textContent = d.themeSelect;
+      btn.onclick = () => activateTheme(t.id);
     }
 
     row.appendChild(btn);
@@ -1512,50 +2139,38 @@ function activateTheme(id) {
   setTheme(id);
   saveLocalState();
   renderThemeShop();
-  updatePointsDisplay();
+  updateAccountUI();
+  toast(`${t('toastThemeApplied')}: ${id}`);
 
   if (!state.isOffline && state.supabase && state.user) {
     state.supabase.from('profiles').update({ active_theme: id }).eq('id', state.user.id);
   }
 }
 
-async function buyTheme(id, cost) {
-  if (state.profile.sync_points < cost) return;
-
-  state.profile.sync_points -= cost;
-  state.profile.unlocked_themes.push(id);
-  state.profile.active_theme = id;
-  setTheme(id);
-  updatePointsDisplay();
-  saveLocalState();
-  renderThemeShop();
-  toast(`${id} freigeschaltet`);
-
-  if (!state.isOffline && state.supabase && state.user) {
-    try {
-      await state.supabase.rpc('purchase_theme', { theme_name: id, cost });
-    } catch (_) {}
-  }
-}
-
-// -----------------------------------------------------------------------------
+// =============================================================================
 // UI & TASTATUR EVENTS
-// -----------------------------------------------------------------------------
+// =============================================================================
 function bindEvents() {
+  // Sprachwechsel DE / EN
+  dom.langToggleBtn.addEventListener('click', toggleLanguage);
+
   // Audio Toggle
   dom.audioToggleBtn.addEventListener('click', toggleAmbientSound);
 
   // Theme Toggle (Hell/Dunkel)
   dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
 
-  // Rangliste
+  // Rangliste Modal
   dom.openLeaderboardBtn.addEventListener('click', openLeaderboard);
   dom.closeLeaderboardBtn.addEventListener('click', closeLeaderboard);
   dom.leaderboardModal.addEventListener('click', e => {
     if (e.target === dom.leaderboardModal) closeLeaderboard();
   });
+  dom.leadTabEasy.addEventListener('click', () => switchLeaderboardTab('easy'));
+  dom.leadTabMedium.addEventListener('click', () => switchLeaderboardTab('medium'));
+  dom.leadTabHard.addEventListener('click', () => switchLeaderboardTab('hard'));
 
-  // Pause Steuerung
+  // Pause & Play Steuerung
   if (dom.btnPauseGame) dom.btnPauseGame.addEventListener('click', togglePause);
   if (dom.btnResumeGame) dom.btnResumeGame.addEventListener('click', resumeGame);
 
@@ -1610,15 +2225,23 @@ function bindEvents() {
   dom.zenDiffMedium.addEventListener('click', () => setZenDifficulty('medium'));
   dom.zenDiffHard.addEventListener('click', () => setZenDifficulty('hard'));
 
+  // Versus Rätsel-Schwierigkeit
+  dom.versusDiffEasy.addEventListener('click', () => setVersusDifficulty('easy'));
+  dom.versusDiffMedium.addEventListener('click', () => setVersusDifficulty('medium'));
+  dom.versusDiffHard.addEventListener('click', () => setVersusDifficulty('hard'));
+
   // Online vs Bot Umschalter
   dom.btnPlayOnline.addEventListener('click', () => setOpponentType('online'));
   dom.btnPlayBot.addEventListener('click', () => setOpponentType('bot'));
 
-  // Bot-Schwierigkeitsgrade & Start Button
+  // Bot-Geschwindigkeit & Start Button
   dom.diffEasy.addEventListener('click', () => setBotDifficulty('easy'));
   dom.diffMedium.addEventListener('click', () => setBotDifficulty('medium'));
   dom.diffHard.addEventListener('click', () => setBotDifficulty('hard'));
-  dom.btnStartBotGame.addEventListener('click', startBotMatch);
+  dom.btnStartBotGame.addEventListener('click', () => {
+    ensureGameStarted();
+    startBotMatch();
+  });
 
   // Raum-Lobby
   dom.createRoom.addEventListener('click', createRoom);
@@ -1627,23 +2250,26 @@ function bindEvents() {
     if (e.key === 'Enter') joinRoom(dom.roomInput.value.trim());
   });
 
-  // Spielsteuerung
+  // Spielsteuerung (Toolbar)
   dom.btnErase.addEventListener('click', clearCell);
   dom.btnNewGame.addEventListener('click', () => startNewGame());
   dom.btnNotes.addEventListener('click', () => {
+    ensureGameStarted();
     state.notesActive = !state.notesActive;
     dom.btnNotes.classList.toggle('active', state.notesActive);
-    dom.btnNotes.textContent = `Notizen: ${state.notesActive ? 'An' : 'Aus'}`;
+    const d = I18N[state.currentLang] || I18N.de;
+    dom.btnNotes.textContent = state.notesActive ? d.notesOn : d.notesOff;
   });
 
+  // Numpad Klicks
   dom.numpad.addEventListener('click', e => {
     const btn = e.target.closest('.num');
     if (!btn || btn.classList.contains('completed')) return;
     handleNumberInput(parseInt(btn.dataset.num, 10));
   });
 
+  // Tastatursteuerung
   window.addEventListener('keydown', e => {
-    // Wenn der Nutzer in einem Textfeld tippt, Tastenkürzel ignorieren
     if (['input', 'textarea'].includes(document.activeElement?.tagName?.toLowerCase())) return;
 
     if (state.isPaused) {
@@ -1656,7 +2282,7 @@ function bindEvents() {
 
     if (e.key.toLowerCase() === 'p') {
       e.preventDefault();
-      pauseGame();
+      togglePause();
       return;
     }
 
@@ -1671,6 +2297,7 @@ function bindEvents() {
     }
   });
 
+  // Theme Modal
   dom.openShop.addEventListener('click', () => {
     renderThemeShop();
     dom.shopModal.classList.remove('hidden');
@@ -1712,7 +2339,7 @@ function toast(msg) {
   dom.toast.textContent = msg;
   dom.toast.classList.remove('hidden');
   clearTimeout(dom.toast._t);
-  dom.toast._t = setTimeout(() => dom.toast.classList.add('hidden'), 2200);
+  dom.toast._t = setTimeout(() => dom.toast.classList.add('hidden'), 2400);
 }
 
 window.addEventListener('DOMContentLoaded', init);

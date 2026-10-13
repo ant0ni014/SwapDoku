@@ -20,8 +20,12 @@
         <h1>SwapDoku</h1>
       </div>
       <div class="header-actions">
+        <!-- Sprachauswahl: Deutsch / English -->
+        <button class="pill-btn lang-btn" id="langToggleBtn" title="Sprache wechseln / Switch Language" aria-label="Sprache">
+          <span id="langLabel">EN</span>
+        </button>
         <!-- Ambient Sound / Musik Button -->
-        <button class="icon-toggle" id="audioToggleBtn" title="Ambient-Sound an/aus" aria-label="Entspannte Musik">
+        <button class="icon-toggle" id="audioToggleBtn" title="Lofi Ambient-Musik an/aus" aria-label="Entspannte Musik">
           <span id="audioToggleIcon">♪</span>
         </button>
         <!-- Schneller Dark-/Light-Mode Umschalter -->
@@ -39,10 +43,10 @@
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
         </button>
-        <!-- Punkte-Pill mit Punktesymbol -->
-        <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
-          <span class="pts-icon">✦</span>
-          <span class="pts-val" id="userPoints">0</span> Pts
+        <!-- Themes-Button (Kostenlos für alle) -->
+        <button class="pill-btn" id="openShopBtn" title="Themes & Farben" aria-label="Themes">
+          <span class="pts-icon">🎨</span>
+          <span id="themeBtnText">Themes</span>
         </button>
       </div>
     </header>
@@ -55,19 +59,19 @@
         <!-- Info / HUD (Zentrierte Sterne, Zeit-Stoppuhr, Pause-Button, Versus-Progress) -->
         <div class="hud" id="gameHud">
           <div class="hud-main-row">
-            <!-- Sterne / Fehler-Anzeige -->
+            <!-- Sterne / Fehler-Anzeige (Lebenszeichen) -->
             <div class="stars-wrap" id="heartsWrap" title="Verbleibende Versuche">
-              <span class="stars-icons" id="heartsDisplay">★★★</span>
+              <span class="stars-icons" id="heartsDisplay">✦✦✦</span>
             </div>
 
-            <!-- Laufzeit-Timer & Pausieren-Button -->
+            <!-- Laufzeit-Timer & Play/Pause-Button -->
             <div class="timer-pause-group">
               <div class="game-timer-wrap" id="gameTimerWrap" title="Spielzeit">
                 <span class="timer-icon">⏱</span>
                 <span id="gameTimerDisplay">00:00</span>
               </div>
-              <button class="icon-toggle pause-btn" id="btnPauseGame" title="Spiel pausieren (P)" aria-label="Spiel pausieren">
-                <span id="pauseBtnIcon">⏸</span>
+              <button class="icon-toggle pause-btn" id="btnPauseGame" title="Starten / Pausieren (P)" aria-label="Spiel starten / pausieren">
+                <span id="pauseBtnIcon">▶</span>
               </button>
             </div>
           </div>
@@ -75,7 +79,7 @@
           <!-- Versus Progress (Nur im Versus-Modus) -->
           <div class="versus-wrap hidden" id="versusBars">
             <div class="bar-row">
-              <span>Du</span>
+              <span id="playerLabelText">Du</span>
               <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
               <span class="bar-pct" id="playerProgressLabel">0%</span>
             </div>
@@ -86,8 +90,9 @@
             </div>
           </div>
 
-          <!-- Swap Countdown Timer (Nur im Co-Op Swap) -->
+          <!-- Swap Countdown Timer (Nur im Co-Op Swap mit farblicher Board-Anzeige) -->
           <div class="swap-wrap hidden" id="swapTimerBox">
+            <span class="board-badge badge-blue" id="swapBoardBadge">Board A</span>
             <span id="swapPartnerLabel">Swap in</span>
             <strong id="swapTimer">10s</strong>
           </div>
@@ -102,8 +107,8 @@
             <div class="pause-overlay hidden" id="pauseOverlay">
               <div class="pause-card">
                 <div class="pause-icon">⏸</div>
-                <h3>Spiel pausiert</h3>
-                <p>Die Zeit ist angehalten.</p>
+                <h3 id="pauseOverlayTitle">Spiel pausiert</h3>
+                <p id="pauseOverlayDesc">Die Zeit ist angehalten.</p>
                 <button class="btn btn-primary" id="btnResumeGame">Fortsetzen</button>
               </div>
             </div>
@@ -130,9 +135,9 @@
           <section class="zen-bar" id="zenDifficultyBar">
             <div class="zen-diff-row">
               <div class="diff-buttons">
-                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ★)</button>
-                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ★)</button>
-                <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ★)</button>
+                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ✦)</button>
+                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ✦)</button>
+                <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ✦)</button>
               </div>
             </div>
           </section>
@@ -166,8 +171,18 @@
 
             <!-- Bot Bereich -->
             <div class="bot-box hidden" id="botSection">
+              <!-- Rätsel-Schwierigkeitsgrad im Versus/Bot-Modus -->
               <div class="bot-difficulty-row">
-                <span class="diff-label">Bot-Stufe:</span>
+                <span class="diff-label" id="versusDiffLabel">Rätsel:</span>
+                <div class="diff-buttons">
+                  <button class="diff-btn" data-diff="easy" id="versusDiffEasy">Einfach</button>
+                  <button class="diff-btn active" data-diff="medium" id="versusDiffMedium">Mittel</button>
+                  <button class="diff-btn" data-diff="hard" id="versusDiffHard">Schwer</button>
+                </div>
+              </div>
+              <!-- Bot-Geschwindigkeit -->
+              <div class="bot-difficulty-row">
+                <span class="diff-label" id="botSpeedLabel">Bot-Stufe:</span>
                 <div class="diff-buttons">
                   <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
                   <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
@@ -239,19 +254,25 @@
   <div class="modal hidden" id="leaderboardModal">
     <div class="modal-card">
       <div class="modal-top">
-        <h2>Rangliste</h2>
+        <h2 id="leadModalTitle">Rangliste</h2>
         <button class="close-btn" id="closeLeaderboardBtn">&times;</button>
       </div>
+      <!-- Schwierigkeitsgrad Tabs zum Filtern -->
+      <div class="leaderboard-tabs">
+        <button class="lead-tab-btn active" data-diff="easy" id="leadTabEasy">Einfach</button>
+        <button class="lead-tab-btn" data-diff="medium" id="leadTabMedium">Mittel</button>
+        <button class="lead-tab-btn" data-diff="hard" id="leadTabHard">Schwer</button>
+      </div>
       <div class="my-rank-info" id="myRankInfo">
-        Dein Rang: <strong>Lädt...</strong> &bull; Punkte: <strong id="myRankPoints">0</strong>
+        <span id="myRankLabel">Deine Bestzeit:</span> <strong id="myRankTime">--:--</strong>
       </div>
       <div class="leaderboard-table-wrap">
         <table class="leaderboard-table">
           <thead>
             <tr>
-              <th>Rang</th>
-              <th>Spieler</th>
-              <th style="text-align: right;">Punkte</th>
+              <th id="thRank">Rang</th>
+              <th id="thPlayer">Spieler</th>
+              <th id="thBestTime" style="text-align: right;">Beste Zeit</th>
             </tr>
           </thead>
           <tbody id="leaderboardBody">
@@ -266,7 +287,7 @@
   <div class="modal hidden" id="accountModal">
     <div class="modal-card account-card">
       <div class="modal-top">
-        <h2>Account & Profil</h2>
+        <h2 id="accountModalTitle">Account & Profil</h2>
         <button class="close-btn" id="closeAccountBtn">&times;</button>
       </div>
       <div class="account-body">
@@ -274,7 +295,7 @@
         <!-- Spieler-Profil Übersicht -->
         <div class="account-profile-box">
           <div class="account-row">
-            <label for="usernameInput" class="profile-label">Spielername:</label>
+            <label for="usernameInput" class="profile-label" id="usernameLabel">Spielername:</label>
             <div class="name-edit-row">
               <input type="text" id="usernameInput" maxlength="16" placeholder="Dein Spielername" spellcheck="false">
               <button class="btn" id="btnSaveUsername">Speichern</button>
@@ -282,15 +303,15 @@
           </div>
           <div class="account-stats">
             <div class="stat-item">
-              <span class="stat-label">Sync-Points</span>
-              <span class="stat-val" id="accountPointsVal">0</span>
+              <span class="stat-label" id="accountBestTimeLabel">Bestzeit (Mittel)</span>
+              <span class="stat-val" id="accountBestTimeVal">--:--</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Aktives Theme</span>
+              <span class="stat-label" id="accountThemeLabel">Aktives Theme</span>
               <span class="stat-val" id="accountThemeVal">Nordic Light</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Status</span>
+              <span class="stat-label" id="accountStatusLabel">Status</span>
               <span class="stat-val" id="accountAuthStatus">Gast</span>
             </div>
           </div>
