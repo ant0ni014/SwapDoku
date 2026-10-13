@@ -102,22 +102,23 @@ body {
 
 .app {
   width: 100%;
-  max-width: min(450px, 50vh, 94vw);
+  max-width: 920px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   align-items: center;
 }
 
-/* Header: Bündig ausgerichtet an den Außenkanten des Sudoku-Boards */
+/* Header oben über die gesamte Breite */
 .header {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0;
-  min-height: 34px;
+  padding: 0 0 10px 0;
+  border-bottom: 1px solid var(--border);
+  min-height: 36px;
 }
 
 .brand {
@@ -126,7 +127,7 @@ body {
 }
 
 .brand h1 {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -136,7 +137,7 @@ body {
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
 }
 
 .icon-toggle {
@@ -152,6 +153,12 @@ body {
   cursor: pointer;
   font-size: 0.88rem;
   transition: border-color 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+}
+
+.icon-toggle svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .icon-toggle:hover {
@@ -192,12 +199,40 @@ body {
   opacity: 0.85;
 }
 
-/* Spieloptionen: Untereinander angeordnet über dem Spielfeld */
+/* Hauptbereich: 2-Spalten-Layout (Links Board, Rechts Modi & Zahlen) */
+.main-content {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.board-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-column {
+  width: 320px;
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 36px; /* Bündig mit der Oberkante des Sudoku-Boards */
+}
+
+/* Spieloptionen */
 .game-options {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 /* Modi-Tabs mit Regel-Hilfe */
@@ -465,6 +500,7 @@ body {
   flex-direction: column;
   gap: 4px;
   width: 100%;
+  max-width: min(520px, 70vh);
 }
 
 .hud-main-row {
@@ -575,7 +611,8 @@ body {
 
 .grid-container {
   position: relative;
-  width: 100%;
+  width: min(520px, 70vh);
+  height: min(520px, 70vh);
   aspect-ratio: 1 / 1;
   display: flex;
   justify-content: center;
@@ -686,7 +723,7 @@ body {
 
 /* Zell-Inhalte */
 .cell .val {
-  font-size: clamp(1.2rem, 4.4vh, 1.7rem);
+  font-size: clamp(1.35rem, 4.6vh, 2rem);
   font-weight: 500;
   color: var(--user-val);
   line-height: 1;
@@ -740,13 +777,12 @@ body {
   line-height: 1;
 }
 
-/* Controls: Toolbar & Ziffernleiste direkt unter dem Board */
+/* Controls: Toolbar & Ziffernblock rechts unter den Modi */
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
-  margin-top: 6px;
 }
 
 .toolbar {
@@ -760,7 +796,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 34px;
+  height: 36px;
   padding: 0 4px;
   font-size: 0.78rem;
   font-weight: 500;
@@ -784,21 +820,21 @@ body {
   border-color: var(--text);
 }
 
-/* 1-reihiges Zahlenfeld: kein Taschenrechner-Look, ausgewogene 8px Radien, kein Vibecoding */
+/* Zahlenblock rechts: 3 Spalten passend zur 3er-Toolbar */
 .numpad {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
   width: 100%;
 }
 
 .num {
-  height: 42px;
+  height: 48px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
   font-family: inherit;
-  font-size: 1.18rem;
+  font-size: 1.25rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
@@ -830,15 +866,17 @@ body {
   transform: none;
 }
 
-/* Footer: Impressum & Datenschutz */
+/* Footer: Impressum & Datenschutz ganz unten */
 .app-footer {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   color: var(--muted);
-  padding-top: 4px;
+  padding: 16px 0 6px 0;
+  border-top: 1px solid var(--border);
 }
 
 .app-footer a {
@@ -856,65 +894,75 @@ body {
 }
 
 /* =============================================================================
-   RESPONSIVE DESIGN: VIEWPORT-FITTING FÜR LAPTOP & MOBILE
+   RESPONSIVE DESIGN: 2-SPALTEN DESKTOP & FLÜSSIGER MOBILE STACK
    ============================================================================= */
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
   body {
-    padding: 4px 8px;
+    padding: 6px 10px;
   }
 
   .app {
-    gap: 4px;
-    max-width: 100%;
+    max-width: 480px;
+    gap: 8px;
   }
 
-  .brand h1 {
-    font-size: 1.15rem;
-  }
-
-  .header-actions {
-    gap: 4px;
-  }
-
-  .icon-toggle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.8rem;
-  }
-
-  .pill-btn {
-    height: 28px;
-    padding: 0 7px;
-    font-size: 0.72rem;
-  }
-
-  .modes {
+  .main-content {
+    flex-direction: column;
+    align-items: center;
     gap: 10px;
   }
 
-  .mode-btn {
-    font-size: 0.78rem;
-    padding: 5px 0;
+  .sidebar-column {
+    display: contents;
   }
 
-  .diff-btn {
-    padding: 5px 4px;
-    font-size: 0.7rem;
+  .game-options {
+    order: 1;
+    width: 100%;
+    max-width: min(440px, 94vw);
   }
 
-  .tool-btn {
-    height: 30px;
-    font-size: 0.72rem;
+  .board-column {
+    order: 2;
+    width: 100%;
+    align-items: center;
   }
 
+  .grid-container {
+    width: min(440px, 50vh);
+    height: min(440px, 50vh);
+  }
+
+  .hud {
+    max-width: min(440px, 50vh);
+  }
+
+  .controls {
+    order: 3;
+    width: 100%;
+    max-width: min(440px, 94vw);
+  }
+
+  /* Auf Mobile: 1x9 Zahlenreihe für schnelle Daumenbedienung */
   .numpad {
-    gap: 3px;
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
   }
 
   .num {
-    height: 36px;
-    font-size: 1.05rem;
+    height: 38px;
+    font-size: 1.08rem;
+  }
+
+  .tool-btn {
+    height: 32px;
+    font-size: 0.74rem;
+  }
+
+  .app-footer {
+    order: 4;
+    padding-top: 10px;
   }
 }
 
