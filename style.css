@@ -12,7 +12,7 @@
   --accent: #18181b;
   --select: #e4e4e7;
   --select-border: #18181b;
-  --highlight: #f4f4f5;
+  --highlight: #f0f0f4;      /* Deutlich sichtbare, elegante graue Streifen für Zeile & Spalte */
   --user-val: #0284c7;
   --err-bg: #fee2e2;
   --err-text: #dc2626;
@@ -27,9 +27,9 @@
   --border: #3f3f46;         /* Hellere, klar sichtbare Trennlinien */
   --border-strong: #71717a;  /* Starker Kontrast für 3x3 Blöcke */
   --accent: #fafafa;
-  --select: #1e293b;
+  --select: #2a2a32;
   --select-border: #38bdf8;
-  --highlight: #222226;      /* Sanftes Highlight, Trennlinien bleiben exzellent sichtbar */
+  --highlight: #232328;      /* Deutlich sichtbare graue Streifen im Dark Mode, Trennlinien bleiben perfekt sichtbar */
   --user-val: #38bdf8;
   --err-bg: #450a0a;
   --err-text: #f87171;
@@ -745,6 +745,7 @@ body {
   border-right: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   cursor: pointer;
+  transition: background-color 0.1s ease;
 }
 
 .cell:nth-child(3n) {
@@ -786,9 +787,20 @@ body {
   color: var(--text);
 }
 
-/* Kreuz-Hervorhebung (Zeile, Spalte, Box) */
+/* Kreuz-Hervorhebung (Horizontale & vertikale graue Streifen + 3x3 Block) */
+.cell.highlight,
 .cell.highlighted {
   background-color: var(--highlight);
+}
+
+/* Gleiche Ziffer auf dem gesamten Spielfeld hervorheben */
+.cell.same-num {
+  background-color: var(--select);
+}
+
+.cell.same-num .val {
+  font-weight: 700;
+  color: var(--text);
 }
 
 .cell.error {

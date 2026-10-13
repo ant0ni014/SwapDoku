@@ -1278,7 +1278,7 @@ function render() {
       }
     }
 
-    // Zeilen-, Spalten- und Block-Highlight
+    // Zeilen-, Spalten- und Block-Highlight (Horizontale & vertikale graue Streifen)
     if (state.selectedIndex !== null && state.selectedIndex !== i) {
       const selR = Math.floor(state.selectedIndex / 9);
       const selC = state.selectedIndex % 9;
@@ -1288,11 +1288,15 @@ function render() {
       const c = i % 9;
       const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
 
-      const selVal = state.currentBoard[state.selectedIndex];
-      if (val !== 0 && val === selVal) {
-        cell.classList.add('same-num');
-      } else if (selR === r || selC === c || selB === b) {
+      // Horizontale und vertikale graue Streifen + 3x3 Block
+      if (selR === r || selC === c || selB === b) {
         cell.classList.add('highlight');
+      }
+
+      // Gleiche Ziffer auf dem gesamten Spielfeld hervorheben
+      const selVal = state.currentBoard[state.selectedIndex];
+      if (selVal !== 0 && val === selVal) {
+        cell.classList.add('same-num');
       }
     }
   }
