@@ -1,11 +1,8 @@
-/* -----------------------------------------------------------------------------
-   SwapDoku: Skandinavischer Minimalismus
-   Keine Effekthascherei, klare Linien, dezente Akzente, pure Typografie.
-   Großzügiges, cleanes Design, optimiert für Laptop & Desktop ohne Scrollen.
------------------------------------------------------------------------------ */
+/* =============================================================================
+   SwapDoku — Scandinavian Minimalist Design & Responsive 2-Column Engine
+   ============================================================================= */
 
-:root,
-[data-theme="nordic-light"] {
+:root {
   --bg: #fafafa;
   --surface: #ffffff;
   --text: #18181b;
@@ -13,10 +10,10 @@
   --border: #e4e4e7;
   --border-strong: #27272a;
   --accent: #18181b;
-  --select: #e0e7ff;
-  --select-border: #4f46e5;
-  --highlight: #f1f5f9;
-  --user-val: #09090b;
+  --select: #e4e4e7;
+  --select-border: #18181b;
+  --highlight: #f4f4f5;
+  --user-val: #0284c7;
   --err-bg: #fee2e2;
   --err-text: #dc2626;
   --num-completed: #e4e4e7;
@@ -105,22 +102,23 @@ body {
 
 .app {
   width: 100%;
-  max-width: 500px;
+  max-width: 960px;
   max-height: 98vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 /* Header: Großzügiger, klar und aufgeräumt */
 .header {
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .brand h1 {
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 600;
   letter-spacing: -0.03em;
 }
@@ -182,7 +180,7 @@ body {
 
 .modes {
   display: flex;
-  gap: 18px;
+  gap: 16px;
 }
 
 .mode-btn {
@@ -223,7 +221,7 @@ body {
   border-color: var(--border-strong);
 }
 
-/* Zen Bar (Zentriert) */
+/* Zen Bar (Schwierigkeitsgrade) */
 .zen-bar {
   display: flex;
   justify-content: center;
@@ -234,6 +232,32 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+}
+
+.diff-buttons {
+  display: flex;
+  gap: 4px;
+  width: 100%;
+}
+
+.diff-btn {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: 4px;
+  padding: 5px 6px;
+  font-size: 0.74rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+}
+
+.diff-btn.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
 }
 
 /* Lobby */
@@ -249,78 +273,24 @@ body {
 
 .lobby-switch {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 6px;
+  padding-bottom: 4px;
 }
 
 .sub-tab {
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 0.72rem;
+  border: none;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
+  padding: 3px 6px;
   cursor: pointer;
 }
 
 .sub-tab.active {
-  background: var(--bg);
-  border-color: var(--border);
   color: var(--text);
-}
-
-.online-box {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.bot-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 2px 0;
-}
-
-.bot-difficulty-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.bot-start-row {
-  display: flex;
-  align-items: center;
-}
-
-.diff-label {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-.diff-buttons {
-  display: flex;
-  gap: 4px;
-}
-
-.diff-btn {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--muted);
-  border-radius: 4px;
-  padding: 4px 10px;
-  font-size: 0.74rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.diff-btn.active {
-  background: var(--text);
-  color: var(--bg);
-  border-color: var(--text);
+  font-weight: 600;
 }
 
 .lobby-row {
@@ -384,6 +354,41 @@ body {
   opacity: 0.9;
 }
 
+.btn-secondary {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.bot-difficulty-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.diff-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.bot-start-row {
+  display: flex;
+  margin-top: 2px;
+}
+
+.bot-start-row .btn {
+  width: 100%;
+}
+
 .lobby-info {
   display: flex;
   justify-content: space-between;
@@ -408,14 +413,21 @@ body {
 .dot.connected { background: #10b981; }
 .dot.connecting { background: #f59e0b; }
 
-/* HUD (Zentrierte Sterne & Timer) */
+/* HUD (Sterne, Timer, Pause & Progress) */
 .hud {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.hud-main-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 20px;
-  padding: 0 4px;
+  width: 100%;
+  min-height: 26px;
+  padding: 0 2px;
 }
 
 .stars-wrap {
@@ -427,17 +439,29 @@ body {
   color: var(--text);
 }
 
+.timer-pause-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .game-timer-wrap {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--muted);
 }
 
+.pause-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 0.75rem;
+}
+
 .versus-wrap {
-  flex: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -496,24 +520,31 @@ body {
   font-size: 0.8rem;
 }
 
-/* 9x9 Grid */
+/* 9x9 Grid & Pause Overlay */
 .grid-wrap {
   width: 100%;
   display: flex;
   justify-content: center;
 }
 
+.grid-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .sudoku-grid {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   grid-template-rows: repeat(9, 1fr);
-  width: min(470px, 54vh);
-  height: min(470px, 54vh);
+  width: 100%;
+  height: 100%;
   aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 2px solid var(--border-strong);
   user-select: none;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease, filter 0.25s ease;
 }
 
 .sudoku-grid.swapping {
@@ -521,6 +552,62 @@ body {
   transform: scale(0.96);
 }
 
+.sudoku-grid.paused {
+  filter: blur(8px);
+  opacity: 0.2;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Pause Overlay */
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  border-radius: 4px;
+}
+
+.pause-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 24px 30px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pause-icon {
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--text);
+}
+
+.pause-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.pause-card p {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.pause-card .btn {
+  padding: 7px 18px;
+  font-size: 0.85rem;
+}
+
+/* Sudoku Zellen */
 .cell {
   position: relative;
   display: flex;
@@ -548,7 +635,7 @@ body {
 
 /* Zell-Inhalte */
 .cell .val {
-  font-size: clamp(1.15rem, 4.2vh, 1.6rem);
+  font-size: clamp(1.2rem, 4.4vh, 1.7rem);
   font-weight: 500;
   color: var(--user-val);
   line-height: 1;
@@ -602,11 +689,11 @@ body {
   line-height: 1;
 }
 
-/* Controls */
+/* Controls: Toolbar & Numpad */
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .toolbar {
@@ -624,6 +711,7 @@ body {
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
+  text-align: center;
 }
 
 .tool-btn.active {
@@ -634,22 +722,20 @@ body {
 
 .numpad {
   display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 5px;
+  gap: 6px;
 }
 
 .num {
-  aspect-ratio: 1 / 1;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
-  font-size: 1.15rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background-color 0.1s ease, border-color 0.1s ease;
 }
 
 .num:hover, .num:active {
@@ -673,7 +759,7 @@ body {
   gap: 8px;
   font-size: 0.68rem;
   color: var(--muted);
-  padding-top: 2px;
+  padding-top: 4px;
 }
 
 .app-footer a {
@@ -690,7 +776,155 @@ body {
   opacity: 0.5;
 }
 
-/* Modals */
+/* =============================================================================
+   RESPONSIVE DESIGN: 2-SPALTEN-LAYOUT (DESKTOP/LAPTOP) VS 1-SPALTE (MOBILE)
+   ============================================================================= */
+
+@media (min-width: 768px) {
+  .app {
+    max-width: 920px;
+    gap: 14px;
+  }
+
+  .game-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    width: 100%;
+  }
+
+  .board-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+  }
+
+  .hud {
+    width: min(490px, 64vh);
+    max-width: min(490px, 64vh);
+  }
+
+  .grid-container {
+    width: min(490px, 64vh);
+    height: min(490px, 64vh);
+  }
+
+  .sidebar-section {
+    width: 320px;
+    max-width: 340px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meta-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .actions-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Auf Desktop: 3x3 Nummernblock für intuitive Bedienung */
+  .numpad {
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 8px;
+  }
+
+  .num {
+    height: 44px;
+    font-size: 1.25rem;
+    border-radius: 6px;
+  }
+
+  .tool-btn {
+    padding: 8px 0;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    padding: 4px 10px;
+  }
+
+  .app {
+    max-width: 480px;
+    gap: 6px;
+  }
+
+  .game-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+  }
+
+  /* Erlaubt direkte vertikale Ordnung auf Mobilgeräten */
+  .sidebar-section {
+    display: contents;
+  }
+
+  .meta-section {
+    order: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .board-section {
+    order: 2;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hud {
+    width: min(440px, 50vh);
+  }
+
+  .grid-container {
+    width: min(440px, 50vh);
+    height: min(440px, 50vh);
+  }
+
+  .actions-section {
+    order: 3;
+    width: 100%;
+    max-width: min(440px, 50vh);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Auf Mobile: 1x9 Zahlenreihe */
+  .numpad {
+    grid-template-columns: repeat(9, 1fr);
+    gap: 4px;
+  }
+
+  .num {
+    aspect-ratio: 1 / 1;
+    font-size: 1.1rem;
+  }
+}
+
+/* =============================================================================
+   MODALS: THEMES, LEADERBOARD, ACCOUNT & RECHTSTEXTE
+   ============================================================================= */
+
 .modal {
   position: fixed;
   inset: 0;
@@ -706,11 +940,11 @@ body {
 .modal-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   width: 100%;
   max-width: 410px;
   max-height: 85vh;
-  padding: 16px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -731,9 +965,14 @@ body {
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   color: var(--muted);
   cursor: pointer;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  color: var(--text);
 }
 
 .modal-content-text {
@@ -751,52 +990,15 @@ body {
   margin-bottom: 8px;
 }
 
-/* Account Modal */
-.account-body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.modal-content-text li {
+  margin-bottom: 4px;
 }
 
-.account-row {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.account-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 10px;
-  text-align: center;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.stat-label {
-  font-size: 0.68rem;
-  color: var(--muted);
-}
-
-.stat-val {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-/* Theme List */
+/* Theme Shop */
 .theme-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .theme-row {
@@ -820,32 +1022,6 @@ body {
 }
 
 /* Leaderboard */
-.profile-label {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-.name-edit-row {
-  display: flex;
-  gap: 6px;
-}
-
-.name-edit-row input {
-  flex: 1;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 5px 8px;
-  font-family: inherit;
-  font-size: 0.78rem;
-  color: var(--text);
-  outline: none;
-}
-
-.name-edit-row input:focus {
-  border-color: var(--border-strong);
-}
-
 .my-rank-info {
   font-size: 0.75rem;
   color: var(--text);
@@ -879,6 +1055,199 @@ body {
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Account & Authentifizierung */
+.account-card {
+  max-width: 440px;
+}
+
+.account-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.account-profile-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.name-edit-row {
+  display: flex;
+  gap: 6px;
+}
+
+.name-edit-row input {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  outline: none;
+}
+
+.name-edit-row input:focus {
+  border-color: var(--border-strong);
+}
+
+.account-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-val {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.account-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 2px 0;
+}
+
+/* Eingeloggt Box */
+.auth-logged-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.auth-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logged-label {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.logged-email {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Gast / Auth-Formular */
+.auth-guest-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-tab-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 6px 0;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: -1px;
+}
+
+.auth-tab-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--text);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auth-field label {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.auth-field input {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  color: var(--text);
+  outline: none;
+}
+
+.auth-field input:focus {
+  border-color: var(--border-strong);
+}
+
+.auth-msg {
+  font-size: 0.72rem;
+  padding: 6px 8px;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.auth-msg.error {
+  background: var(--err-bg);
+  color: var(--err-text);
+}
+
+.auth-msg.success {
+  background: #dcfce7;
+  color: #15803d;
 }
 
 /* Rechtstexte */

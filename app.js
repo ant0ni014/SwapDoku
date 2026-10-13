@@ -36,9 +36,14 @@ const state = {
   currentHearts: 3,
   isGameOver: false,
 
-  // Spielzeit-Timer
+  // Spielzeit-Timer & Pause
   gameSeconds: 0,
   gameTimerInterval: null,
+  isPaused: false,
+
+  // Auth & Benutzerkonto
+  authMode: 'login', // 'login' | 'register'
+  authEmail: null,
 
   // Ambient Audio
   audioPlaying: false,
@@ -253,11 +258,28 @@ const dom = {
   swapTimer: document.getElementById('swapTimer'),
   swapPartnerLabel: document.getElementById('swapPartnerLabel'),
   grid: document.getElementById('sudokuGrid'),
+  btnPauseGame: document.getElementById('btnPauseGame'),
+  pauseBtnIcon: document.getElementById('pauseBtnIcon'),
+  pauseOverlay: document.getElementById('pauseOverlay'),
+  btnResumeGame: document.getElementById('btnResumeGame'),
   btnNotes: document.getElementById('btnNotes'),
   btnErase: document.getElementById('btnErase'),
   btnNewGame: document.getElementById('btnNewGame'),
   numpad: document.getElementById('numpad'),
-  toast: document.getElementById('toast')
+  toast: document.getElementById('toast'),
+
+  // Auth & Account Modal
+  authLoggedInSection: document.getElementById('authLoggedInSection'),
+  authLoggedInEmail: document.getElementById('authLoggedInEmail'),
+  btnLogout: document.getElementById('btnLogout'),
+  authGuestSection: document.getElementById('authGuestSection'),
+  tabAuthLogin: document.getElementById('tabAuthLogin'),
+  tabAuthRegister: document.getElementById('tabAuthRegister'),
+  authForm: document.getElementById('authForm'),
+  authEmail: document.getElementById('authEmail'),
+  authPassword: document.getElementById('authPassword'),
+  btnAuthSubmit: document.getElementById('btnAuthSubmit'),
+  authStatusMsg: document.getElementById('authStatusMsg')
 };
 
 // Initialisierung
@@ -294,10 +316,16 @@ function buildGrid() {
 
 async function initAuth() {
   try {
+    const savedLocalEmail = localStorage.getItem('swapdoku_auth_email');
+    if (savedLocalEmail) {
+      state.authEmail = savedLocalEmail;
+    }
+
     if (!window.supabase || SUPABASE_CONFIG.url.includes('xyzcompany')) {
       state.isOffline = true;
       loadLocalState();
       updatePointsDisplay();
+      updateAccountUI();
       return;
     }
 
@@ -312,12 +340,28 @@ async function initAuth() {
     }
 
     state.user = session.user;
+    if (session.user?.email) {
+      state.authEmail = session.user.email;
+    }
     await syncProfileFromDB();
+
+    state.supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (newSession?.user) {
+        state.user = newSession.user;
+        state.authEmail = newSession.user.email || null;
+        await syncProfileFromDB();
+      } else if (event === 'SIGNED_OUT') {
+        state.user = null;
+        state.authEmail = null;
+      }
+      updateAccountUI();
+    });
   } catch (e) {
     state.isOffline = true;
     loadLocalState();
     updatePointsDisplay();
   }
+  updateAccountUI();
 }
 
 async function syncProfileFromDB() {
@@ -335,22 +379,42 @@ async function syncProfileFromDB() {
     }
     setTheme(state.profile.active_theme);
     updatePointsDisplay();
+    updateAccountUI();
   } catch (_) {}
 }
 
 function loadLocalState() {
-  const saved = localStorage.getItem('swapdoku_state');
-  if (saved) {
-    try { 
-      const parsed = JSON.parse(saved);
-      state.profile = { ...state.profile, ...parsed };
-    } catch (_) {}
+  const savedEmail = localStorage.getItem('swapdoku_auth_email');
+  if (savedEmail) {
+    state.authEmail = savedEmail;
+    const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+    if (accounts[savedEmail]) {
+      state.profile = { ...state.profile, ...accounts[savedEmail] };
+    }
+  } else {
+    const saved = localStorage.getItem('swapdoku_state');
+    if (saved) {
+      try { 
+        const parsed = JSON.parse(saved);
+        state.profile = { ...state.profile, ...parsed };
+      } catch (_) {}
+    }
   }
   setTheme(state.profile.active_theme);
 }
 
 function saveLocalState() {
   localStorage.setItem('swapdoku_state', JSON.stringify(state.profile));
+  if (state.authEmail) {
+    const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+    accounts[state.authEmail] = {
+      username: state.profile.username,
+      sync_points: state.profile.sync_points,
+      active_theme: state.profile.active_theme,
+      unlocked_themes: state.profile.unlocked_themes
+    };
+    localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(accounts));
+  }
 }
 
 function updatePointsDisplay() {
@@ -363,17 +427,35 @@ function updatePointsDisplay() {
 }
 
 // -----------------------------------------------------------------------------
-// TIMER- & ZEITMESSUNG
+// TIMER-, PAUSE- & ZEITMESSUNG
 // -----------------------------------------------------------------------------
-function startStopwatch() {
+function startStopwatch(reset = true) {
   stopStopwatch();
-  state.gameSeconds = 0;
+  if (reset) {
+    state.gameSeconds = 0;
+  }
   updateStopwatchDisplay();
 
   state.gameTimerInterval = setInterval(() => {
     state.gameSeconds++;
     updateStopwatchDisplay();
   }, 1000);
+}
+
+function pauseStopwatch() {
+  if (state.gameTimerInterval) {
+    clearInterval(state.gameTimerInterval);
+    state.gameTimerInterval = null;
+  }
+}
+
+function resumeStopwatch() {
+  if (!state.gameTimerInterval) {
+    state.gameTimerInterval = setInterval(() => {
+      state.gameSeconds++;
+      updateStopwatchDisplay();
+    }, 1000);
+  }
 }
 
 function stopStopwatch() {
@@ -387,6 +469,39 @@ function updateStopwatchDisplay() {
   const mins = Math.floor(state.gameSeconds / 60);
   const secs = state.gameSeconds % 60;
   dom.gameTimerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function togglePause() {
+  if (state.isGameOver) return;
+  if (state.isPaused) {
+    resumeGame();
+  } else {
+    pauseGame();
+  }
+}
+
+function pauseGame() {
+  if (state.isPaused || state.isGameOver) return;
+  state.isPaused = true;
+  pauseStopwatch();
+  if (dom.grid) dom.grid.classList.add('paused');
+  if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('hidden');
+  if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '▶';
+  if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel fortsetzen (P)');
+  state.selectedIndex = null;
+  render();
+  toast('Spiel pausiert');
+}
+
+function resumeGame() {
+  if (!state.isPaused) return;
+  state.isPaused = false;
+  resumeStopwatch();
+  if (dom.grid) dom.grid.classList.remove('paused');
+  if (dom.pauseOverlay) dom.pauseOverlay.classList.add('hidden');
+  if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
+  if (dom.btnPauseGame) dom.btnPauseGame.setAttribute('title', 'Spiel pausieren (P)');
+  toast('Spiel fortgesetzt');
 }
 
 // -----------------------------------------------------------------------------
@@ -514,6 +629,7 @@ function getCluesForZenDifficulty() {
 }
 
 function startNewGame(customBoard = null, customSol = null) {
+  if (state.isPaused) resumeGame();
   stopSwapCountdown();
   stopBot();
   stopStopwatch();
@@ -584,7 +700,7 @@ function render() {
 }
 
 function selectCell(index) {
-  if (state.isGameOver) return;
+  if (state.isPaused || state.isGameOver) return;
   state.selectedIndex = index;
   render();
 }
@@ -623,7 +739,7 @@ function updateNumpadCompletedState() {
 }
 
 function handleNumberInput(num) {
-  if (state.isGameOver) return;
+  if (state.isPaused || state.isGameOver) return;
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
@@ -658,7 +774,7 @@ function handleNumberInput(num) {
 }
 
 function clearCell() {
-  if (state.isGameOver) return;
+  if (state.isPaused || state.isGameOver) return;
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
@@ -765,6 +881,7 @@ function stopBot() {
 }
 
 function botStep() {
+  if (state.isPaused) return;
   const emptyIndices = [];
   for (let i = 0; i < 81; i++) {
     if (state.botBoard[i] === 0 || state.botBoard[i] !== state.botSolution[i]) {
@@ -959,6 +1076,7 @@ function startSwapCountdown() {
   dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
   state.swapTimerId = setInterval(() => {
+    if (state.isPaused) return;
     state.swapSecondsLeft--;
     dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
@@ -1085,13 +1203,179 @@ function closeLeaderboard() {
 }
 
 function openAccount() {
-  dom.usernameInput.value = state.profile.username;
-  updatePointsDisplay();
+  updateAccountUI();
+  clearAuthMsg();
   dom.accountModal.classList.remove('hidden');
 }
 
 function closeAccount() {
   dom.accountModal.classList.add('hidden');
+}
+
+function updateAccountUI() {
+  if (dom.usernameInput) dom.usernameInput.value = state.profile.username || '';
+  if (dom.accountPointsVal) dom.accountPointsVal.textContent = state.profile.sync_points;
+  const activeObj = THEMES.find(t => t.id === state.profile.active_theme);
+  if (dom.accountThemeVal) dom.accountThemeVal.textContent = activeObj ? activeObj.name : state.profile.active_theme;
+
+  const currentEmail = state.authEmail || state.user?.email;
+  if (currentEmail) {
+    if (dom.authLoggedInSection) dom.authLoggedInSection.classList.remove('hidden');
+    if (dom.authGuestSection) dom.authGuestSection.classList.add('hidden');
+    if (dom.authLoggedInEmail) dom.authLoggedInEmail.textContent = currentEmail;
+    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = 'Angemeldet';
+  } else {
+    if (dom.authLoggedInSection) dom.authLoggedInSection.classList.add('hidden');
+    if (dom.authGuestSection) dom.authGuestSection.classList.remove('hidden');
+    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = 'Gast';
+  }
+}
+
+function switchAuthMode(mode) {
+  state.authMode = mode;
+  if (mode === 'login') {
+    dom.tabAuthLogin.classList.add('active');
+    dom.tabAuthRegister.classList.remove('active');
+    dom.btnAuthSubmit.textContent = 'Anmelden';
+    dom.authPassword.setAttribute('autocomplete', 'current-password');
+  } else {
+    dom.tabAuthLogin.classList.remove('active');
+    dom.tabAuthRegister.classList.add('active');
+    dom.btnAuthSubmit.textContent = 'Konto registrieren';
+    dom.authPassword.setAttribute('autocomplete', 'new-password');
+  }
+  clearAuthMsg();
+}
+
+function showAuthMsg(msg, type = 'error') {
+  if (!dom.authStatusMsg) return;
+  dom.authStatusMsg.textContent = msg;
+  dom.authStatusMsg.className = `auth-msg ${type}`;
+  dom.authStatusMsg.classList.remove('hidden');
+}
+
+function clearAuthMsg() {
+  if (!dom.authStatusMsg) return;
+  dom.authStatusMsg.classList.add('hidden');
+  dom.authStatusMsg.textContent = '';
+}
+
+async function handleAuthSubmit() {
+  const email = dom.authEmail.value.trim();
+  const password = dom.authPassword.value;
+
+  if (!email || !email.includes('@')) {
+    showAuthMsg('Bitte eine gültige E-Mail-Adresse angeben.');
+    return;
+  }
+  if (!password || password.length < 6) {
+    showAuthMsg('Das Passwort muss mindestens 6 Zeichen lang sein.');
+    return;
+  }
+
+  clearAuthMsg();
+  dom.btnAuthSubmit.disabled = true;
+  dom.btnAuthSubmit.textContent = 'Wird verarbeitet...';
+
+  try {
+    if (state.authMode === 'login') {
+      await loginUser(email, password);
+    } else {
+      await registerUser(email, password);
+    }
+  } catch (err) {
+    showAuthMsg(err.message || 'Authentifizierungsfehler');
+  } finally {
+    dom.btnAuthSubmit.disabled = false;
+    dom.btnAuthSubmit.textContent = state.authMode === 'login' ? 'Anmelden' : 'Konto registrieren';
+  }
+}
+
+async function loginUser(email, password) {
+  if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
+    const { data, error } = await state.supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      showAuthMsg(error.message === 'Invalid login credentials' ? 'Ungültige Anmeldedaten.' : error.message);
+      return;
+    }
+    state.user = data.user;
+    state.authEmail = data.user.email;
+    await syncProfileFromDB();
+    toast('Erfolgreich angemeldet!');
+    updateAccountUI();
+    dom.authEmail.value = '';
+    dom.authPassword.value = '';
+  } else {
+    state.authEmail = email;
+    localStorage.setItem('swapdoku_auth_email', email);
+    const saved = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+    if (saved[email]) {
+      state.profile.username = saved[email].username || state.profile.username;
+      state.profile.sync_points = saved[email].sync_points ?? state.profile.sync_points;
+      state.profile.active_theme = saved[email].active_theme || state.profile.active_theme;
+    } else {
+      saved[email] = {
+        username: state.profile.username,
+        sync_points: state.profile.sync_points,
+        active_theme: state.profile.active_theme
+      };
+      localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(saved));
+    }
+    setTheme(state.profile.active_theme);
+    updatePointsDisplay();
+    toast('Erfolgreich angemeldet!');
+    updateAccountUI();
+    dom.authEmail.value = '';
+    dom.authPassword.value = '';
+  }
+}
+
+async function registerUser(email, password) {
+  if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
+    const { data, error } = await state.supabase.auth.signUp({ email, password });
+    if (error) {
+      showAuthMsg(error.message);
+      return;
+    }
+    if (data.session) {
+      state.user = data.session.user;
+      state.authEmail = data.user.email;
+      await syncProfileFromDB();
+      toast('Konto erfolgreich erstellt!');
+    } else {
+      showAuthMsg('Konto erstellt! Bitte Bestätigungs-E-Mail prüfen falls aktiviert.', 'success');
+    }
+    updateAccountUI();
+    dom.authEmail.value = '';
+    dom.authPassword.value = '';
+  } else {
+    state.authEmail = email;
+    localStorage.setItem('swapdoku_auth_email', email);
+    const saved = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+    saved[email] = {
+      username: state.profile.username,
+      sync_points: state.profile.sync_points,
+      active_theme: state.profile.active_theme
+    };
+    localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(saved));
+    toast('Konto erfolgreich erstellt!');
+    updateAccountUI();
+    dom.authEmail.value = '';
+    dom.authPassword.value = '';
+  }
+}
+
+async function logoutUser() {
+  if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
+    try {
+      await state.supabase.auth.signOut();
+    } catch (_) {}
+  }
+  state.user = null;
+  state.authEmail = null;
+  localStorage.removeItem('swapdoku_auth_email');
+  toast('Erfolgreich abgemeldet');
+  updateAccountUI();
 }
 
 async function saveUsername() {
@@ -1271,13 +1555,24 @@ function bindEvents() {
     if (e.target === dom.leaderboardModal) closeLeaderboard();
   });
 
-  // Account
+  // Pause Steuerung
+  if (dom.btnPauseGame) dom.btnPauseGame.addEventListener('click', togglePause);
+  if (dom.btnResumeGame) dom.btnResumeGame.addEventListener('click', resumeGame);
+
+  // Account & Authentifizierung
   dom.openAccountBtn.addEventListener('click', openAccount);
   dom.closeAccountBtn.addEventListener('click', closeAccount);
   dom.btnSaveUsername.addEventListener('click', saveUsername);
   dom.accountModal.addEventListener('click', e => {
     if (e.target === dom.accountModal) closeAccount();
   });
+  if (dom.tabAuthLogin) dom.tabAuthLogin.addEventListener('click', () => switchAuthMode('login'));
+  if (dom.tabAuthRegister) dom.tabAuthRegister.addEventListener('click', () => switchAuthMode('register'));
+  if (dom.authForm) dom.authForm.addEventListener('submit', e => {
+    e.preventDefault();
+    handleAuthSubmit();
+  });
+  if (dom.btnLogout) dom.btnLogout.addEventListener('click', logoutUser);
 
   // Spielregeln Info Button
   dom.helpModeBtn.addEventListener('click', showModeRules);
@@ -1348,6 +1643,23 @@ function bindEvents() {
   });
 
   window.addEventListener('keydown', e => {
+    // Wenn der Nutzer in einem Textfeld tippt, Tastenkürzel ignorieren
+    if (['input', 'textarea'].includes(document.activeElement?.tagName?.toLowerCase())) return;
+
+    if (state.isPaused) {
+      if (e.key.toLowerCase() === 'p' || e.code === 'Space') {
+        e.preventDefault();
+        resumeGame();
+      }
+      return;
+    }
+
+    if (e.key.toLowerCase() === 'p') {
+      e.preventDefault();
+      pauseGame();
+      return;
+    }
+
     if (e.key >= '1' && e.key <= '9') {
       handleNumberInput(parseInt(e.key, 10));
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
