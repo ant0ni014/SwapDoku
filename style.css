@@ -102,31 +102,41 @@ body {
 
 .app {
   width: 100%;
-  max-width: 960px;
-  max-height: 98vh;
+  max-width: min(450px, 50vh, 94vw);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
+  align-items: center;
 }
 
-/* Header: Großzügiger, klar und aufgeräumt */
+/* Header: Bündig ausgerichtet an den Außenkanten des Sudoku-Boards */
 .header {
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 0;
+  min-height: 34px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
 }
 
 .brand h1 {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 600;
   letter-spacing: -0.03em;
+  line-height: 1;
+  margin: 0;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .icon-toggle {
@@ -140,7 +150,7 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   transition: border-color 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
 }
 
@@ -159,20 +169,35 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
-  padding: 5px 10px;
+  height: 32px;
+  padding: 0 10px;
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 500;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
 .pill-btn:hover {
   border-color: var(--border-strong);
   transform: translateY(-1px);
+}
+
+.pts-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+/* Spieloptionen: Untereinander angeordnet über dem Spielfeld */
+.game-options {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Modi-Tabs mit Regel-Hilfe */
@@ -550,6 +575,8 @@ body {
 
 .grid-container {
   position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -829,145 +856,65 @@ body {
 }
 
 /* =============================================================================
-   RESPONSIVE DESIGN: 2-SPALTEN-LAYOUT (DESKTOP/LAPTOP) VS 1-SPALTE (MOBILE)
+   RESPONSIVE DESIGN: VIEWPORT-FITTING FÜR LAPTOP & MOBILE
    ============================================================================= */
 
-@media (min-width: 768px) {
-  .app {
-    max-width: 880px;
-    gap: 12px;
-  }
-
-  .game-layout {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 36px;
-    width: 100%;
-  }
-
-  .board-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    flex: 0 0 auto;
-    width: min(450px, 56vh);
-  }
-
-  .hud {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .grid-wrap {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  .grid-container {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-  }
-
-  .controls {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .sidebar-section {
-    width: 290px;
-    max-width: 320px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-top: 32px;
-  }
-
-  .meta-section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
-@media (max-width: 767px) {
+@media (max-width: 480px) {
   body {
-    padding: 4px 10px;
+    padding: 4px 8px;
   }
 
   .app {
-    max-width: 460px;
-    gap: 6px;
+    gap: 4px;
+    max-width: 100%;
   }
 
-  .game-layout {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: center;
-    width: 100%;
+  .brand h1 {
+    font-size: 1.15rem;
   }
 
-  /* Erlaubt direkte vertikale Ordnung auf Mobilgeräten */
-  .sidebar-section {
-    display: contents;
-  }
-
-  .meta-section {
-    order: 1;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .board-section {
-    order: 2;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .hud {
-    width: min(420px, 48vh);
-    max-width: min(420px, 48vh);
-  }
-
-  .grid-container {
-    width: min(420px, 48vh);
-    height: min(420px, 48vh);
-  }
-
-  .controls {
-    width: min(420px, 48vh);
-    max-width: min(420px, 48vh);
-    margin-top: 4px;
-    gap: 5px;
-  }
-
-  .numpad {
+  .header-actions {
     gap: 4px;
   }
 
-  .num {
-    height: 38px;
-    font-size: 1.08rem;
+  .icon-toggle {
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+  }
+
+  .pill-btn {
+    height: 28px;
+    padding: 0 7px;
+    font-size: 0.72rem;
+  }
+
+  .modes {
+    gap: 10px;
+  }
+
+  .mode-btn {
+    font-size: 0.78rem;
+    padding: 5px 0;
+  }
+
+  .diff-btn {
+    padding: 5px 4px;
+    font-size: 0.7rem;
   }
 
   .tool-btn {
-    height: 32px;
-    font-size: 0.74rem;
+    height: 30px;
+    font-size: 0.72rem;
   }
 
-  .app-footer {
-    order: 3;
-    padding: 6px 0 10px 0;
+  .numpad {
+    gap: 3px;
+  }
+
+  .num {
+    height: 36px;
+    font-size: 1.05rem;
   }
 }
 

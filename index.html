@@ -36,176 +36,167 @@
         <button class="icon-toggle" id="openAccountBtn" title="Account & Profil" aria-label="Account">
           <span style="font-size: 0.8rem;">👤</span>
         </button>
-        <!-- Punkte-Pill -->
+        <!-- Punkte-Pill mit Punktesymbol -->
         <button class="pill-btn" id="openShopBtn" title="Themes & Punkte">
+          <span class="pts-icon">✦</span>
           <span class="pts-val" id="userPoints">0</span> Pts
         </button>
       </div>
     </header>
 
-    <!-- Haupt-Layout: 2-Spalten auf Desktop/Laptop, 1-Spalte auf Mobile -->
-    <div class="game-layout">
-      
-      <!-- Linke Spalte / Hauptbereich: HUD & 9x9 Sudoku Board -->
-      <section class="board-section">
-        <!-- Info / HUD (Zentrierte Sterne, Zeit-Stoppuhr, Pause-Button, Versus-Progress) -->
-        <div class="hud" id="gameHud">
-          <div class="hud-main-row">
-            <!-- Sterne / Fehler-Anzeige -->
-            <div class="stars-wrap" id="heartsWrap" title="Verbleibende Versuche">
-              <span class="stars-icons" id="heartsDisplay">★★★</span>
-            </div>
+    <!-- Spieloptionen: Modi & Schwierigkeit / Lobby untereinander angeordnet -->
+    <section class="game-options" id="gameOptions">
+      <!-- Modi mit Info-Buttons -->
+      <div class="modes-wrap">
+        <nav class="modes">
+          <button class="mode-btn active" data-mode="zen" id="tabZen">Einzelspieler</button>
+          <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
+          <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
+        </nav>
+        <!-- Hilfeknopf für den aktuellen Modus -->
+        <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
+      </div>
 
-            <!-- Laufzeit-Timer & Pausieren-Button -->
-            <div class="timer-pause-group">
-              <div class="game-timer-wrap" id="gameTimerWrap" title="Spielzeit">
-                <span class="timer-icon">⏱</span>
-                <span id="gameTimerDisplay">00:00</span>
-              </div>
-              <button class="icon-toggle pause-btn" id="btnPauseGame" title="Spiel pausieren (P)" aria-label="Spiel pausieren">
-                <span id="pauseBtnIcon">⏸</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Versus Progress (Nur im Versus-Modus) -->
-          <div class="versus-wrap hidden" id="versusBars">
-            <div class="bar-row">
-              <span>Du</span>
-              <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
-              <span class="bar-pct" id="playerProgressLabel">0%</span>
-            </div>
-            <div class="bar-row">
-              <span id="opponentLabelText">Gegner</span>
-              <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
-              <span class="bar-pct" id="opponentProgressLabel">0%</span>
-            </div>
-          </div>
-
-          <!-- Swap Countdown Timer (Nur im Co-Op Swap) -->
-          <div class="swap-wrap hidden" id="swapTimerBox">
-            <span id="swapPartnerLabel">Swap in</span>
-            <strong id="swapTimer">10s</strong>
+      <!-- Einzelspieler-Schwierigkeit -->
+      <section class="zen-bar" id="zenDifficultyBar">
+        <div class="zen-diff-row">
+          <div class="diff-buttons">
+            <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ★)</button>
+            <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ★)</button>
+            <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ★)</button>
           </div>
         </div>
-
-        <!-- 9x9 Sudoku Feld mit Pause-Overlay -->
-        <main class="grid-wrap">
-          <div class="grid-container">
-            <div class="sudoku-grid" id="sudokuGrid"></div>
-
-            <!-- Pause-Overlay: deckt das Spielfeld während der Pause blicksicher ab -->
-            <div class="pause-overlay hidden" id="pauseOverlay">
-              <div class="pause-card">
-                <div class="pause-icon">⏸</div>
-                <h3>Spiel pausiert</h3>
-                <p>Die Zeit ist angehalten.</p>
-                <button class="btn btn-primary" id="btnResumeGame">Fortsetzen</button>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        <!-- Steuerleiste & Ziffernleiste direkt unter dem Board (1-reihig, sanft abgerundet) -->
-        <section class="controls">
-          <div class="toolbar">
-            <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
-            <button class="tool-btn" id="btnErase">Löschen</button>
-            <button class="tool-btn" id="btnNewGame">Neu</button>
-          </div>
-
-          <div class="numpad" id="numpad">
-            <button class="num" data-num="1">1</button>
-            <button class="num" data-num="2">2</button>
-            <button class="num" data-num="3">3</button>
-            <button class="num" data-num="4">4</button>
-            <button class="num" data-num="5">5</button>
-            <button class="num" data-num="6">6</button>
-            <button class="num" data-num="7">7</button>
-            <button class="num" data-num="8">8</button>
-            <button class="num" data-num="9">9</button>
-          </div>
-        </section>
       </section>
 
-      <!-- Rechte Spalte / Sidebar: Modi, Einstellungen & Footer -->
-      <aside class="sidebar-section">
-        <div class="meta-section">
-          <!-- Modi mit Info-Buttons -->
-          <div class="modes-wrap">
-            <nav class="modes">
-              <button class="mode-btn active" data-mode="zen" id="tabZen">Einzelspieler</button>
-              <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
-              <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
-            </nav>
-            <!-- Hilfeknopf für den aktuellen Modus -->
-            <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
-          </div>
-
-          <!-- Einzelspieler-Schwierigkeit -->
-          <section class="zen-bar" id="zenDifficultyBar">
-            <div class="zen-diff-row">
-              <div class="diff-buttons">
-                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach (5 ★)</button>
-                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel (3 ★)</button>
-                <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer (1 ★)</button>
-              </div>
-            </div>
-          </section>
-
-          <!-- Multiplayer Lobby mit Online- oder Bot-Wahl -->
-          <section class="lobby hidden" id="multiplayerLobby">
-            <!-- Spieler-Typ: Online oder Bot -->
-            <div class="lobby-switch">
-              <button class="sub-tab active" id="btnPlayOnline">Online (Raum)</button>
-              <button class="sub-tab" id="btnPlayBot">Mit Bot spielen</button>
-            </div>
-
-            <!-- Online Bereich (Raum erstellen / beitreten) -->
-            <div class="online-box" id="onlineSection">
-              <div class="lobby-row">
-                <button class="btn" id="createRoomBtn">Raum erstellen</button>
-                <span class="divider">oder</span>
-                <div class="join-box">
-                  <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
-                  <button class="btn" id="joinRoomBtn">Beitreten</button>
-                </div>
-              </div>
-              <div class="lobby-info">
-                <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
-                <span class="status-indicator">
-                  <span class="dot" id="connDot"></span>
-                  <span id="connText">Nicht verbunden</span>
-                </span>
-              </div>
-            </div>
-
-            <!-- Bot Bereich -->
-            <div class="bot-box hidden" id="botSection">
-              <div class="bot-difficulty-row">
-                <span class="diff-label">Bot-Stufe:</span>
-                <div class="diff-buttons">
-                  <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
-                  <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
-                  <button class="diff-btn" data-diff="hard" id="diffHard">Schwer</button>
-                </div>
-              </div>
-              <div class="bot-start-row">
-                <button class="btn btn-primary" id="btnStartBotGame">Spiel gegen Bot starten</button>
-              </div>
-            </div>
-          </section>
+      <!-- Multiplayer Lobby mit Online- oder Bot-Wahl -->
+      <section class="lobby hidden" id="multiplayerLobby">
+        <!-- Spieler-Typ: Online oder Bot -->
+        <div class="lobby-switch">
+          <button class="sub-tab active" id="btnPlayOnline">Online (Raum)</button>
+          <button class="sub-tab" id="btnPlayBot">Mit Bot spielen</button>
         </div>
 
-        <!-- Footer: Impressum & Datenschutz Links -->
-        <footer class="app-footer">
-          <a href="#" id="openImpressumLink">Impressum</a>
-          <span class="footer-sep">&bull;</span>
-          <a href="#" id="openDatenschutzLink">Datenschutz</a>
-        </footer>
-      </aside>
+        <!-- Online Bereich (Raum erstellen / beitreten) -->
+        <div class="online-box" id="onlineSection">
+          <div class="lobby-row">
+            <button class="btn" id="createRoomBtn">Raum erstellen</button>
+            <span class="divider">oder</span>
+            <div class="join-box">
+              <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
+              <button class="btn" id="joinRoomBtn">Beitreten</button>
+            </div>
+          </div>
+          <div class="lobby-info">
+            <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
+            <span class="status-indicator">
+              <span class="dot" id="connDot"></span>
+              <span id="connText">Nicht verbunden</span>
+            </span>
+          </div>
+        </div>
 
+        <!-- Bot Bereich -->
+        <div class="bot-box hidden" id="botSection">
+          <div class="bot-difficulty-row">
+            <span class="diff-label">Bot-Stufe:</span>
+            <div class="diff-buttons">
+              <button class="diff-btn" data-diff="easy" id="diffEasy">Einfach</button>
+              <button class="diff-btn active" data-diff="medium" id="diffMedium">Mittel</button>
+              <button class="diff-btn" data-diff="hard" id="diffHard">Schwer</button>
+            </div>
+          </div>
+          <div class="bot-start-row">
+            <button class="btn btn-primary" id="btnStartBotGame">Spiel gegen Bot starten</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <!-- Info / HUD (Zentrierte Sterne, Zeit-Stoppuhr, Pause-Button, Versus-Progress) -->
+    <div class="hud" id="gameHud">
+      <div class="hud-main-row">
+        <!-- Sterne / Fehler-Anzeige -->
+        <div class="stars-wrap" id="heartsWrap" title="Verbleibende Versuche">
+          <span class="stars-icons" id="heartsDisplay">★★★</span>
+        </div>
+
+        <!-- Laufzeit-Timer & Pausieren-Button -->
+        <div class="timer-pause-group">
+          <div class="game-timer-wrap" id="gameTimerWrap" title="Spielzeit">
+            <span class="timer-icon">⏱</span>
+            <span id="gameTimerDisplay">00:00</span>
+          </div>
+          <button class="icon-toggle pause-btn" id="btnPauseGame" title="Spiel pausieren (P)" aria-label="Spiel pausieren">
+            <span id="pauseBtnIcon">⏸</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Versus Progress (Nur im Versus-Modus) -->
+      <div class="versus-wrap hidden" id="versusBars">
+        <div class="bar-row">
+          <span>Du</span>
+          <div class="bar-track"><div class="bar-fill" id="playerProgressBar"></div></div>
+          <span class="bar-pct" id="playerProgressLabel">0%</span>
+        </div>
+        <div class="bar-row">
+          <span id="opponentLabelText">Gegner</span>
+          <div class="bar-track"><div class="bar-fill opponent" id="opponentProgressBar"></div></div>
+          <span class="bar-pct" id="opponentProgressLabel">0%</span>
+        </div>
+      </div>
+
+      <!-- Swap Countdown Timer (Nur im Co-Op Swap) -->
+      <div class="swap-wrap hidden" id="swapTimerBox">
+        <span id="swapPartnerLabel">Swap in</span>
+        <strong id="swapTimer">10s</strong>
+      </div>
     </div>
+
+    <!-- 9x9 Sudoku Feld mit Pause-Overlay -->
+    <main class="grid-wrap">
+      <div class="grid-container">
+        <div class="sudoku-grid" id="sudokuGrid"></div>
+
+        <!-- Pause-Overlay: deckt das Spielfeld während der Pause blicksicher ab -->
+        <div class="pause-overlay hidden" id="pauseOverlay">
+          <div class="pause-card">
+            <div class="pause-icon">⏸</div>
+            <h3>Spiel pausiert</h3>
+            <p>Die Zeit ist angehalten.</p>
+            <button class="btn btn-primary" id="btnResumeGame">Fortsetzen</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Steuerleiste & Ziffernleiste direkt unter dem Board (1-reihig, sanft abgerundet) -->
+    <section class="controls">
+      <div class="toolbar">
+        <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
+        <button class="tool-btn" id="btnErase">Löschen</button>
+        <button class="tool-btn" id="btnNewGame">Neu</button>
+      </div>
+
+      <div class="numpad" id="numpad">
+        <button class="num" data-num="1">1</button>
+        <button class="num" data-num="2">2</button>
+        <button class="num" data-num="3">3</button>
+        <button class="num" data-num="4">4</button>
+        <button class="num" data-num="5">5</button>
+        <button class="num" data-num="6">6</button>
+        <button class="num" data-num="7">7</button>
+        <button class="num" data-num="8">8</button>
+        <button class="num" data-num="9">9</button>
+      </div>
+    </section>
+
+    <!-- Footer: Impressum & Datenschutz Links -->
+    <footer class="app-footer">
+      <a href="#" id="openImpressumLink">Impressum</a>
+      <span class="footer-sep">&bull;</span>
+      <a href="#" id="openDatenschutzLink">Datenschutz</a>
+    </footer>
   </div>
 
   <!-- Modal: Spielregeln & Erklärung -->
