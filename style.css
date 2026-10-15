@@ -906,16 +906,18 @@ body {
   border-color: var(--text);
 }
 
-/* Zahlenblock rechts: 3 Spalten passend zur 3er-Toolbar */
+/* Zahlenblock rechts: 3 Spalten, kompakt & horizontal zentriert */
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   width: 100%;
+  max-width: 216px;
+  margin: 4px auto 0 auto;
 }
 
 .num {
-  height: 48px;
+  height: 52px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1034,6 +1036,8 @@ body {
   .numpad {
     grid-template-columns: repeat(9, 1fr);
     gap: 4px;
+    max-width: 100%;
+    margin: 0;
   }
 
   .num {
