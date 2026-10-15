@@ -247,7 +247,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center; /* Vertikal exakt zentriert zur Höhe der Sudoku-Spielfläche */
   justify-content: space-between;
   gap: 32px;
 }
@@ -267,7 +267,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 36px; /* Bündig mit der Oberkante des Sudoku-Boards */
+  padding-top: 0; /* Perfekt symmetrisch und mittig zum Board */
 }
 
 /* Spieloptionen */
@@ -906,14 +906,12 @@ body {
   border-color: var(--text);
 }
 
-/* Zahlenblock rechts: 3 Spalten, kompakt & horizontal zentriert */
+/* Zahlenblock rechts: 3 Spalten passend zur Toolbar, symmetrisch & großzügig */
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
   width: 100%;
-  max-width: 216px;
-  margin: 4px auto 0 auto;
 }
 
 .num {
@@ -922,7 +920,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 8px;
   font-family: inherit;
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
