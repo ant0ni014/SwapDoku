@@ -277,11 +277,14 @@ Der integrierte Lofi-Ambient-Player benötigt keinerlei externe Sounddateien:
 
 ### 4.9 Design-System & Theme-Engine (CSS Custom Properties)
 Die Visualisierung basiert vollständig auf semantischen CSS-Variablen:
-- **`nordic-light` (Standard):** Kühles Weiß (`#ffffff`), zarte Zementgrau-Hintergründe (`#fafafa`), tiefgrauer Text (`#18181b`).
-- **`dark-slate` (Dark Mode):** Tiefes Anthrazit (`#09090b`), Graphit-Oberflächen (`#141416`), hellgraue Trennlinien (`#3f3f46`) für perfekten Kontrast.
-- **`matcha-paper`:** Sanftes Salbeigrün/Papieroptik (`#f4f5f1`), Waldgrün-Akzente.
-- **`nordic-frost`:** Skandinavisches Eisblau (`#f5f8fa`), Arktik-Akzente (`#0284c7`).
-Alle Themes sind kostenlos über das Theme-Modal wählbar.
+- **`nordic-light` (Standard):** Kühles Schieferweiß (`#f8fafc`), reines Weiß (`#ffffff`) für das Spielfeld, tiefes Dunkelblau/Schwarz (`#0f172a`) für Zahlen und royalblaue Benutzereingaben (`#2563eb`).
+- **`dark-slate` (Dark Mode):** Tiefes Mitternachtsschwarz (`#090d16`), edle Graphit-Oberflächen (`#111827`), helle Ziffern (`#f9fafb`) und neonblaue Akzente (`#38bdf8`).
+- **`matcha-paper` (Matcha Green):** Sanftes Salbei- & Matcha-Grün (`#e3ede5`), frische Matcha-Creme (`#f2f7f3`) für das Board und tiefes Waldgrün (`#133320`) für optimale Lesbarkeit.
+- **`nordic-frost` (Ocean Frost):** Echtes, kühles Himmels- und Ozeanblau (`#dbeafe`), kristallines Arktik-Weiß (`#eff6ff`) für das Board und sattes Marineblau (`#0c2340`).
+- **`warm-sunset` (Sunset Amber):** Warme Pfirsich- & Leinentöne (`#fbe6db`), warmes Elfenbein (`#fff5ef`) und sattes Terracotta/Bernstein (`#c2410c`).
+- **`lavender-dream` (Lavender Dream):** Zartes, sichtbares Pastell-Lavendel (`#ede7f6`), feines Flieder-Weiß (`#f8f5fc`) und tiefes Mitternachtsviolett (`#26113b`).
+
+Alle Themes sind kostenlos, bieten eine Farb-Swatch-Vorschau im Theme-Modal und transformieren sofort das gesamte Spielfeld inklusive Fadenkreuz und Ziffern.
 
 ---
 

@@ -8,10 +8,54 @@ const SUPABASE_CONFIG = {
 };
 
 const THEMES = [
-  { id: 'nordic-light', name: 'Nordic Light', cost: 0 },
-  { id: 'dark-slate', name: 'Dark Slate', cost: 0 },
-  { id: 'matcha-paper', name: 'Matcha Paper', cost: 0 },
-  { id: 'nordic-frost', name: 'Nordic Frost', cost: 0 }
+  { 
+    id: 'nordic-light', 
+    name: 'Nordic Light', 
+    cost: 0, 
+    colors: ['#f8fafc', '#ffffff', '#2563eb'],
+    descDe: 'Klassisches Weiß & Schiefergrau',
+    descEn: 'Classic crisp white & slate'
+  },
+  { 
+    id: 'dark-slate', 
+    name: 'Dark Slate', 
+    cost: 0, 
+    colors: ['#090d16', '#111827', '#38bdf8'],
+    descDe: 'Elegantes Mitternachtsschwarz',
+    descEn: 'Sleek midnight dark mode'
+  },
+  { 
+    id: 'matcha-paper', 
+    name: 'Matcha Green', 
+    cost: 0, 
+    colors: ['#e3ede5', '#f2f7f3', '#1e7046'],
+    descDe: 'Beruhigendes Salbei & Waldgrün',
+    descEn: 'Soothing sage & forest green'
+  },
+  { 
+    id: 'nordic-frost', 
+    name: 'Ocean Frost', 
+    cost: 0, 
+    colors: ['#dbeafe', '#eff6ff', '#0284c7'],
+    descDe: 'Kühles Arktik- & Ozeanblau',
+    descEn: 'Crisp glacier & ocean blue'
+  },
+  { 
+    id: 'warm-sunset', 
+    name: 'Sunset Amber', 
+    cost: 0, 
+    colors: ['#fbe6db', '#fff5ef', '#c2410c'],
+    descDe: 'Warme Pfirsich- & Terracotta-Töne',
+    descEn: 'Warm apricot & terracotta glow'
+  },
+  { 
+    id: 'lavender-dream', 
+    name: 'Lavender Dream', 
+    cost: 0, 
+    colors: ['#ede7f6', '#f8f5fc', '#7c3aed'],
+    descDe: 'Elegantes Pastell-Lavendel & Violett',
+    descEn: 'Dreamy pastel lavender & violet'
+  }
 ];
 
 // =============================================================================
@@ -336,7 +380,7 @@ const state = {
     username: 'Spieler',
     sync_points: 0,
     active_theme: 'nordic-light',
-    unlocked_themes: ['nordic-light', 'dark-slate', 'matcha-paper', 'nordic-frost']
+    unlocked_themes: ['nordic-light', 'dark-slate', 'matcha-paper', 'nordic-frost', 'warm-sunset', 'lavender-dream']
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
@@ -2092,6 +2136,18 @@ async function saveUsername() {
 function setTheme(id) {
   dom.root.setAttribute('data-theme', id);
   updateThemeToggleIcon(id);
+  
+  // Browser theme-color Meta-Tag synchronisieren
+  let metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (!metaTheme) {
+    metaTheme = document.createElement('meta');
+    metaTheme.name = 'theme-color';
+    document.head.appendChild(metaTheme);
+  }
+  const themeObj = THEMES.find(t => t.id === id);
+  if (themeObj && themeObj.colors) {
+    metaTheme.content = themeObj.colors[0];
+  }
 }
 
 function toggleDarkLight() {
@@ -2112,18 +2168,24 @@ function renderThemeShop() {
 
   THEMES.forEach(t => {
     const isActive = state.profile.active_theme === t.id;
+    const desc = state.currentLang === 'de' ? t.descDe : t.descEn;
 
     const row = document.createElement('div');
-    row.className = 'theme-row';
+    row.className = 'theme-row' + (isActive ? ' active-theme' : '');
     row.innerHTML = `
-      <div>
-        <div class="theme-name">${t.name}</div>
-        <div class="theme-price">${d.themeFree}</div>
+      <div class="theme-meta">
+        <div class="theme-swatches" title="${t.name}">
+          ${t.colors.map(c => `<span class="theme-swatch-circle" style="background:${c}"></span>`).join('')}
+        </div>
+        <div class="theme-text-wrap">
+          <div class="theme-name">${t.name}</div>
+          <div class="theme-desc">${desc}</div>
+        </div>
       </div>
     `;
 
     const btn = document.createElement('button');
-    btn.className = 'btn';
+    btn.className = 'btn' + (isActive ? ' btn-primary' : '');
 
     if (isActive) {
       btn.textContent = d.themeActive;
@@ -2144,7 +2206,9 @@ function activateTheme(id) {
   saveLocalState();
   renderThemeShop();
   updateAccountUI();
-  toast(`${t('toastThemeApplied')}: ${id}`);
+  const themeObj = THEMES.find(t => t.id === id);
+  const themeName = themeObj ? themeObj.name : id;
+  toast(`${t('toastThemeApplied')}: ${themeName}`);
 
   if (!state.isOffline && state.supabase && state.user) {
     state.supabase.from('profiles').update({ active_theme: id }).eq('id', state.user.id);

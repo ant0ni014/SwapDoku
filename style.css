@@ -2,34 +2,35 @@
    SwapDoku — Scandinavian Minimalist Design & Responsive 2-Column Engine
    ============================================================================= */
 
-:root {
-  --bg: #fafafa;
+:root,
+[data-theme="nordic-light"] {
+  --bg: #f8fafc;
   --surface: #ffffff;
-  --text: #18181b;
-  --muted: #71717a;
-  --border: #e4e4e7;
-  --border-strong: #27272a;
-  --accent: #18181b;
-  --select: #e4e4e7;
-  --select-border: #18181b;
-  --highlight: #f0f0f4;      /* Deutlich sichtbare, elegante graue Streifen für Zeile & Spalte */
-  --user-val: #0284c7;
+  --text: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --border-strong: #1e293b;
+  --accent: #2563eb;
+  --select: #e2e8f0;
+  --select-border: #1e293b;
+  --highlight: #f1f5f9;
+  --user-val: #2563eb;
   --err-bg: #fee2e2;
   --err-text: #dc2626;
-  --num-completed: #e4e4e7;
+  --num-completed: #cbd5e1;
 }
 
 [data-theme="dark-slate"] {
-  --bg: #09090b;
-  --surface: #141416;
-  --text: #fafafa;
-  --muted: #a1a1aa;
-  --border: #3f3f46;         /* Hellere, klar sichtbare Trennlinien */
-  --border-strong: #71717a;  /* Starker Kontrast für 3x3 Blöcke */
-  --accent: #fafafa;
-  --select: #2a2a32;
+  --bg: #090d16;
+  --surface: #111827;
+  --text: #f9fafb;
+  --muted: #9ca3af;
+  --border: #374151;
+  --border-strong: #6b7280;
+  --accent: #38bdf8;
+  --select: #1f2937;
   --select-border: #38bdf8;
-  --highlight: #232328;      /* Deutlich sichtbare graue Streifen im Dark Mode, Trennlinien bleiben perfekt sichtbar */
+  --highlight: #1e293b;
   --user-val: #38bdf8;
   --err-bg: #450a0a;
   --err-text: #f87171;
@@ -37,37 +38,71 @@
 }
 
 [data-theme="matcha-paper"] {
-  --bg: #f4f5f1;
-  --surface: #fcfcfb;
-  --text: #1c2826;
-  --muted: #64736d;
-  --border: #d8deda;
-  --border-strong: #2d403b;
-  --accent: #2d403b;
-  --select: #d8eadc;
-  --select-border: #40916c;
-  --highlight: #e3eae4;
-  --user-val: #1e3a2f;
-  --err-bg: #fae8e8;
+  --bg: #e3ede5;             /* Echtes, sanftes Salbei- & Matcha-Grün */
+  --surface: #f2f7f3;        /* Helle Matcha-Creme für das Spielfeld */
+  --text: #133320;           /* Tiefes Waldgrün für optimale Lesbarkeit */
+  --muted: #4e6b56;
+  --border: #b8cfbe;
+  --border-strong: #1e4d30;
+  --accent: #2d6a4f;
+  --select: #c2dec9;
+  --select-border: #2d6a4f;
+  --highlight: #d5e9db;
+  --user-val: #1e7046;       /* Sattes Smaragdgrün für Spielereingaben */
+  --err-bg: #fde8e8;
   --err-text: #b91c1c;
-  --num-completed: #d8deda;
+  --num-completed: #b8cfbe;
 }
 
 [data-theme="nordic-frost"] {
-  --bg: #f5f8fa;
-  --surface: #ffffff;
-  --text: #0f172a;
-  --muted: #64748b;
-  --border: #cbd5e1;
-  --border-strong: #334155;
+  --bg: #dbeafe;             /* Echtes, kühles Himmels- & Eisblau */
+  --surface: #eff6ff;        /* Kristallines Arktik-Weiß für das Spielfeld */
+  --text: #0c2340;           /* Tiefes Marineblau */
+  --muted: #3b5f88;
+  --border: #b9d5ee;
+  --border-strong: #0f3460;
   --accent: #0284c7;
-  --select: #e0f2fe;
+  --select: #bae0fd;
   --select-border: #0284c7;
-  --highlight: #e2e8f0;
-  --user-val: #0284c7;
+  --highlight: #cfe5fb;
+  --user-val: #0284c7;       /* Strahlendes Ozeanblau */
   --err-bg: #fee2e2;
   --err-text: #dc2626;
-  --num-completed: #cbd5e1;
+  --num-completed: #b9d5ee;
+}
+
+[data-theme="warm-sunset"] {
+  --bg: #fbe6db;             /* Warme Pfirsich- & Leinentöne */
+  --surface: #fff5ef;        /* Warmes Elfenbein für das Spielfeld */
+  --text: #431b0e;           /* Tiefes Terracotta-Braun */
+  --muted: #8c5a47;
+  --border: #f0caa9;
+  --border-strong: #872808;
+  --accent: #ea580c;
+  --select: #fbd3be;
+  --select-border: #ea580c;
+  --highlight: #f8ded0;
+  --user-val: #c2410c;       /* Warmes Bernstein / Amber */
+  --err-bg: #fee2e2;
+  --err-text: #dc2626;
+  --num-completed: #f0caa9;
+}
+
+[data-theme="lavender-dream"] {
+  --bg: #ede7f6;             /* Sanftes, sichtbares Pastell-Lavendel */
+  --surface: #f8f5fc;        /* Zartes Flieder-Weiß für das Spielfeld */
+  --text: #26113b;           /* Tiefes Mitternachtsviolett */
+  --muted: #6b4c8a;
+  --border: #d4c5ea;
+  --border-strong: #4a1572;
+  --accent: #7c3aed;
+  --select: #ded0f7;
+  --select-border: #7c3aed;
+  --highlight: #e6dbfa;
+  --user-val: #7c3aed;       /* Strahlendes Königsviolett */
+  --err-bg: #fee2e2;
+  --err-text: #dc2626;
+  --num-completed: #d4c5ea;
 }
 
 *, *::before, *::after {
@@ -1101,19 +1136,53 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.theme-row.active-theme {
+  border-color: var(--border-strong);
+  background: var(--highlight);
+}
+
+.theme-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.theme-swatches {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.theme-swatch-circle {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.theme-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
 .theme-name {
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
 }
 
-.theme-price {
-  font-size: 0.72rem;
+.theme-desc {
+  font-size: 0.7rem;
   color: var(--muted);
 }
 
