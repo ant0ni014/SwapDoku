@@ -1,220 +1,153 @@
-# Projektskizze zur Semesterarbeit
+# Projektskizze zur Semesterarbeit: SwapDoku
 
-**Thema:** SwapDoku — Konzeption und Implementierung einer echtzeitfähigen, kollaborativen Web-Sudoku-Plattform auf Basis moderner Web-Standards und serverloser BaaS-Architektur  
-**Untertitel:** Eine performante, barrierearme Single-Page-Application (SPA) mit innovativem Co-Op Board-Swap, Versus-Modus und prozeduraler Audio-Synthese  
-**Modul:** Web Technologie / Verteilte Systeme  
+**Thema:** SwapDoku — Entwicklung eines modernen, werbefreien Web-Sudokus mit kooperativem Echtzeit-Board-Swap  
+**Modul:** Web Technologie  
+**Studiengang:** Wirtschaftsinformatik (FOM Hochschule München)  
 **Autor:** Antonio Famog  
-**Abgabedatum Skizze (Forum):** 06.11.2026  
-**Zielumfang der Ausarbeitung:** ca. 4.000 Wörter (inkl. lauffähigem Praxis-Artefakt)  
-**Repository & Live-Code:** [https://github.com/ant0ni014/SwapDoku](https://github.com/ant0ni014/SwapDoku)
+**Projekt-URL & Code:** [https://github.com/ant0ni014/SwapDoku](https://github.com/ant0ni014/SwapDoku)  
 
 ---
 
-## 1. Executive Summary & Pitch (Überzeugungsargument)
+## 1. Einleitung & Projektidee (Warum SwapDoku?)
 
-Klassische Sudoku-Webanwendungen sind seit über zwei Jahrzehnten auf isolierte Einzelspieler-Erfahrungen, statische PDF-Exporte oder asynchrone Highscore-Listen beschränkt. Zeitgenössische Web-Standards bieten jedoch alle Voraussetzungen für hochdynamische, vernetzte und kollaborative Erlebnisse – ohne dabei auf ressourcenhungrige JavaScript-Frameworks (React, Angular) oder komplexe Node.js-Server-Cluster zurückgreifen zu müssen.
+Fast jeder kennt Sudoku und hat es schon einmal auf dem Smartphone oder im Browser gespielt. Wenn man heute online nach Sudoku sucht, stößt man jedoch fast immer auf dieselben Probleme:
+- Webseiten sind voll mit Bannern, blinkender Werbung und Popups, die den Spielfluss stören.
+- Man wird ständig gedrängt, eine App aus dem App Store herunterzuladen.
+- Es gibt fast ausschließlich Einzelspieler-Modi. Wenn es mal einen Multiplayer gibt, spielt man lediglich auf Zeit gegeneinander – jeder stur auf seinem eigenen Feld.
 
-**SwapDoku** schließt diese Marktlücke durch eine leichtgewichtige, installationsfreie Web-Applikation, die traditionelles Logikrätseln mit innovativen Multiplayer-Mechaniken kombiniert:
-1. **Kooperativer Board-Swap (Co-Op Swap):** Zwei räumlich getrennte Spieler tauschen über einen synchronisierten Timer in Echtzeit ihre Spielfelder und lösen das Rätsel des Partners nahtlos weiter.
-2. **Echtzeit-Versus:** Direkter Wettkampf gegen menschliche Mitspieler oder eine adaptive Bot-KI mit synchronen Fortschrittsbalken.
-3. **Zero-Build & Zero-Asset-Architektur:** Lauffähig direkt im Browser ohne Node.js-Buildschritt, Ladezeit < 100 ms, prozedurale Klangerzeugung via Web Audio API statt speicherintensiver MP3s.
+**Hier setzt SwapDoku an:**  
+SwapDoku ist ein modernes, sauberes Web-Spiel, das direkt im Browser ohne Download und ohne Werbung läuft. Das absolute Alleinstellungsmerkmal (unser **Unique Selling Point**) ist der **Co-Op Swap Modus**:  
+Zwei Freunde spielen nicht gegeneinander, sondern *miteinander als Team*. Beide starten gleichzeitig auf zwei unterschiedlichen Sudoku-Feldern. Alle 10 Sekunden ertönt ein Signal und die Spielfelder tauschen in Echtzeit die Seiten! Man muss blitzschnell erfassen, was der Partner vorbereitet oder eingetragen hat, und das fremde Rätsel weiterlösen. 
 
-Dieses Vorhaben demonstriert par excellence die zentralen Lehrinhalte des Moduls *Web Technologie*: Clientseitiges State-Management, asynchrone WebSocket-Kommunikation, mathematische Backtracking-Algorithmen, CSS-Grid-Layouts und modernste Browser-APIs. Die technische Machbarkeit ist durch Prototypen vollständig plausibilisiert und stellt ein hervorragendes Fundament für eine exzellente Semesterarbeit dar.
-
----
-
-## 2. Problemstellung und Praxisrelevanz
-
-### 2.1 Ausgangslage & Marktanalyse
-Obwohl Sudoku weltweit täglich von Millionen Menschen gespielt wird, existieren kaum zeitgemäße Web-Lösungen mit echter Kollaboration:
-- **Framework-Overhead:** Moderne Webspiele laden häufig mehrere Megabyte an JavaScript-Bundles herunter, was auf mobilen Endgeräten zu spürbaren Rucklern und Verzögerungen beim First Contentful Paint (FCP) führt.
-- **Mangelnde Spielmechanik-Innovation:** Bestehende Multiplayer-Ansätze erschöpfen sich im nebeneinander her laufenden Stoppuhr-Vergleich ohne direkte spielerische Interaktion.
-- **Einstiegshürden:** Native Apps fordern App-Store-Downloads, Kontenzwang und monetarisieren aggressiv mit Fullscreen-Werbung.
-
-### 2.2 Praxisrelevanz & Lerneffekt
-Das Projekt adressiert zentrale Herausforderungen moderner Softwaretechnik im Web:
-- **Ressourceneffizienz:** Wie viel Funktionalität lässt sich mit purem Vanilla JavaScript (ES6+), semantischem HTML5 und CSS Custom Properties erzielen?
-- **Serverless Realtime Architecture:** Wie können Echtzeit-Spiele über Backend-as-a-Service (Supabase Realtime WebSockets) skaliert werden, ohne eigene Serverinfrastruktur warten zu müssen?
-- **Algorithmen & Heuristiken im Frontend:** Ausführung deterministischer Backtracking-Generatoren und Validatoren innerhalb des browserseitigen Event-Loops bei 60 FPS.
+*(Recherche-Hinweis: Klassische Koop-Sudokus im Netz lassen Spieler meist nur auf demselben Feld tippen. Ein aktiver, zeitgesteuerter Board-Tausch zwischen zwei Spielern existiert so auf dem Markt bisher nicht!)*
 
 ---
 
-## 3. Angestrebtes Ergebnis (Deliverable)
+## 2. Angestrebtes Ergebnis
 
-Das finale Ergebnis der Semesterarbeit gliedert sich in zwei eng verzahnte Bestandteile:
-1. **Das funktionale Web-Artefakt (Software):**
-   - Eine produktiv gehostete, responsive Web-App (Single-Page-Application), die auf Desktop-, Tablet- und Smartphone-Browsern uneingeschränkt nutzbar ist.
-   - Drei vollwertige Spielmodi: Einzelspieler (Zen), Versus (Online & Bot) und Co-Op Swap.
-   - Vollständige Offline-Fähigkeit für Einzelspieler mittels LocalStorage-Persistenz.
-   - Integrierter, mathematisch synthetisierter Lofi-Soundtrack (Web Audio API) und ein 6-stufiges Design-Theme-System.
-2. **Die wissenschaftliche Ausarbeitung (Schriftlicher Bericht, ca. 4.000 Wörter):**
-   - Eine fundierte Dokumentation nach wissenschaftlichen Standards, welche Architektur, Algorithmen, Latenzmessungen, Herausforderungen und Best Practices im Web Engineering reflektiert.
+Das finale Ergebnis der Arbeit besteht aus zwei Teilen:
+1. **Das fertige Web-Spiel (Software):** Eine funktionierende Web-App, die sowohl am Laptop/PC als auch auf dem Smartphone flüssig im Browser läuft – mit Einzelspieler, Versus-Modus (auch gegen Computer-Gegner/Bot) und dem innovativen Co-Op Swap.
+2. **Die schriftliche Seminararbeit (ca. 4.000 Wörter):** Eine verständliche Dokumentation, die zeigt, wie das Spiel geplant, programmiert und getestet wurde (inkl. Gliederung angelehnt an das erfolgreiche FOM-Projekt *Balkan Snake*).
 
 ---
 
-## 4. Ziele und Nutzen nach den SMART-Kriterien
+## 3. Ziele und Nutzen (einfach nach SMART erklärt)
 
-* **S (Spezifisch):**  
-  Entwicklung und wissenschaftliche Evaluation einer zustandsbehafteten Echtzeit-Webanwendung für kollaboratives Sudoku unter Verwendung moderner nativer Webstandards (HTML5, CSS Grid/Flexbox, ES6+ Modules, Web Audio API) und eines serverlosen BaaS-WebSocket-Backends (Supabase).
-* **M (Messbar):**  
-  - **Performance:** First Contentful Paint (FCP) < 300 ms, Google Lighthouse Score > 95 in Performance, Accessibility und Best Practices.
-  - **Latenz:** WebSocket-Synchronisationsdauer für Spielfeld-Zustände < 80 ms im mitteleuropäischen Raum.
-  - **Code-Qualität:** 0 Build-Abhängigkeiten (Zero-Build-Architektur), modularer Code mit klarer Trennung von Logik, State und DOM-Rendering.
-  - **Umfang:** Schriftliche Ausarbeitung mit mindestens 4.000 Wörtern, vollständiger Quellcode auf GitHub.
-* **A (Akzeptiert & Attraktiv):**  
-  Niedrigschwelliger Einstieg für Nutzer (kein Download, optionaler Gast-Modus, keine Werbung, freie Themes) und hoher Erkenntnisgewinn für die akademische Begutachtung im Modul Web Technologie.
-* **R (Realistisch):**  
-  Die technische Machbarkeit von Backtracking-Algorithmen und WebSocket-Broadcasting im Browser ist erwiesen. Durch den Verzicht auf schwere Frameworks bleibt der Projektumfang für eine Einzelperson innerhalb des Semesterrahmens präzise beherrschbar.
-* **T (Terminiert):**  
-  - 06.11.2026: Einreichung und Peer-Feedback der Projektskizze im Hochschulforum.
-  - 30.11.2026: Fertigstellung des Kern-MVP (Gruppe A).
-  - 31.12.2026: Abschluss der Multiplayer- & Audio-Implementierung (Gruppe B).
-  - 20.01.2027: Abschluss der empirischen Tests, Messungen und Schriftfassung (ca. 4.000 Wörter).
-  - Finale Abgabe gemäß offiziellem Prüfungsplan.
+Das **SMART-Prinzip** hilft dabei, Ziele so zu formulieren, dass sie nicht schwammig sind, sondern klar überprüft werden können:
+
+- **S (Spezifisch – Was genau wird gemacht?):**  
+  Entwicklung eines vollwertigen, werbefreien Sudokus im Web, das um einen Echtzeit-Multiplayer mit automatischem Spielfeld-Tausch erweitert wird.
+- **M (Messbar – Woran sieht man, ob es geklappt hat?):**  
+  Das Spiel lädt sofort (in unter einer Sekunde), reagiert verzögerungsfrei auf Eingaben, und der Spielfeld-Tausch zwischen zwei Geräten funktioniert stabil über einen Raum-Code.
+- **A (Attraktiv – Welchen Mehrwert bringt es?):**  
+  Spieler können ohne Registrierung und ohne App-Installation einfach einen 4-stelligen Raum-Code an Freunde schicken und direkt zusammen losrätseln – ohne störende Werbung.
+- **R (Realistisch – Ist das alleine im Semester machbar?):**  
+  Ja. Statt schwere, unübersichtliche Frameworks zu nutzen, baut SwapDoku auf den Standard-Webtechnologien (HTML, CSS, JavaScript) auf. Für die Vernetzung wird ein fertiger Dienst (Supabase) genutzt, sodass kein eigener Server aufgesetzt oder gewartet werden muss.
+- **T (Terminiert – Bis wann?):**  
+  - 06.11.2026: Einstellen der Projektskizze im Forum
+  - Ende November: Grundlegendes Sudoku spielbar (MVP)
+  - Ende Dezember: Multiplayer, Board-Swap und Design fertig
+  - Januar 2027: Abgabe der schriftlichen Seminararbeit
 
 ---
 
-## 5. Scope: Umfang, Leistung und Qualitätskriterien
+## 4. Scope: Was gehört dazu und was nicht?
 
-### In-Scope (Leistungsumfang)
-- **Sudoku-Engine:** Generierung gültiger, symmetrisch balancierter 9×9-Gitter mit garantierter eindeutiger Lösbarkeit über Backtracking; drei adaptive Schwierigkeitsgrade (*Einfach*, *Mittel*, *Schwer*).
-- **Zustandsverwaltung:** Zentraler State Store für Gitterzustände, Notizen-Ebene (Pencil Marks), Ziffernkontingente und Zeitmessung.
-- **Echtzeit-Synchronisation:** Raum-basierte Multiplayer-Sessions mit 4-stelligem Code via Supabase Realtime Channels (Presence & Broadcast).
-- **UI/UX & Barrierefreiheit:** Skandinavisches Design-System mit 6 Kontrast-Themes (inkl. OLED-Darkmode), vollständige Tastatursteuerung (Pfeiltasten, Ziffern 1–9, Notizen-Toggle, Pause), responsive Anpassung für Smartphones.
-- **Audio-Synthese:** Eigenständige Klangsynthese im Browser via Web Audio API (Oszillatoren, Biquad-Filter, Gain-Hüllkurven).
-
-### Out-of-Scope (Abgrenzung zur Komplexitätsreduktion)
-- Native Mobile-Apps (iOS/Android im App Store) – Fokus liegt rein auf Standards des Open Web.
-- Monetarisierung, In-App-Käufe oder Zahlungsabwicklungen (alle Features sind 100 % kostenfrei).
-- Eigener Linux-Rootserver mit Node.js/Socket.io – bewusst durch serverloses BaaS (Supabase) ersetzt, um Wartungsaufwände zu eliminieren.
-
-### Qualitätskriterien
-- **Resilienz:** Bei kurzzeitigem Verbindungsabbruch geht der Spielstand nicht verloren (Reconnection-Strategie & LocalStorage-Backup).
-- **Usability:** Keine störenden visuellen Elemente (keine bunten Emojis, dezente monochrome Vektor-SVGs, saubere Fadenkreuz-Hervorhebung für Zeilen und Spalten).
-- **Datenschutz:** DSGVO-konforme Datenhaltung (Gastmodus ohne Personenbezug, minimale Speicherung bei E-Mail-Registrierung).
+- **Im Projekt enthalten (In-Scope):**
+  - Klassisches 9×9 Sudoku mit automatischer Rätsel-Erstellung und Lösungsprüfung (3 Schwierigkeitsgrade).
+  - Notiz-Funktion (Bleistift-Zahlen in den Ecken), Fehlerprüfung und Stoppuhr.
+  - Der Co-Op Swap Modus (Zwei Spieler, Board-Tausch alle 10 Sekunden).
+  - Versus-Modus (Wettrennen gegen Freunde oder gegen einen Computer-Bot).
+  - Verschiedene Farb-Designs (Themes wie Dark Mode, Grün, Blau etc.) und entspannte Lofi-Hintergrundmusik.
+  - Responsive Anpassung (gut bedienbar am Desktop mit Tastatur und am Handy per Touch).
+- **Nicht im Projekt enthalten (Out-of-Scope):**
+  - Keine native App für den Apple App Store oder Google Play Store (das Spiel soll eine reine Web-Anwendung bleiben).
+  - Keine Bezahlfunktionen, Abos oder In-Game-Käufe (alles bleibt 100 % kostenlos).
 
 ---
 
-## 6. Strukturierung der Arbeitspakete (3-Stufen-Modell)
+## 5. Strukturierung der Arbeitspakete (Stufenplan)
 
-Um den Anforderungen der Prüfungsordnung und einem professionellen Risikomanagement gerecht zu werden, sind die Arbeitspakete in drei Ausbaustufen unterteilt:
+Die Entwicklung ist in drei aufeinander aufbauende Stufen unterteilt. Das sorgt dafür, dass am Ende garantiert ein funktionierendes Spiel bereitsteht:
 
-```mermaid
-flowchart TD
-    subgraph GruppeA ["Gruppe A: Minimales MVP (Ziel: Bestehen / Note 4.0)"]
-        AP1["AP 1.1: Semantisches HTML5/CSS Grid"]
-        AP2["AP 1.2: Sudoku Core Engine (Solver/Generator)"]
-        AP3["AP 1.3: Game-Loop & Validierung (Singleplayer)"]
-    end
+### Stufe 1: Minimaler Umfang (MVP – Die solide Basis)
+*Ziel: Ein vollwertiges, funktionierendes Sudoku für eine Person.*
+- **AP 1.1 Spielfeld & Oberfläche:** Aufbau des 9×9 Gitters mit sauberem HTML5 und modernem CSS.
+- **AP 1.2 Sudoku-Logik:** Programmierung des Algorithmus, der gültige Rätsel erzeugt und Eingaben auf Richtigkeit prüft.
+- **AP 1.3 Spielablauf:** Zifferneingabe, Notizen an/aus, Fehlerzähler (3 Leben), Timer und lokale Bestzeit.
 
-    subgraph GruppeB ["Gruppe B: 'Schöne' Arbeit (Ziel: Note 2.x - 1.x)"]
-        AP4["AP 2.1: Supabase Realtime (Versus & Co-Op Swap)"]
-        AP5["AP 2.2: Autonome Bot-KI (Offline-Gegner)"]
-        AP6["AP 2.3: Web Audio API Lofi-Synthesizer"]
-        AP7["AP 2.4: 6-Farben Theme-Engine & CSS Variables"]
-        AP8["AP 2.5: Zweisprachige i18n (DE/EN)"]
-    end
+### Stufe 2: Erweiterter Umfang (Das Besondere an SwapDoku)
+*Ziel: Die Multiplayer-Modi und ein schönes Spielerlebnis.*
+- **AP 2.1 Co-Op Swap Modus:** Entwicklung der Tausch-Mechanik, bei der zwei Spieler alle 10 Sekunden automatisch die Boards tauschen.
+- **AP 2.2 Versus-Modus & Computer-Bot:** Live-Fortschrittsbalken gegen Mitspieler oder gegen einen virtuellen Bot.
+- **AP 2.3 Design, Themes & Sound:** 6 verschiedene Farbwelten (inkl. Dark Mode) und entspannter Lofi-Sound.
+- **AP 2.4 Handy-Optimierung:** Anpassung des Layouts für kleine Bildschirme.
 
-    subgraph GruppeC ["Gruppe C: Exzellente Erweiterungen (Stretch Goals)"]
-        AP9["AP 3.1: Supabase Auth (Gast & User-Accounts)"]
-        AP10["AP 3.2: Zeitbasierte Rangliste & Bestenlisten-Filter"]
-        AP11["AP 3.3: Latenz- & Performance-Evaluation (Wireshark/Lighthouse)"]
-    end
+### Stufe 3: Optionale Erweiterungen (Das i-Tüpfelchen)
+*Ziel: Zusatzfeatures für Langzeitmotivation.*
+- **AP 3.1 Benutzer-Accounts:** Optionaler Login/Registrierung für Spieler, die ihr Profil speichern wollen.
+- **AP 3.2 Globale Rangliste:** Online-Bestenliste sortiert nach Schwierigkeitsgrad und Bestzeiten.
 
-    GruppeA --> GruppeB
-    GruppeB --> GruppeC
-```
-
-### Gruppe A: Minimales Set von Arbeitspaketen (MVP — Ziel: Gerade so bestehen)
-*Dieses Set sichert die Basisanforderungen einer funktionierenden Web-Anwendung und einer geschlossenen theoretischen Arbeit ab.*
-* **AP 1.1: Semantische UI & Responsive Grid:** Aufbau der Benutzeroberfläche mit HTML5 und CSS Grid/Flexbox zur korrekten Darstellung eines 9×9-Sudokufelds auf Desktop und Mobilgeräten.
-* **AP 1.2: Sudoku-Algorithmus:** Implementierung eines Backtracking-Algorithmus in JavaScript zur Prüfung der Spielfeldvalidität und Erzeugung lösbarer Gitter.
-* **AP 1.3: Interaktive Spielmechanik:** Eingabe von Zahlen, Fehlerüberprüfung, Zählung verbleibender Ziffern, Stoppuhr und grundlegendes Gewonnen/Verloren-Feedback.
-* **Theoretischer Teil A:** Dokumentation von Web-Grundlagen, DOM-Manipulation und Algorithmen-Komplexität (Landau-Symbole des Solvers).
-
-### Gruppe B: Weitere Arbeitspakete für eine "schöne", vollwertige Arbeit (Ziel: Note 2.x bis 1.x)
-*Diese Pakete heben das Projekt auf ein überdurchschnittliches akademisches und praktisches Niveau.*
-* **AP 2.1: Echtzeit-Multiplayer via Supabase:** Einbindung von WebSockets über Supabase Realtime Channels. Implementierung der Synchronisation für den Versus-Fortschritt und den kooperativen Board-Swap.
-* **AP 2.2: Autonome Bot-Engine:** Entwicklung eines browserseitigen KI-Gegners mit menschlichem Lösungsverhalten (zufallsgesteuerte menschliche Bedenkzeit, Fehlerrate je nach Stufe).
-* **AP 2.3: Synthetisierte Sound-Engine:** Implementierung eines prozeduralen Audio-Synthesizers mit der Web Audio API für Lofi-Ambient-Musik und taktiles akustisches Feedback.
-* **AP 2.4: Theme-Engine & Scandinavian Minimalist UI:** Dynamisches Farbsystem mit 6 distinkten Farbwelten (Nordic Light, Dark Slate, Matcha Green, Ocean Frost, Sunset Amber, Lavender Dream) via CSS Custom Properties.
-* **AP 2.5: Internationalisierung (i18n):** Clientseitige Umschaltung zwischen Deutsch und Englisch ohne Neuladen der Seite.
-* **Theoretischer Teil B:** Analyse von BaaS vs. Self-Hosted WebSockets, Latenzvergleich und Synthese vs. Streaming im Web.
-
-> **Begründungsstrategie bei Nicht-Realisierung einzelner APs aus Gruppe B:**  
-> Sollten unvorhersehbare Hürden auftreten (z. B. Überschreitung von Supabase-Free-Tier-Quotas oder unlösbare Web-Audio-Inkompatibilitäten auf exotischen Browsern), greifen definierte Fallback-Mechanismen:  
-> - Der Multiplayer weicht nahtlos auf die autonome Bot-Engine aus (vollständige Offline-Spielbarkeit garantiert).  
-> - Die Sound-Engine lässt sich über ein "Silent Graceful Degradation"-Muster deaktivieren, ohne die Spielbarkeit zu beeinträchtigen.  
-> Diese Vorkehrungen werden in der Semesterarbeit wissenschaftlich als architektonische Resilienz begründet.
-
-### Gruppe C: Zusätzliche Erweiterungen (Stretch Goals / Exzellenz)
-*Optionale Vertiefungen für eine herausragende wissenschaftliche Leistung.*
-* **AP 3.1: Authentifizierung & Cloud-Profile:** Anbindung von Supabase Auth (Passwort-Registrierung & anonymer Gastzugang) zur Synchronisation persönlicher Statistiken.
-* **AP 3.2: Zeitbasierte Ranglisten-Filter:** Globale Bestenliste mit filterbaren Schwierigkeitsgraden und Sortierung nach Lösungszeit.
-* **AP 3.3: Empirische Latenz- und Performance-Analyse:** Systematische Messreihen der WebSocket-Roundtrip-Time (RTT) unter simulierter Netzwerkdrosselung (3G/4G) und Auswertung für die Seminararbeit.
+> **Begründung bei Planänderungen (Fallback-Strategie):**  
+> Sollte es wider Erwarten zu zeitlichen Engpässen oder Verbindungsproblemen beim Online-Multiplayer kommen, bleibt das Spiel durch Stufe 1 (Einzelspieler) und den lokalen Computer-Bot jederzeit uneingeschränkt spielbar. In der Seminararbeit wird genau reflektiert, wie solche Hürden gelöst oder strukturiert abgefangen wurden.
 
 ---
 
-## 7. Zeit-, Ressourcen- und Aufwandsplanung
+## 6. Zeit- und Aufwandsplanung
 
-Für die Durchführung der Semesterarbeit wird ein studentischer Gesamtaufwand von ca. **140 Arbeitsstunden** (Personenstunden) veranschlagt:
+Für das gesamte Projekt (Entwicklung + Ausarbeitung der Seminararbeit) sind ca. **140 Arbeitsstunden** eingeplant:
 
-| Phase | Zeitraum | Inhalt / Meilensteine | Geplanter Aufwand |
+| Phase | Zeitraum | Aufgaben | Aufwand |
 | :--- | :--- | :--- | :--- |
-| **Phase 1: Konzeption & Skizze** | Bis 06.11.2026 | Anforderungsanalyse, Systemarchitektur, Einreichung der Projektskizze | 15 h |
-| **Phase 2: MVP-Entwicklung (Gruppe A)** | 07.11. – 25.11.2026 | HTML/CSS-Skelett, Backtracking-Solver, Singleplayer Game Loop | 35 h |
-| **Phase 3: Multiplayer & Audio (Gruppe B)**| 26.11. – 20.12.2026 | Supabase Realtime, Co-Op Swap, Bot-KI, Web Audio API, Themes | 40 h |
-| **Phase 4: Testen, Refactoring & Messung**| 21.12. – 05.01.2027 | Cross-Browser-Tests (Chrome, Safari, Firefox, Mobile), RTT-Messungen | 15 h |
-| **Phase 5: Schriftliche Ausarbeitung** | 06.01. – 25.01.2027 | Verfassen der wissenschaftlichen Arbeit (4.000 Wörter), Peer-Review | 35 h |
-| **Gesamtaufwand:** | | | **140 Stunden** |
+| **Phase 1: Konzeption** | Bis 06.11.2026 | Spielkonzept, Architektur, Projektskizze fürs Forum | ca. 15 h |
+| **Phase 2: Basis-Spiel (Stufe 1)** | Bis 25.11.2026 | Spielfeld, Rätsel-Generator, Notizen, Timer (MVP) | ca. 35 h |
+| **Phase 3: Swap-Multiplayer (Stufe 2)** | Bis 20.12.2026 | Co-Op Swap, Versus-Modus, Bot-Gegner, Themes & Sound | ca. 40 h |
+| **Phase 4: Tests & Verfeinerung** | Bis 05.01.2027 | Testen auf Handy/PC, Fehlerbehebung, Feedback einarbeiten | ca. 15 h |
+| **Phase 5: Schriftliche Arbeit** | Bis 25.01.2027 | Verfassen der Seminararbeit (ca. 4.000 Wörter), Korrektur | ca. 35 h |
+| **Gesamt:** | | | **ca. 140 h** |
 
 ---
 
-## 8. Risiken, Auswirkungen und Mitigationsstrategien
+## 7. Risiken und wie wir damit umgehen
 
-| Risiko | Wkt. | Auswirkung | Präventive Gegenmaßnahme (Mitigation) |
-| :--- | :--- | :--- | :--- |
-| **R1: Verbindungsabbrüche bei WebSockets** | Mittel | Hoch | Implementierung eines Heartbeat-Pings, Reconnection-Handshake und lokaler Zwischenspeicherung im `localStorage`. |
-| **R2: Latenzbedingte Desynchronisation beim Board-Swap** | Mittel | Hoch | Zeitstempel-basierte Synchronisation über Presence-State; deterministischer Swap-Timer, der clientseitig vorausberechnet wird. |
-| **R3: Hohe Rechenlast beim Puzzle-Generieren** | Niedrig | Mittel | Optimierter Backtracking-Algorithmus mit zufälliger Zeilen-Permutation; Generierung benötigt < 15 ms, blockiert den Event-Loop nicht. |
-| **R4: Audio-Autoplay-Blockaden moderner Browser** | Hoch | Niedrig | Initialisierung des `AudioContext` erst nach expliziter Benutzerinteraktion (Klick auf Musik-Button) gemäß W3C-Spezifikation. |
-| **R5: Zeitverzug bei der schriftlichen Dokumentation** | Mittel | Mittel | Frühzeitiges Führen eines Entwicklungstagebuchs und paralleles Verschriftlichen der Architektur-Kapitel während der Implementierung. |
-
----
-
-## 9. Vorläufiger Gliederungsvorschlag für die Semesterarbeit (ca. 4.000 Wörter)
-
-1. **Einleitung und Motivation** (~400 Wörter)
-   - 1.1 Ausgangslage und Relevanz kollaborativer Webanwendungen
-   - 1.2 Zielsetzung und Alleinstellungsmerkmal von SwapDoku
-   - 1.3 Aufbau der Arbeit
-2. **Theoretische Grundlagen & Technologieauswahl** (~700 Wörter)
-   - 2.1 Architekturvergleich: Zero-Build Vanilla Web vs. Framework-Ökosysteme (React/Vue)
-   - 2.2 Echtzeitkommunikation: WebSockets vs. Server-Sent Events vs. HTTP Long-Polling
-   - 2.3 Serverlose Architekturen: Backend-as-a-Service (BaaS) im Kontext von Online-Spielen
-3. **Konzeption und Systemdesign** (~800 Wörter)
-   - 3.1 Anforderungsanalyse und Use Cases (Zen, Versus, Co-Op Swap)
-   - 3.2 Systemarchitektur und Datenflussmodell
-   - 3.3 UI/UX-Design: Skandinavischer Minimalismus und Responsive 2-Spalten-Layout
-4. **Implementierung der Kernkomponenten** (~1.200 Wörter)
-   - 4.1 Die Sudoku-Engine: Backtracking-Algorithmus, Validierung und Symmetrie
-   - 4.2 Zustandssynchronisation und Raumverwaltung via Supabase Realtime
-   - 4.3 Die Co-Op Swap-Mechanik und visuelles Feedback
-   - 4.4 Autonome Bot-KI für Einzelspieler
-   - 4.5 Prozedurale Klangsynthese mittels Web Audio API
-5. **Evaluation, Qualitätssicherung und Diskussion** (~600 Wörter)
-   - 5.1 Latenz- und Synchronisationsmessungen unter Realbedingungen
-   - 5.2 Performance-Audit (Lighthouse, Core Web Vitals)
-   - 5.3 Kritische Würdigung der Zero-Build-Architektur und BaaS-Abhängigkeit
-6. **Fazit und Ausblick** (~300 Wörter)
-   - 6.1 Zusammenfassung der erzielten Ergebnisse
-   - 6.2 Zukünftige Erweiterungsmöglichkeiten (PWA, Matchmaking, Turniersysteme)
+1. **Risiko: Was passiert, wenn die Internetverbindung während des Spiels kurz abbricht?**  
+   *Lösung:* Der Spielstand wird im Browser zwischengespeichert. Bei einem kurzen Verbindungsverlust wird automatisch neu verbunden, ohne dass der Fortschritt verloren geht.
+2. **Risiko: Ein Spieler tauscht das Board eine Sekunde später als der andere (Verzögerung).**  
+   *Lösung:* Die beiden Browser gleichen ihre Uhren beim Spielstart kurz ab, sodass der 10-Sekunden-Countdown auf beiden Bildschirmen synchron läuft.
+3. **Risiko: Das Erstellen des Sudokus dauert zu lange und das Spiel hakt.**  
+   *Lösung:* Es wird ein schneller, optimierter Berechnungs-Algorithmus genutzt, der das Spielfeld in wenigen Millisekunden berechnet.
 
 ---
 
-## 10. Nutzen für die Diskussion im Forum
+## 8. Gliederungsvorschlag für die Seminararbeit
 
-Liebe Kommilitoninnen und Kommilitonen, ich freue mich auf euer Feedback zu folgenden Diskussionspunkten:
-1. **Multiplayer-Fokus:** Findet ihr das kooperative Board-Swap-Konzept intuitiv oder würdet ihr zusätzliche Interaktionsformen (z. B. gegenseitiges Sperren von Ziffern / Sabotage-Items) spannender finden?
-2. **Architektur-Entscheidung:** Wie bewertet ihr den bewussten Verzicht auf Frameworks (Zero-Build Vanilla JS) im Vergleich zu React/TypeScript bezüglich Wartbarkeit und akademischem Erkenntnisgewinn?
-3. **Praxisnutzen:** Welche weiteren Qualitätskriterien oder Messungen (z. B. Memory Leaks bei Langzeit-Sessions) würdet ihr in der wissenschaftlichen Evaluation als besonders wertvoll erachten?
+*(Aufbau orientiert sich an der erfolgreichen Seminararbeit „Balkan Snake“ von Haris & Marko an der FOM Hochschule)*
+
+1. **Einleitung**
+   - 1.1 Aufgabenstellung
+   - 1.2 Motivation (Warum Sudoku neu gedacht werden muss)
+   - 1.3 Zielsetzung (SMART)
+   - 1.4 Aufbau der Arbeit
+2. **Anforderungsanalyse & Konzeption**
+   - 2.1 Funktionale Anforderungen
+     - 2.1.1 Minimaler Umfang (MVP – Klassisches Sudoku)
+     - 2.1.2 Erweiterter Umfang (Co-Op Swap, Versus & Bot)
+     - 2.1.3 Optionale Erweiterungen (Accounts & Rangliste)
+   - 2.2 Nicht-funktionale Anforderungen (Usability, Werbefreiheit, Performance)
+   - 2.3 Technologie & Systemarchitektur (HTML5, CSS, JS, Supabase)
+3. **Projektmethodik & Vorgehensweise**
+   - 3.1 Agiles Vorgehensmodell (Arbeiten in Sprints)
+   - 3.2 Qualitätssicherung & Testen
+   - 3.3 Risikomanagement
+4. **Implementierung**
+   - 4.1 Frontend-Architektur (Dateiorganisation, Single-Page-Application)
+   - 4.2 Spiellogik (Spielfeld-Generator, Backtracking-Prüfung, Game-Loop)
+   - 4.3 Design, Themes & Audio (Skandinavisches UI, CSS-Variablen, Web Audio)
+   - 4.4 Echtzeit-Synchronisation (Raum-Code-Lobby, Board-Swap-Timing)
+5. **Projektauswertung**
+   - 5.1 Geplanter vs. tatsächlicher Aufwand (Soll-Ist-Vergleich)
+   - 5.2 Scope-Analyse (Was wurde umgesetzt, was angepasst?)
+   - 5.3 Reflexion & Lerneffekte
+6. **Fazit & Ausblick**
+   - 6.1 Zusammenfassung der Ergebnisse
+   - 6.2 Ausblick auf zukünftige Erweiterungen
