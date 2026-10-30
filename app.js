@@ -420,7 +420,7 @@ const state = {
   },
 
   mode: 'zen', // 'zen' | 'versus' | 'swap'
-  zenDifficulty: 'medium', // 'easy' (5 ✦), 'medium' (3 ✦), 'hard' (1 ✦)
+  zenDifficulty: 'easy', // 'easy' (Standard), 'medium', 'hard'
   versusDifficulty: 'medium', // 'easy', 'medium', 'hard'
   opponentType: 'online', // 'online' | 'bot'
   botDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
@@ -1001,8 +1001,8 @@ async function init() {
   loadLocalState();
   bindEvents();
   setLanguage(state.currentLang);
-  await initAuth();
-  startNewGame();
+  startNewGame(); // Sofortiges Erzeugen & Rendern des Rätsels ohne Wartezeit
+  initAuth();     // Läuft im Hintergrund ohne Blockieren des Spielfelds
 }
 
 function buildGrid() {
@@ -1440,7 +1440,7 @@ function handleGameOver() {
 // =============================================================================
 function getCluesForZenDifficulty() {
   switch (state.zenDifficulty) {
-    case 'easy': return 40;   // Großzügig
+    case 'easy': return 42;   // Sehr großzügig: 42 Zahlen sofort sichtbar & entspannt
     case 'hard': return 28;   // Anspruchsvoll
     case 'medium':
     default: return 34;

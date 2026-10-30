@@ -308,6 +308,36 @@ body {
   border-bottom-color: var(--text);
 }
 
+.mode-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.mode-actions .icon-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, transform 0.2s ease;
+  padding: 0;
+}
+
+.mode-actions .icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  transform: rotate(45deg);
+}
+
 .info-help-btn {
   background: transparent;
   border: 1px solid var(--border);
@@ -321,8 +351,8 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  margin-bottom: 4px;
   transition: border-color 0.15s ease, color 0.15s ease;
+  padding: 0;
 }
 
 .info-help-btn:hover {

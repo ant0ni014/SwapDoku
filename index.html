@@ -155,23 +155,26 @@
       <aside class="sidebar-column">
         <!-- Spieloptionen: Modi & Schwierigkeit / Lobby -->
         <section class="game-options" id="gameOptions">
-          <!-- Modi mit Info-Buttons -->
+          <!-- Modi mit Info-Buttons & Neu-Button -->
           <div class="modes-wrap">
             <nav class="modes">
               <button class="mode-btn active" data-mode="zen" id="tabZen">Einzelspieler</button>
               <button class="mode-btn" data-mode="versus" id="tabVersus">Versus</button>
               <button class="mode-btn" data-mode="swap" id="tabSwap">Co-Op Swap</button>
             </nav>
-            <!-- Hilfeknopf für den aktuellen Modus -->
-            <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
+            <div class="mode-actions">
+              <button class="icon-btn" id="btnNewGame" title="Neues Rätsel (↻)" aria-label="Neues Rätsel">↻</button>
+              <!-- Hilfeknopf für den aktuellen Modus -->
+              <button class="info-help-btn" id="helpModeBtn" title="Spielregeln & Modus-Info">?</button>
+            </div>
           </div>
 
-          <!-- Einzelspieler-Schwierigkeit -->
+          <!-- Einzelspieler-Schwierigkeit: Standardmäßig 'Einfach' aktiv -->
           <section class="zen-bar" id="zenDifficultyBar">
             <div class="zen-diff-row">
               <div class="diff-buttons">
-                <button class="diff-btn" data-diff="easy" id="zenDiffEasy">Einfach</button>
-                <button class="diff-btn active" data-diff="medium" id="zenDiffMedium">Mittel</button>
+                <button class="diff-btn active" data-diff="easy" id="zenDiffEasy">Einfach</button>
+                <button class="diff-btn" data-diff="medium" id="zenDiffMedium">Mittel</button>
                 <button class="diff-btn" data-diff="hard" id="zenDiffHard">Schwer</button>
               </div>
             </div>
@@ -237,7 +240,6 @@
             <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
             <button class="tool-btn" id="btnHint" title="Einen Tipp erhalten">Tipp (<span id="hintCount">3</span>)</button>
             <button class="tool-btn" id="btnErase">Löschen</button>
-            <button class="tool-btn" id="btnNewGame">Neu</button>
           </div>
 
           <div class="numpad" id="numpad">
