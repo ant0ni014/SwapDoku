@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT DEFAULT 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6),
     sync_points INTEGER NOT NULL DEFAULT 0 CHECK (sync_points >= 0),
+    versus_wins INTEGER NOT NULL DEFAULT 0 CHECK (versus_wins >= 0),
     active_theme TEXT NOT NULL DEFAULT 'nordic-light',
     -- Strukturierte Bestzeiten pro Spielmodus (JSONB-Mapping: { "easy": INTEGER, "medium": INTEGER, "hard": INTEGER })
     best_times_zen JSONB NOT NULL DEFAULT '{"easy": null, "medium": null, "hard": null}'::jsonb,
@@ -103,8 +104,8 @@ CREATE POLICY "Users can insert own unlocked themes"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-    INSERT INTO public.profiles (id, sync_points, active_theme)
-    VALUES (NEW.id, 0, 'nordic-light')
+    INSERT INTO public.profiles (id, sync_points, versus_wins, active_theme)
+    VALUES (NEW.id, 0, 0, 'nordic-light')
     ON CONFLICT (id) DO NOTHING;
 
     -- Standard-Theme "nordic-light" sofort als freigeschaltet eintragen

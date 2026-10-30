@@ -74,3 +74,31 @@ Dieses Dokument dient als zentrale Wissensbasis für die wissenschaftliche Semin
 - **Problem:** Die Verwendung von bunten Betriebssystem-Emojis (z. B. 🎨, ⏱️, 👤) wirkte unprofessionell und auf verschiedenen Geräten (iOS vs. Android vs. Windows) optisch inkonsistent.
 - **Ursache:** Native Schriftart-Emojis variieren je nach Plattform stark in Farbe, Form und Größe.
 - **Lösung:** Vollständiger Austausch aller Emojis gegen standardisierte, monochrome Inline-SVG-Vektorgrafiken (`stroke="currentColor"`). Dadurch passen sich die Icons automatisch der Textfarbe und dem gewählten Theme an.
+
+---
+
+### Herausforderung 9: Asynchroner Spielstart im Multiplayer
+- **Problem:** Traten zwei Spieler über den 4-stelligen Raumcode gegeneinander an, begann der Spieler, der zuerst im Raum war, früher zu rätseln als der beigetretene Partner.
+- **Ursache:** Fehlende Vorstart-Synchronisation. Der Raum-Host startete seinen Timer sofort, anstatt auf die Empfangsbestätigung des Clients zu warten.
+- **Lösung:** Einführung eines gemeinsamen **3-2-1 Countdown-Overlays**. Sobald der zweite Spieler den Raum betritt (`presence:sync`), sendet der Host ein `COUNTDOWN_START`-Signal über Supabase Realtime Broadcast. Beide Clients zählen visuell synchron von 3 auf 0 herunter, bevor die Eingabe freigeschaltet wird.
+
+---
+
+### Herausforderung 10: Blockieren des Sieges-Modals bei Netzwerkfehlern
+- **Problem:** Hatte ein Spieler das letzte Feld gelöst, erschien in manchen Testläufen das Sieges-Overlay nicht, wenn der asynchrone Highscore-Upload zu Supabase fehlschlug oder verzögert war.
+- **Ursache:** Der Aufruf von `showResultOverlay()` erfolgte erst am Ende einer asynchronen Kette nach `saveScoreToDB()`. Trat dort eine unbehandelte Exception auf, brach die Ausführung ab.
+- **Lösung:** Umkehrung der Priorität: Das UI-Ergebnis (`showResultOverlay()`) wird sofort synchron aufgerufen. Alle nachgelagerten Datenbank- und Toast-Aufrufe wurden in `try-catch`-Blöcke gekapselt, sodass das visuelle Spielerlebnis auch bei Verbindungsabbrüchen zu 100 % garantiert ist.
+
+---
+
+### Herausforderung 11: Ungerechtes Spielende bei Verbindungsabbruch (Ghost-Räume)
+- **Problem:** Schloss ein Spieler im Versus- oder Co-Op-Modus einfach den Browser-Tab, blieb der verbleibende Spieler in einem eingefrorenen Raum zurück.
+- **Ursache:** Fehlende Behandlung des Supabase-Presence-Leaves.
+- **Lösung:** Implementierung eines Event-Listeners auf `channel.on('presence', { event: 'leave' })`. Verlässt der Gegner das Match vorzeitig, wertet das System dies als Forfeit (Aufgabe) und erklärt den verbliebenen Spieler automatisch zum Sieger.
+
+---
+
+### Herausforderung 12: Fehler-Exploit bei Ziffernüberschreibung
+- **Problem:** Ein Spieler verlor nur dann ein Leben, wenn er eine falsche Zahl in eine *leere* Zelle eintrug. Überschrieb er eine bereits falsch gesetzte Zelle mit einer weiteren falschen Zelle, wurde kein Leben abgezogen.
+- **Ursache:** Die Validierungsprüfung enthielt eine Bedingung `if (prevVal === 0)`, die bereits belegte Zellen von der Fehlerstrafe ausschloss.
+- **Lösung:** Vereinheitlichung der Validierungslogik: Jede eingegebene Zahl wird gegen `state.solution[idx]` geprüft. Stimmt der Wert nicht mit der mathematischen Lösung überein, wird ausnahmslos ein Leben abgezogen (`deductLife()`), unabhängig vom vorherigen Inhalt der Zelle.

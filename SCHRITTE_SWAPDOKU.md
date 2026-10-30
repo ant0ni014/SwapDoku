@@ -106,3 +106,41 @@ In dieser Datei wird jeder einzelne Entwicklungsschritt von SwapDoku mit exaktem
   - Abgabe von qualifiziertem Peer-Feedback im Hochschulforum zu den Projekten der Kommilitonen.
 * **2026-10-29** – **Aufsetzen des professionellen Forschungs- und Tracking-Systems**
   - Erstellung von `SCHRITTE_SWAPDOKU.md` (Chronologie mit Zeitstempeln), `HERAUSFORDERUNGEN_SWAPDOKU.md` (Problemlösungs-Log) und `LERNEN_SWAPDOKU.md` (Wissenschaftliche Reflexion).
+
+---
+
+### 30. Oktober 2026: Live-Supabase-Anbindung, Multiplayer-Feinschliff & Sieg-Flows
+* **2026-10-30 12:09** (`33a5273`) – **Backend-Schema für Multi-Mode-Leaderboards & RLS-Erweiterung**
+  - Erweiterung von `schema.sql` um modi-spezifische Tabellen (`leaderboard_zen`, `leaderboard_versus`, `leaderboard_swap`).
+  - Stored Procedures und Validierung für echte Multiplayer-Statistiken und 3-Leben-Regelung.
+* **2026-10-30 12:16** (`e513b13`) – **UI-Harmonisierung & Default-Konfiguration**
+  - Default-Spielstart auf `Einfach` mit sofort sichtbaren Startzahlen.
+  - Toolbar auf 3 zentrale Buttons bereinigt und Neustart-Icon direkt neben dem Hilfe-Button verankert.
+* **2026-10-30 12:42** (`e127c70`) – **Bugfix: Fehlende Hilfsfunktion deklariert**
+  - Deklaration der fehlenden Funktion `updateBotPartnerDifficultyLabels()`.
+  - Konsolidierung des Refresh-Icons für den Neustart.
+* **2026-10-30 12:45** (`f486db6`) – **Kritische Spielmechanik-Korrektur: Fehlervalidierung**
+  - Fehlerabzug korrigiert: Leben wird nun bei *jeder* Falscheingabe abgezogen, auch beim Überschreiben bereits belegter (nicht-initialer) Zellen.
+* **2026-10-30 12:47** (`305791c`) – **UI-Bereinigung im Ergebnis-Modal**
+  - Entfernung des fehlerhaften Peek-Buttons und des roten Kreuzes.
+  - Integration eines sauberen „Lösung anzeigen“-Buttons (`show solution`).
+* **2026-10-30 12:58** (`d9ff4c0`) – **Board-Inspektion & Top-Bar nach Spielende**
+  - Ergänzung einer dezenten oberen Leiste nach Spielende: Spieler können das fertige Board in Ruhe inspizieren und das Ergebnis-Modal jederzeit wieder öffnen oder die Lösung einblenden.
+* **2026-10-30 13:16** (`0ce8e1f`) – **Live-Supabase-Integration (Schärfung des Live-Backends)**
+  - Einbindung der realen Supabase-Projekt-URL und des echten Anon-Keys.
+  - Aktivierung von Live-WebSockets (`room:CODE`), echter Cloud-Authentifizierung und synchronem Datenbank-Abgleich.
+* **2026-10-30 13:37** (`ddc3674`) – **Auto-Lock für vervollständigte Ziffern & Robuste Siegerkennung**
+  - Automatisches Sperren/Deaktivieren von Zifferntasten auf dem Numpad, sobald eine Zahl 9-mal korrekt im Gitter gesetzt wurde.
+  - Minimalistischer Pause-Button.
+  - Absicherung der Sudoku-Abschlussprüfung (`isComplete()`).
+* **2026-10-30 13:41** (`4547a0e`) – **Leaderboard-Bereinigung: Reale Spielerdaten**
+  - Entfernung aller künstlichen Dummy-/Bot-Einträge aus der Rangliste.
+  - Anzeige ausschließlich echter Spielerrekorde aus der Supabase-PostgreSQL-Datenbank.
+* **2026-10-30 13:59** (`9479747`) – **Robuste Siegesanzeige (Try-Catch-Kapselung)**
+  - Priorisierung von `showResultOverlay()`.
+  - Kapselung von Backend- und Toast-Aufrufen in `try-catch`-Blöcken, damit das Sieges-Modal unter allen Umständen garantiert aufpoppt (selbst bei Latenz- oder Netzwerkfehlern).
+* **2026-10-30 15:07** (`145d85b`) – **Multiplayer-Vollendung: Synchroner Start, Knockout & Forfeit**
+  - **Synchronisierter Start:** Einblendung eines 3-2-1 Countdowns für beide Spieler bei Beitritt in einen Raum.
+  - **3-Leben Knockout:** Verliert ein Spieler im Versus alle 3 Leben, gewinnt der Gegner sofort durch Knockout (`KNOCKOUT_WIN`).
+  - **Forfeit-Erkennung:** Verlässt ein Spieler den Raum vorzeitig (`presence:leave`), wird dies als Aufgabe gewertet und der verbleibende Spieler siegt.
+  - **Versus-Leaderboard:** Rangliste zählt nun echte Versus-Siege.

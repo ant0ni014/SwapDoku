@@ -1145,10 +1145,14 @@ async function initAuth() {
 async function syncProfileFromDB() {
   if (!state.supabase || !state.user) return;
   try {
-    const { data } = await state.supabase.from('profiles').select('username, active_theme').eq('id', state.user.id).single();
+    const { data } = await state.supabase.from('profiles').select('username, active_theme, versus_wins').eq('id', state.user.id).single();
     if (data) {
       state.profile.username = data.username || 'Spieler';
       state.profile.active_theme = data.active_theme || 'nordic-light';
+      if (typeof data.versus_wins === 'number') {
+        state.profile.versus_wins = Math.max(state.profile.versus_wins || 0, data.versus_wins);
+        localStorage.setItem('swapdoku_versus_wins', state.profile.versus_wins.toString());
+      }
     }
     setTheme(state.profile.active_theme);
     updateAccountUI();
@@ -2175,7 +2179,7 @@ function recordVersusWin() {
 
   if (state.supabase && state.user) {
     state.supabase.from('profiles').update({
-      sync_points: state.profile.versus_wins
+      versus_wins: state.profile.versus_wins
     }).eq('id', state.user.id).catch(() => {});
   }
 }

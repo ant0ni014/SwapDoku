@@ -16,7 +16,11 @@ Diese Datei bündelt die persönlichen, fachlichen und methodischen Lerneffekte 
 
 ### 1.3 Verteilte Systeme & Echtzeit-Web (HTTP vs. WebSockets)
 - **Erkenntnis:** Klassische REST-APIs über HTTP eignen sich nicht für Live-Spiele, da Polling-Anfragen hohe Serverlast und Latenzen erzeugen.
-- **Lerneffekt:** Die Funktionsweise bidirektionaler, persistenter **WebSockets** über Supabase Realtime Channels. Verständnis des Unterschieds zwischen **Presence-Tracking** (wer ist im Raum?) und **Broadcasts** (Senden von Spielzuständen und Fortschrittsbalken).
+- **Lerneffekt:** Die Funktionsweise bidirektionaler, persistenter **WebSockets** über Supabase Realtime Channels. Verständnis des Unterschieds zwischen **Presence-Tracking** (wer ist im Raum?) und **Broadcasts** (Senden von Spielzuständen und Fortschrittsbalken). Besondere Beachtung erfordert die asynchrone Fehlerbehandlung: UI-Updates müssen stets Vorrang vor asynchronen Backend-Writes haben (Optimistic UI / Uncoupled Rendering), um UI-Freezes bei Netzwerkfehlern zu verhindern.
+
+### 1.4 State-Synchronisation & Fairness in Multiplayer-Web-Games
+- **Erkenntnis:** Bei synchronen Mehrspieler-Spielen im Web dürfen Clients nicht unkontrolliert starten oder ohne Konsequenzen die Verbindung trennen.
+- **Lerneffekt:** Implementierung von **Synchronisations-Barrieren** (3-2-1 Countdown-Broadcasts vor Freischaltung der Eingabe), Behandlung von vorzeitigen Verbindungsabbrüchen (*Presence-Leave Forfeits*) und zustandsbasierte Knockout-Bedingungen (3-Leben-K.O.-Sieg).
 
 ### 1.4 Web Audio API statt statischer Sounddateien
 - **Erkenntnis:** Das Einbinden externer MP3-/WAV-Dateien frisst Bandbreite, erfordert Pufferzeiten und kann bei mobilen Datenverbindungen abbrechen.
