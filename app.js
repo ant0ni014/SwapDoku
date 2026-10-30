@@ -1835,6 +1835,7 @@ function showResultOverlay(isWin) {
 
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
   dom.boardResultOverlay.classList.remove('hidden');
+  dom.boardResultOverlay.style.display = 'flex';
 }
 
 function showFullSolution() {
@@ -1845,7 +1846,10 @@ function showFullSolution() {
   state.selectedIndex = null;
   render();
   updateNumpadCompletedState();
-  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
+  if (dom.boardResultOverlay) {
+    dom.boardResultOverlay.classList.add('hidden');
+    dom.boardResultOverlay.style.display = 'none';
+  }
   if (dom.hudResultBar) {
     dom.hudResultBar.classList.remove('hidden');
     if (dom.btnHudSolution) dom.btnHudSolution.classList.add('hidden');
@@ -1854,7 +1858,10 @@ function showFullSolution() {
 }
 
 function hideResultOverlayForInspection() {
-  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
+  if (dom.boardResultOverlay) {
+    dom.boardResultOverlay.classList.add('hidden');
+    dom.boardResultOverlay.style.display = 'none';
+  }
   if (dom.hudResultBar) {
     dom.hudResultBar.classList.remove('hidden');
     const isWin = SudokuEngine.isComplete(state.currentBoard, state.solution);
@@ -1872,7 +1879,10 @@ function hideResultOverlayForInspection() {
 }
 
 function restoreResultOverlay() {
-  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.remove('hidden');
+  if (dom.boardResultOverlay) {
+    dom.boardResultOverlay.classList.remove('hidden');
+    dom.boardResultOverlay.style.display = 'flex';
+  }
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
 }
 
@@ -1904,26 +1914,47 @@ async function gameWon() {
   state.isGameOver = true;
   stopBot();
   stopStopwatch();
+  state.selectedIndex = null;
+
+  // 1. ZUERST den Sieg-Dialog anzeigen - GARANTIERT und OHNE Blockade!
+  try {
+    showResultOverlay(true);
+  } catch (err) {
+    console.error('Error showing result overlay:', err);
+    if (dom.boardResultOverlay) {
+      dom.boardResultOverlay.classList.remove('hidden');
+      dom.boardResultOverlay.style.display = 'flex';
+    }
+  }
 
   const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
   const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : 'medium');
 
-  // Zeit in Bestenliste aufnehmen
-  const isBest = recordBestTime(currentDiff, state.gameSeconds);
-
-  if (isBest) {
-    toast(`${t('toastGameWon')}${formattedTime}! ${t('toastNewBestTime')}`);
-  } else {
-    toast(`${t('toastGameWon')}${formattedTime}!`);
+  // 2. Zeit in Bestenliste aufnehmen (im try-catch, damit keine Exceptions den Sieg stören)
+  let isBest = false;
+  try {
+    isBest = recordBestTime(currentDiff, state.gameSeconds);
+  } catch (err) {
+    console.warn('recordBestTime error:', err);
   }
 
-  showResultOverlay(true);
+  try {
+    if (isBest) {
+      toast(`${t('toastGameWon')}${formattedTime}! ${t('toastNewBestTime')}`);
+    } else {
+      toast(`${t('toastGameWon')}${formattedTime}!`);
+    }
+  } catch (_) {}
 
-  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
-    broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
-  }
+  // 3. Versus Broadcast & Account UI
+  try {
+    if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
+      broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
+    }
+    updateAccountUI();
+  } catch (_) {}
 
-  updateAccountUI();
+  render();
 }
 
 // =============================================================================
@@ -2358,15 +2389,19 @@ function recordBestTime(diff, seconds) {
   saveLeaderboards(boards);
 
   // Supabase Backend Sync (RPC submit_score)
-  if (state.supabase) {
-    state.supabase.rpc('submit_score', {
-      p_mode: mode,
-      p_difficulty: diff,
-      p_time_seconds: seconds,
-      p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3))
-    }).catch(err => {
-      console.warn('Backend sync submit_score skipped/failed:', err.message);
-    });
+  if (state.supabase && typeof state.supabase.rpc === 'function') {
+    try {
+      state.supabase.rpc('submit_score', {
+        p_mode: mode,
+        p_difficulty: diff,
+        p_time_seconds: seconds,
+        p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3))
+      }).catch(err => {
+        console.warn('Backend sync submit_score skipped/failed:', err?.message || err);
+      });
+    } catch (err) {
+      console.warn('Backend sync submit_score error:', err?.message || err);
+    }
   }
 
   return isNewBest;
