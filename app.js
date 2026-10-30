@@ -1215,6 +1215,12 @@ function ensureGameStarted() {
   }
 }
 
+function resetStopwatch() {
+  stopStopwatch();
+  state.gameSeconds = 0;
+  updateStopwatchDisplay();
+}
+
 function startStopwatch(reset = true) {
   stopStopwatch();
   if (reset) {
@@ -2223,7 +2229,6 @@ function runMatchCountdown(initialBoard, solution) {
 
       state.isPaused = false;
       state.gameStarted = true;
-      resetStopwatch();
       startStopwatch();
       if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
       updateNumpadCompletedState();
@@ -2256,6 +2261,7 @@ function updateSwapVisualTheme() {
 
 function hostStartDuel() {
   if (!state.isHost || !state.channel) return;
+  if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 
   if (state.mode === 'swap') {
     // Generiere ZWEI voneinander unabhängige Rätsel: Board A und Board B
@@ -2284,6 +2290,8 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
     clearInterval(countdownTimer);
     countdownTimer = null;
   }
+
+  if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 
   if (dom.boardResultOverlay) {
     dom.boardResultOverlay.classList.add('hidden');
@@ -2324,9 +2332,10 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
 
       state.isPaused = false;
       state.gameStarted = true;
-      resetStopwatch();
       startStopwatch();
       if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
+      state.swapSecondsLeft = 10;
+      if (dom.swapTimer) dom.swapTimer.textContent = '10s';
       updateNumpadCompletedState();
       render();
 
