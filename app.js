@@ -133,6 +133,9 @@ const I18N = {
     resDescWin: 'Sudoku fehlerfrei gemeistert.',
     thWins: 'Siege',
     myRankWins: 'Deine Duellsiege:',
+    btnStartDuel: 'Duell starten',
+    btnStartSwap: 'Co-Op Swap starten',
+    toastPartnerLeft: 'Partner hat das Spiel verlassen.',
     winsUnit: 'Siege',
     startDuelBtn: 'Duell starten',
     waitingForHost: 'Warte auf Spielstart durch Host...',
@@ -318,6 +321,9 @@ const I18N = {
     thWins: 'Wins',
     myRankWins: 'Your Duel Wins:',
     winsUnit: 'Wins',
+    btnStartDuel: 'Start Duel',
+    btnStartSwap: 'Start Co-Op Swap',
+    toastPartnerLeft: 'Partner has left the game.',
     startDuelBtn: 'Start Duel',
     waitingForHost: 'Waiting for host to start...',
     playersReady: 'players ready',
@@ -1339,10 +1345,9 @@ function setAudioVolume(vol) {
   state.audioVolume = Math.max(0, Math.min(1, vol));
   if (dom.volValue) dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
   if (state.audioMasterGain && state.audioContext) {
-    state.audioMasterGain.gain.setValueAtTime(0.06 * state.audioVolume, state.audioContext.currentTime);
-  }
-  if (state.audioElement) {
-    state.audioElement.volume = state.audioVolume;
+    try {
+      state.audioMasterGain.gain.setValueAtTime(0.35 * state.audioVolume, state.audioContext.currentTime);
+    } catch (_) {}
   }
 }
 
@@ -1354,40 +1359,7 @@ function toggleAmbientSound() {
   }
 }
 
-function startAmbientSound() {
-  // Wenn ein KI-Track gewählt ist, versuchen wir die MP3-Audiodatei abzuspielen
-  if (state.currentAudioTrack === 'zen' || state.currentAudioTrack === 'lofi') {
-    try {
-      if (!state.audioElement) {
-        state.audioElement = new Audio();
-        state.audioElement.loop = true;
-      }
-      const trackSrc = state.currentAudioTrack === 'zen' ? 'audio/ai_zen_garden.mp3' : 'audio/midnight_lofi.mp3';
-      state.audioElement.src = trackSrc;
-      state.audioElement.volume = state.audioVolume;
-      const playPromise = state.audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          state.audioPlaying = true;
-          dom.audioToggleBtn.classList.add('active');
-          updateAudioModalUI();
-          toast(t('toastMusicOn'));
-        }).catch(() => {
-          // Fallback zum prozeduralen Web Audio Synthesizer, falls MP3 nicht vorhanden ist
-          startProceduralSynth();
-        });
-        return;
-      }
-    } catch (_) {
-      startProceduralSynth();
-      return;
-    }
-  }
-
-  startProceduralSynth();
-}
-
-function startProceduralSynth() {
+async function startAmbientSound() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -1397,82 +1369,112 @@ function startProceduralSynth() {
     }
     
     if (state.audioContext.state === 'suspended') {
-      state.audioContext.resume();
+      await state.audioContext.resume();
+    }
+
+    if (state.ambientChordTimer) {
+      clearInterval(state.ambientChordTimer);
+      state.ambientChordTimer = null;
     }
 
     state.audioMasterGain = state.audioContext.createGain();
-    state.audioMasterGain.gain.setValueAtTime(0.06 * state.audioVolume, state.audioContext.currentTime);
+    state.audioMasterGain.gain.setValueAtTime(0.35 * state.audioVolume, state.audioContext.currentTime);
     state.audioMasterGain.connect(state.audioContext.destination);
 
-    // Warm Rhodes / Lofi Akkordprogression (Fmaj7 -> Em7 -> Dm7 -> Cmaj7)
-    const CHORDS = [
+    state.ambientChordIndex = 0;
+    state.audioPlaying = true;
+    playGenerativeTrack();
+
+    state.ambientChordTimer = setInterval(() => {
+      if (!state.audioPlaying) return;
+      playGenerativeTrack();
+    }, 4600);
+
+    if (dom.audioToggleBtn) dom.audioToggleBtn.classList.add('active');
+    updateAudioModalUI();
+    toast(t('toastMusicOn'));
+  } catch (err) {
+    console.warn('Ambient Audio Init:', err);
+  }
+}
+
+function playGenerativeTrack() {
+  if (!state.audioContext || !state.audioPlaying) return;
+
+  const now = state.audioContext.currentTime;
+  const duration = 4.5;
+
+  let chords;
+  let filterFreq = 1200;
+  let qVal = 0.8;
+  let oscTypes = ['triangle', 'sine'];
+
+  if (state.currentAudioTrack === 'zen') {
+    chords = [
+      [220.00, 329.63, 440.00, 523.25], // A3, E4, A4, C5
+      [196.00, 293.66, 392.00, 440.00], // G3, D4, G4, A4
+      [174.61, 261.63, 349.23, 440.00], // F3, C4, F4, A4
+      [164.81, 246.94, 329.63, 392.00]  // E3, B3, E4, G4
+    ];
+    filterFreq = 1600;
+    oscTypes = ['sine', 'sine'];
+  } else if (state.currentAudioTrack === 'lofi') {
+    chords = [
       [174.61, 220.00, 261.63, 329.63], // Fmaj7
       [164.81, 196.00, 246.94, 293.66], // Em7
       [146.83, 174.61, 220.00, 261.63], // Dm7
       [130.81, 164.81, 196.00, 246.94]  // Cmaj7
     ];
-
-    state.ambientChordIndex = 0;
-    playLofiChord(CHORDS[state.ambientChordIndex]);
-
-    state.ambientChordTimer = setInterval(() => {
-      if (!state.audioPlaying) return;
-      state.ambientChordIndex = (state.ambientChordIndex + 1) % CHORDS.length;
-      playLofiChord(CHORDS[state.ambientChordIndex]);
-    }, 4800);
-
-    state.audioPlaying = true;
-    dom.audioToggleBtn.classList.add('active');
-    updateAudioModalUI();
-    toast(t('toastMusicOn'));
-  } catch (err) {
-    console.warn('Lofi-Audio Init:', err);
+    filterFreq = 1100;
+    oscTypes = ['triangle', 'sine'];
+  } else {
+    // synth / nordic ambient
+    chords = [
+      [130.81, 196.00, 261.63, 392.00], // C3, G3, C4, G4
+      [146.83, 220.00, 293.66, 440.00], // D3, A3, D4, A4
+      [110.00, 164.81, 220.00, 329.63], // A2, E3, A3, E4
+      [174.61, 261.63, 349.23, 523.25]  // F3, C4, F4, C5
+    ];
+    filterFreq = 950;
+    qVal = 1.2;
+    oscTypes = ['triangle', 'triangle'];
   }
-}
 
-function playLofiChord(notes) {
-  if (!state.audioContext || !state.audioPlaying) return;
+  const notes = chords[state.ambientChordIndex % chords.length];
+  state.ambientChordIndex = (state.ambientChordIndex + 1) % chords.length;
 
-  const now = state.audioContext.currentTime;
-  const duration = 4.7;
+  try {
+    const filter = state.audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(filterFreq, now);
+    filter.Q.setValueAtTime(qVal, now);
+    filter.connect(state.audioMasterGain);
 
-  // Lofi Filter
-  const filter = state.audioContext.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.setValueAtTime(420, now);
-  filter.Q.setValueAtTime(0.7, now);
-  filter.connect(state.audioMasterGain);
+    notes.forEach((freq, idx) => {
+      const osc = state.audioContext.createOscillator();
+      const gain = state.audioContext.createGain();
 
-  notes.forEach((freq, idx) => {
-    const osc = state.audioContext.createOscillator();
-    const gain = state.audioContext.createGain();
+      osc.type = oscTypes[idx % oscTypes.length];
+      const detune = (Math.random() - 0.5) * 6;
+      osc.frequency.setValueAtTime(freq + detune * 0.04, now);
 
-    osc.type = (idx % 2 === 0) ? 'triangle' : 'sine';
-    // Subtiles Detune für warmen Tape/Vinyl Schwebungseffekt
-    const detune = (Math.random() - 0.5) * 8;
-    osc.frequency.setValueAtTime(freq + detune * 0.05, now);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.8);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-    // Sanfte Lofi Hüllkurve (weicher Attack, langes Ausklingen)
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(0.035, now + 1.2);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain);
+      gain.connect(filter);
 
-    osc.connect(gain);
-    gain.connect(filter);
-
-    osc.start(now);
-    osc.stop(now + duration);
-    state.activeVoices.push(osc);
-  });
+      osc.start(now);
+      osc.stop(now + duration);
+      state.activeVoices.push(osc);
+    });
+  } catch (err) {
+    console.warn('Voice play error:', err);
+  }
 }
 
 function stopAmbientSound() {
-  if (state.audioElement) {
-    try {
-      state.audioElement.pause();
-      state.audioElement.currentTime = 0;
-    } catch (_) {}
-  }
   if (state.ambientChordTimer) {
     clearInterval(state.ambientChordTimer);
     state.ambientChordTimer = null;
@@ -1484,7 +1486,7 @@ function stopAmbientSound() {
     state.activeVoices = [];
   }
   state.audioPlaying = false;
-  dom.audioToggleBtn.classList.remove('active');
+  if (dom.audioToggleBtn) dom.audioToggleBtn.classList.remove('active');
   updateAudioModalUI();
   toast(t('toastMusicOff'));
 }
@@ -1567,15 +1569,12 @@ function startNewGame(customBoard = null, customSol = null) {
 
   setupHeartsForDifficulty();
 
-  // Co-Op Swap Board A (Blau) als Startboard setzen
+  // Co-Op Swap Board-Farbe setzen
   if (state.mode === 'swap') {
-    state.activeBoard = 'A';
-    dom.grid.classList.add('board-theme-a');
-    dom.grid.classList.remove('board-theme-b');
-    dom.swapBoardBadge.textContent = 'Board A';
-    dom.swapBoardBadge.className = 'board-badge badge-blue';
+    if (!state.activeBoard) state.activeBoard = 'A';
+    updateSwapVisualTheme();
   } else {
-    dom.grid.classList.remove('board-theme-a', 'board-theme-b');
+    if (dom.grid) dom.grid.classList.remove('board-theme-a', 'board-theme-b');
   }
 
   if (customBoard && customSol) {
@@ -2233,16 +2232,119 @@ function runMatchCountdown(initialBoard, solution) {
   }, 1000);
 }
 
+function serializeNotes(notesArray) {
+  if (!Array.isArray(notesArray)) return Array.from({ length: 81 }, () => []);
+  return notesArray.map(set => (set instanceof Set ? Array.from(set) : (Array.isArray(set) ? set : [])));
+}
+
+function deserializeNotes(notesArray) {
+  if (!Array.isArray(notesArray)) return Array.from({ length: 81 }, () => new Set());
+  return notesArray.map(list => new Set(Array.isArray(list) ? list : []));
+}
+
+function updateSwapVisualTheme() {
+  const isA = state.activeBoard === 'A';
+  if (dom.grid) {
+    dom.grid.classList.toggle('board-theme-a', isA);
+    dom.grid.classList.toggle('board-theme-b', !isA);
+  }
+  if (dom.swapBoardBadge) {
+    dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
+    dom.swapBoardBadge.className = `board-badge ${isA ? 'badge-blue' : 'badge-red'}`;
+  }
+}
+
 function hostStartDuel() {
   if (!state.isHost || !state.channel) return;
-  const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
-  const puzzle = SudokuEngine.generate(clues);
 
-  broadcast('START_COUNTDOWN', {
-    initialBoard: puzzle.initialBoard,
-    solution: puzzle.solution
-  });
-  runMatchCountdown(puzzle.initialBoard, puzzle.solution);
+  if (state.mode === 'swap') {
+    // Generiere ZWEI voneinander unabhängige Rätsel: Board A und Board B
+    const puzzleA = SudokuEngine.generate(34);
+    const puzzleB = SudokuEngine.generate(34);
+
+    broadcast('START_SWAP_COUNTDOWN', {
+      puzzleA: { initialBoard: puzzleA.initialBoard, solution: puzzleA.solution },
+      puzzleB: { initialBoard: puzzleB.initialBoard, solution: puzzleB.solution }
+    });
+    runSwapMatchCountdown(puzzleA, puzzleB, true);
+  } else {
+    const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
+    const puzzle = SudokuEngine.generate(clues);
+
+    broadcast('START_COUNTDOWN', {
+      initialBoard: puzzle.initialBoard,
+      solution: puzzle.solution
+    });
+    runMatchCountdown(puzzle.initialBoard, puzzle.solution);
+  }
+}
+
+function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+
+  if (dom.boardResultOverlay) {
+    dom.boardResultOverlay.classList.add('hidden');
+    dom.boardResultOverlay.style.display = 'none';
+  }
+  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
+
+  // Host beginnt auf Board A (Blau), Partner auf Board B (Rot)
+  if (isHost) {
+    state.activeBoard = 'A';
+    startNewGame(puzzleA.initialBoard, puzzleA.solution);
+  } else {
+    state.activeBoard = 'B';
+    startNewGame(puzzleB.initialBoard, puzzleB.solution);
+  }
+  updateSwapVisualTheme();
+
+  state.isPaused = true;
+  if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.remove('hidden');
+
+  let count = 3;
+  if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+  if (dom.countdownLabel) {
+    dom.countdownLabel.textContent = state.currentLang === 'de' ? 'Co-Op Swap startet in...' : 'Co-Op Swap starts in...';
+  }
+
+  countdownTimer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+    } else if (count === 0) {
+      if (dom.countdownNumber) dom.countdownNumber.textContent = state.currentLang === 'de' ? 'LOS!' : 'GO!';
+      if (dom.countdownLabel) dom.countdownLabel.textContent = '';
+    } else {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.add('hidden');
+
+      state.isPaused = false;
+      state.gameStarted = true;
+      resetStopwatch();
+      startStopwatch();
+      if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
+      updateNumpadCompletedState();
+      render();
+
+      if (isHost) {
+        startSwapCountdown();
+      }
+    }
+  }, 1000);
+}
+
+function handlePartnerLeft(partnerName) {
+  stopSwapCountdown();
+  stopStopwatch();
+  state.isGameOver = true;
+  const d = I18N[state.currentLang] || I18N.de;
+  toast(d.toastPartnerLeft || `${partnerName || 'Partner'} hat das Spiel verlassen.`);
+  setConnectionStatus('connecting', state.currentLang === 'de' ? 'Partner hat Raum verlassen' : 'Partner left room');
+  if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 }
 
 function handleVersusWinByElimination(oppName) {
@@ -2318,6 +2420,14 @@ async function joinRoom(code) {
 
   if (state.isOffline || !state.supabase) {
     setConnectionStatus('connected', `Demo ${state.roomCode}`);
+    if (state.isHost && dom.onlineStartRow) {
+      dom.onlineStartRow.classList.remove('hidden');
+      if (dom.btnStartDuel) {
+        dom.btnStartDuel.textContent = state.mode === 'swap' 
+          ? (state.currentLang === 'de' ? 'Co-Op Swap starten' : 'Start Co-Op Swap') 
+          : (state.currentLang === 'de' ? 'Duell starten' : 'Start Duel');
+      }
+    }
     return;
   }
 
@@ -2332,7 +2442,14 @@ async function joinRoom(code) {
     if (state.peersCount === 2) {
       if (state.isHost) {
         setConnectionStatus('connected', `2 ${t('playersReady')}`);
-        if (dom.onlineStartRow) dom.onlineStartRow.classList.remove('hidden');
+        if (dom.onlineStartRow) {
+          dom.onlineStartRow.classList.remove('hidden');
+          if (dom.btnStartDuel) {
+            dom.btnStartDuel.textContent = state.mode === 'swap' 
+              ? (state.currentLang === 'de' ? 'Co-Op Swap starten' : 'Start Co-Op Swap') 
+              : (state.currentLang === 'de' ? 'Duell starten' : 'Start Duel');
+          }
+        }
       } else {
         setConnectionStatus('connected', `2 ${t('playersReady')} — ${t('waitingForHost')}`);
         if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
@@ -2341,6 +2458,9 @@ async function joinRoom(code) {
     } else {
       setConnectionStatus('connected', `${state.peersCount} ${t('statusPlayers')}`);
       if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+      if (state.mode === 'swap' && state.gameStarted && !state.isGameOver) {
+        handlePartnerLeft('Partner');
+      }
     }
   });
 
@@ -2348,11 +2468,30 @@ async function joinRoom(code) {
     .on('broadcast', { event: 'START_COUNTDOWN' }, ({ payload }) => {
       runMatchCountdown(payload.initialBoard, payload.solution);
     })
+    .on('broadcast', { event: 'START_SWAP_COUNTDOWN' }, ({ payload }) => {
+      runSwapMatchCountdown(payload.puzzleA, payload.puzzleB, false);
+    })
+    .on('broadcast', { event: 'SWAP_TICK' }, ({ payload }) => {
+      if (payload && payload.secondsLeft !== undefined) {
+        state.swapSecondsLeft = payload.secondsLeft;
+        if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+      }
+    })
+    .on('broadcast', { event: 'DO_SWAP_EXCHANGE' }, ({ payload }) => {
+      handleDoSwapExchange(payload);
+    })
+    .on('broadcast', { event: 'SWAP_EXCHANGE_REPLY' }, ({ payload }) => {
+      handleSwapExchangeReply(payload);
+    })
     .on('broadcast', { event: 'OPPONENT_ELIMINATED' }, ({ payload }) => {
       handleVersusWinByElimination(payload?.username || 'Gegner');
     })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
-      handleVersusWinByForfeit(payload?.username || 'Gegner');
+      if (state.mode === 'swap') {
+        handlePartnerLeft(payload?.username || 'Partner');
+      } else {
+        handleVersusWinByForfeit(payload?.username || 'Gegner');
+      }
     })
     .on('broadcast', { event: 'SYNC_BOARD' }, ({ payload }) => {
       toast(t('toastSynced'));
@@ -2364,9 +2503,6 @@ async function joinRoom(code) {
         : Math.round((payload.solved / payload.total) * 100);
       dom.opponentBar.style.width = `${pct}%`;
       dom.opponentLabel.textContent = `${pct}%`;
-    })
-    .on('broadcast', { event: 'SWAP' }, ({ payload }) => {
-      applyIncomingSwap(payload);
     })
     .on('broadcast', { event: 'GAME_OVER' }, () => {
       toast(t('toastOpponentWon'));
@@ -2388,9 +2524,9 @@ function broadcast(event, payload) {
 
 function leaveRoom() {
   if (state.channel) {
-    if (state.roomCode && state.peersCount >= 2 && state.gameStarted && !state.isGameOver) {
+    if (state.roomCode && state.peersCount >= 2) {
       try {
-        broadcast('OPPONENT_LEFT', { username: state.profile.username || 'Gegner' });
+        broadcast('OPPONENT_LEFT', { username: state.profile.username || 'Spieler', mode: state.mode });
       } catch (_) {}
     }
     try {
@@ -2417,12 +2553,17 @@ function setConnectionStatus(status, text) {
 function startSwapCountdown() {
   stopSwapCountdown();
   state.swapSecondsLeft = 10;
-  dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+  if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
 
   state.swapTimerId = setInterval(() => {
-    if (state.isPaused || !state.gameStarted) return;
+    if (state.isPaused || !state.gameStarted || state.isGameOver) return;
     state.swapSecondsLeft--;
-    dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+    if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+
+    // Host sendet SWAP_TICK an Partner zur präzisen Synchronisation
+    if (state.mode === 'swap' && state.channel && state.isHost) {
+      broadcast('SWAP_TICK', { secondsLeft: state.swapSecondsLeft });
+    }
 
     if (state.swapSecondsLeft <= 0) {
       state.swapSecondsLeft = 10;
@@ -2439,17 +2580,15 @@ function stopSwapCountdown() {
 }
 
 function doBoardSwap() {
-  dom.grid.classList.add('swapping');
-  setTimeout(() => dom.grid.classList.remove('swapping'), 320);
-
-  // Board Farbe umschalten (A <-> B)
-  state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
-  dom.grid.classList.toggle('board-theme-a', state.activeBoard === 'A');
-  dom.grid.classList.toggle('board-theme-b', state.activeBoard === 'B');
-  dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
-  dom.swapBoardBadge.className = `board-badge ${state.activeBoard === 'A' ? 'badge-blue' : 'badge-red'}`;
+  if (dom.grid) {
+    dom.grid.classList.add('swapping');
+    setTimeout(() => dom.grid.classList.remove('swapping'), 320);
+  }
 
   if (state.opponentType === 'bot') {
+    state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
+    updateSwapVisualTheme();
+
     const tempBoard = [...state.currentBoard];
     const tempInitial = [...state.initialBoard];
     const tempSol = [...state.solution];
@@ -2467,14 +2606,22 @@ function doBoardSwap() {
     checkProgress();
     updateNumpadCompletedState();
     toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
-  } else if (state.channel) {
-    broadcast('SWAP', {
-      currentBoard: state.currentBoard,
-      initialBoard: state.initialBoard,
-      solution: state.solution,
-      activeBoard: state.activeBoard
-    });
+  } else if (state.channel && state.roomCode) {
+    if (state.isHost) {
+      // Host packt sein aktuelles Board ein und sendet Tauschbefehl
+      broadcast('DO_SWAP_EXCHANGE', {
+        currentBoard: [...state.currentBoard],
+        initialBoard: [...state.initialBoard],
+        solution: [...state.solution],
+        notes: serializeNotes(state.notes),
+        savedNotes: serializeNotes(state.savedNotes),
+        wrongNotes: serializeNotes(state.wrongNotes),
+        fromBoard: state.activeBoard
+      });
+    }
   } else {
+    state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
+    updateSwapVisualTheme();
     const next = SudokuEngine.generate(34);
     state.solution = next.solution;
     state.initialBoard = next.initialBoard;
@@ -2484,19 +2631,43 @@ function doBoardSwap() {
   }
 }
 
-function applyIncomingSwap(payload) {
-  dom.grid.classList.add('swapping');
-  setTimeout(() => dom.grid.classList.remove('swapping'), 320);
+function handleDoSwapExchange(payload) {
+  // Partner packt sein eigenes Board ein und schickt es als Antwort an den Host
+  const partnerState = {
+    currentBoard: [...state.currentBoard],
+    initialBoard: [...state.initialBoard],
+    solution: [...state.solution],
+    notes: serializeNotes(state.notes),
+    savedNotes: serializeNotes(state.savedNotes),
+    wrongNotes: serializeNotes(state.wrongNotes),
+    fromBoard: state.activeBoard
+  };
+  broadcast('SWAP_EXCHANGE_REPLY', partnerState);
 
-  state.activeBoard = payload.activeBoard || (state.activeBoard === 'A' ? 'B' : 'A');
-  dom.grid.classList.toggle('board-theme-a', state.activeBoard === 'A');
-  dom.grid.classList.toggle('board-theme-b', state.activeBoard === 'B');
-  dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
-  dom.swapBoardBadge.className = `board-badge ${state.activeBoard === 'A' ? 'badge-blue' : 'badge-red'}`;
+  // Partner übernimmt das Board des Hosts
+  applyIncomingSwapData(payload);
+}
+
+function handleSwapExchangeReply(payload) {
+  // Host übernimmt das Board des Partners
+  applyIncomingSwapData(payload);
+}
+
+function applyIncomingSwapData(payload) {
+  if (dom.grid) {
+    dom.grid.classList.add('swapping');
+    setTimeout(() => dom.grid.classList.remove('swapping'), 320);
+  }
+
+  state.activeBoard = payload.fromBoard;
+  updateSwapVisualTheme();
 
   state.currentBoard = [...payload.currentBoard];
   state.initialBoard = [...payload.initialBoard];
   state.solution = [...payload.solution];
+  state.notes = deserializeNotes(payload.notes);
+  state.savedNotes = deserializeNotes(payload.savedNotes);
+  state.wrongNotes = deserializeNotes(payload.wrongNotes);
   state.selectedIndex = null;
 
   render();

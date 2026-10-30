@@ -1231,18 +1231,30 @@ body {
 
 @media (max-width: 768px) {
   body {
-    padding: 6px 10px;
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    overflow-y: auto;
+    align-items: flex-start;
+    padding: 2px 6px 12px 6px;
   }
 
   .app {
     max-width: 480px;
-    gap: 8px;
+    gap: 6px;
+    padding-top: 0;
+  }
+
+  .header {
+    padding: 2px 0 4px 0;
+    min-height: 28px;
+    margin-bottom: 2px;
   }
 
   .main-content {
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
   }
 
   .sidebar-column {
@@ -1253,12 +1265,14 @@ body {
     order: 1;
     width: 100%;
     max-width: min(440px, 94vw);
+    gap: 4px;
   }
 
   .board-column {
     order: 2;
     width: 100%;
     align-items: center;
+    gap: 4px;
   }
 
   .grid-container {
@@ -1268,12 +1282,14 @@ body {
 
   .hud {
     max-width: min(440px, 92vw, 54vh);
+    margin-bottom: 2px;
   }
 
   .controls {
     order: 3;
     width: 100%;
     max-width: min(440px, 94vw);
+    gap: 6px;
   }
 
   /* Auf Mobile: 1x9 Zahlenreihe für schnelle Daumenbedienung */
