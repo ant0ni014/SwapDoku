@@ -931,7 +931,7 @@ function applyLanguageToDOM() {
     dom.hintCount = document.getElementById('hintCount');
   }
   if (dom.btnErase) dom.btnErase.textContent = d.erase;
-  if (dom.btnNewGame) dom.btnNewGame.textContent = d.newGame;
+  if (dom.btnNewGame) dom.btnNewGame.setAttribute('title', d.newGameTitle || `${d.newGame} (↻)`);
 
   // Bot vs Partner Labels
   updateBotPartnerDifficultyLabels();
@@ -990,6 +990,21 @@ function updatePauseBtnTitle() {
     dom.btnPauseGame.setAttribute('title', d.resumeTitle);
   } else {
     dom.btnPauseGame.setAttribute('title', d.pauseTitle);
+  }
+}
+
+function updateBotPartnerDifficultyLabels() {
+  const d = I18N[state.currentLang] || I18N.de;
+  if (state.mode === 'swap') {
+    if (dom.botSpeedLabel) dom.botSpeedLabel.textContent = d.partnerSpeedLabel || 'Partner-Stufe:';
+    if (dom.diffEasy) dom.diffEasy.textContent = d.partnerEasy || 'Entspannt';
+    if (dom.diffMedium) dom.diffMedium.textContent = d.partnerMedium || 'Verlässlich';
+    if (dom.diffHard) dom.diffHard.textContent = d.partnerHard || 'Profi';
+  } else {
+    if (dom.botSpeedLabel) dom.botSpeedLabel.textContent = d.botSpeedLabel || 'Bot-Stufe:';
+    if (dom.diffEasy) dom.diffEasy.textContent = d.diffEasy || 'Leicht';
+    if (dom.diffMedium) dom.diffMedium.textContent = d.diffMedium || 'Mittel';
+    if (dom.diffHard) dom.diffHard.textContent = d.diffHard || 'Schwer';
   }
 }
 
