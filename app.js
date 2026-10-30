@@ -129,8 +129,19 @@ const I18N = {
     newGame: 'Neu',
     
     // Board Result Overlay
-    resTitleWin: 'Hervorragend gelöst!',
+    resTitleWin: 'Gelöst!',
     resDescWin: 'Sudoku fehlerfrei gemeistert.',
+    thWins: 'Siege',
+    myRankWins: 'Deine Duellsiege:',
+    winsUnit: 'Siege',
+    startDuelBtn: 'Duell starten',
+    waitingForHost: 'Warte auf Spielstart durch Host...',
+    playersReady: 'Spieler bereit',
+    opponentEliminated: 'Gegner hat alle 3 Leben verloren!',
+    duelWonTitle: 'Duell gewonnen!',
+    opponentLeftTitle: 'Sieg durch Aufgabe!',
+    opponentLeftDesc: 'Der Gegner hat das Spiel verlassen.',
+    toastOpponentLeft: 'Gegner hat das Duell verlassen.',
     resTitleGameOver: 'Keine Leben mehr',
     resDescGameOver: 'Alle 3 Leben aufgebraucht.',
     resBtnNewGame: 'Neues Spiel',
@@ -302,8 +313,19 @@ const I18N = {
     newGame: 'New',
     
     // Board Result Overlay
-    resTitleWin: 'Solved Successfully!',
-    resDescWin: 'Sudoku completed with flying colors.',
+    resTitleWin: 'Solved!',
+    resDescWin: 'Sudoku completed successfully.',
+    thWins: 'Wins',
+    myRankWins: 'Your Duel Wins:',
+    winsUnit: 'Wins',
+    startDuelBtn: 'Start Duel',
+    waitingForHost: 'Waiting for host to start...',
+    playersReady: 'players ready',
+    opponentEliminated: 'Opponent lost all 3 lives!',
+    duelWonTitle: 'Duel Won!',
+    opponentLeftTitle: 'Win by Forfeit!',
+    opponentLeftDesc: 'Opponent left the match.',
+    toastOpponentLeft: 'Opponent left the duel.',
     resTitleGameOver: 'Game Over',
     resDescGameOver: 'All 3 attempts used up.',
     resBtnNewGame: 'New Game',
@@ -415,6 +437,7 @@ const state = {
   profile: {
     username: 'Spieler',
     sync_points: 0,
+    versus_wins: 0,
     active_theme: 'nordic-light',
     unlocked_themes: ['nordic-light', 'dark-slate', 'matcha-paper', 'nordic-frost', 'warm-sunset', 'lavender-dream']
   },
@@ -830,6 +853,14 @@ const dom = {
   currentRoom: document.getElementById('currentRoomCode'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
+  onlineStartRow: document.getElementById('onlineStartRow'),
+  btnStartDuel: document.getElementById('btnStartDuel'),
+
+  // Match Countdown
+  matchCountdownOverlay: document.getElementById('matchCountdownOverlay'),
+  countdownNumber: document.getElementById('countdownNumber'),
+  countdownLabel: document.getElementById('countdownLabel'),
+  leadDiffTabs: document.getElementById('leadDiffTabs'),
 
   // HUD & Grid
   gameHud: document.getElementById('gameHud'),
@@ -1125,6 +1156,7 @@ async function syncProfileFromDB() {
 }
 
 function loadLocalState() {
+  state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_versus_wins') || '0', 10);
   const savedEmail = localStorage.getItem('swapdoku_auth_email');
   if (savedEmail) {
     state.authEmail = savedEmail;
@@ -1487,6 +1519,11 @@ function handleGameOver() {
   stopBot();
   stopSwapCountdown();
   stopStopwatch();
+
+  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
+    broadcast('OPPONENT_ELIMINATED', { username: state.profile.username || 'Spieler' });
+  }
+
   showResultOverlay(false);
 }
 
@@ -1808,11 +1845,10 @@ function showResultOverlay(isWin) {
 
   if (isWin) {
     if (dom.resultBadge) {
-      dom.resultBadge.style.display = 'block';
-      dom.resultBadge.textContent = '✦';
-      dom.resultBadge.style.color = 'var(--user-val)';
+      dom.resultBadge.style.display = 'none';
+      dom.resultBadge.textContent = '';
     }
-    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleWin || 'Hervorragend gelöst!';
+    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleWin || 'Gelöst!';
     if (dom.resultDesc) dom.resultDesc.textContent = d.resDescWin || 'Sudoku fehlerfrei gemeistert.';
     if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
   } else {
@@ -2057,6 +2093,9 @@ function setVersusDifficulty(diff) {
 // MODI & MULTIPLAYER LOBBY
 // =============================================================================
 function setMode(mode) {
+  if (state.mode !== mode && state.channel && state.roomCode) {
+    leaveRoom();
+  }
   state.mode = mode;
   state.leadMode = mode; // Rangliste passt sich automatisch an den aktuellen Modus an!
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
@@ -2112,6 +2151,149 @@ function updateOpponentLabels() {
   if (dom.swapPartnerLabel) dom.swapPartnerLabel.textContent = isBot ? d.swapWithBotIn : d.swapIn;
 }
 
+function recordVersusWin() {
+  state.profile.versus_wins = (state.profile.versus_wins || 0) + 1;
+  localStorage.setItem('swapdoku_versus_wins', state.profile.versus_wins.toString());
+
+  const boards = loadSavedLeaderboards();
+  const vList = boards['versus_wins'] || [];
+  const myName = state.profile.username || 'Spieler';
+  let entry = vList.find(e => e.id === 'player-me' || e.username === myName);
+  if (entry) {
+    entry.wins = state.profile.versus_wins;
+    entry.username = myName;
+  } else {
+    vList.push({
+      id: 'player-me',
+      username: myName,
+      wins: state.profile.versus_wins
+    });
+  }
+  vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+  boards['versus_wins'] = vList;
+  saveLeaderboards(boards);
+
+  if (state.supabase && state.user) {
+    state.supabase.from('profiles').update({
+      sync_points: state.profile.versus_wins
+    }).eq('id', state.user.id).catch(() => {});
+  }
+}
+
+let countdownTimer = null;
+
+function runMatchCountdown(initialBoard, solution) {
+  if (countdownTimer) clearInterval(countdownTimer);
+
+  stopStopwatch();
+  stopBot();
+  state.isGameOver = false;
+  state.gameStarted = false;
+  state.isPaused = true;
+  if (dom.pauseOverlay) dom.pauseOverlay.classList.add('hidden');
+  if (dom.boardResultOverlay) {
+    dom.boardResultOverlay.classList.add('hidden');
+    dom.boardResultOverlay.style.display = 'none';
+  }
+  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
+
+  startNewGame(initialBoard, solution);
+  state.isPaused = true;
+
+  if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.remove('hidden');
+
+  let count = 3;
+  if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+  if (dom.countdownLabel) dom.countdownLabel.textContent = state.currentLang === 'de' ? 'Duell startet in...' : 'Duel starts in...';
+
+  countdownTimer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+    } else if (count === 0) {
+      if (dom.countdownNumber) dom.countdownNumber.textContent = state.currentLang === 'de' ? 'LOS!' : 'GO!';
+      if (dom.countdownLabel) dom.countdownLabel.textContent = '';
+    } else {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+      if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.add('hidden');
+
+      state.isPaused = false;
+      state.gameStarted = true;
+      resetStopwatch();
+      startStopwatch();
+      if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
+      updateNumpadCompletedState();
+      render();
+    }
+  }, 1000);
+}
+
+function hostStartDuel() {
+  if (!state.isHost || !state.channel) return;
+  const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
+  const puzzle = SudokuEngine.generate(clues);
+
+  broadcast('START_COUNTDOWN', {
+    initialBoard: puzzle.initialBoard,
+    solution: puzzle.solution
+  });
+  runMatchCountdown(puzzle.initialBoard, puzzle.solution);
+}
+
+function handleVersusWinByElimination(oppName) {
+  state.isGameOver = true;
+  stopStopwatch();
+  stopBot();
+  recordVersusWin();
+
+  const d = I18N[state.currentLang] || I18N.de;
+  if (dom.resultBadge) {
+    dom.resultBadge.style.display = 'none';
+    dom.resultBadge.textContent = '';
+  }
+  if (dom.resultTitle) dom.resultTitle.textContent = d.duelWonTitle || 'Duell gewonnen!';
+  if (dom.resultDesc) dom.resultDesc.textContent = `${oppName || 'Gegner'} ${d.opponentEliminated || 'hat alle 3 Leben verloren!'}`;
+  if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
+
+  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
+  if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
+  if (dom.resStatDiffVal) dom.resStatDiffVal.textContent = 'Versus';
+
+  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
+  dom.boardResultOverlay.classList.remove('hidden');
+  dom.boardResultOverlay.style.display = 'flex';
+  toast(d.duelWonTitle || 'Duell gewonnen! ✦');
+}
+
+function handleVersusWinByForfeit(oppName) {
+  if (!state.gameStarted && !state.roomCode) return;
+  state.isGameOver = true;
+  stopStopwatch();
+  stopBot();
+  recordVersusWin();
+
+  const d = I18N[state.currentLang] || I18N.de;
+  if (dom.resultBadge) {
+    dom.resultBadge.style.display = 'none';
+    dom.resultBadge.textContent = '';
+  }
+  if (dom.resultTitle) dom.resultTitle.textContent = d.opponentLeftTitle || 'Sieg durch Aufgabe!';
+  if (dom.resultDesc) dom.resultDesc.textContent = `${oppName || 'Gegner'} ${d.opponentLeftDesc || 'hat das Duell verlassen.'}`;
+  if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
+
+  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
+  if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
+  if (dom.resStatDiffVal) dom.resStatDiffVal.textContent = 'Versus';
+
+  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
+  dom.boardResultOverlay.classList.remove('hidden');
+  dom.boardResultOverlay.style.display = 'flex';
+  toast(d.toastOpponentLeft || 'Gegner hat das Duell verlassen.');
+  setConnectionStatus('connecting', 'Gegner hat Raum verlassen');
+  if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+}
+
 function createRoom() {
   const code = Math.random().toString(36).substring(2, 6).toUpperCase();
   state.isHost = true;
@@ -2142,17 +2324,32 @@ async function joinRoom(code) {
   state.channel.on('presence', { event: 'sync' }, () => {
     const pres = state.channel.presenceState();
     state.peersCount = Object.keys(pres).length;
-    setConnectionStatus('connected', `${state.peersCount} ${t('statusPlayers')}`);
-
-    if (state.isHost && state.peersCount === 2 && state.mode === 'versus') {
-      broadcast('SYNC_BOARD', {
-        initialBoard: state.initialBoard,
-        solution: state.solution
-      });
+    
+    if (state.peersCount === 2) {
+      if (state.isHost) {
+        setConnectionStatus('connected', `2 ${t('playersReady')}`);
+        if (dom.onlineStartRow) dom.onlineStartRow.classList.remove('hidden');
+      } else {
+        setConnectionStatus('connected', `2 ${t('playersReady')} — ${t('waitingForHost')}`);
+        if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+        toast(t('waitingForHost'));
+      }
+    } else {
+      setConnectionStatus('connected', `${state.peersCount} ${t('statusPlayers')}`);
+      if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
     }
   });
 
   state.channel
+    .on('broadcast', { event: 'START_COUNTDOWN' }, ({ payload }) => {
+      runMatchCountdown(payload.initialBoard, payload.solution);
+    })
+    .on('broadcast', { event: 'OPPONENT_ELIMINATED' }, ({ payload }) => {
+      handleVersusWinByElimination(payload?.username || 'Gegner');
+    })
+    .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
+      handleVersusWinByForfeit(payload?.username || 'Gegner');
+    })
     .on('broadcast', { event: 'SYNC_BOARD' }, ({ payload }) => {
       toast(t('toastSynced'));
       startNewGame(payload.initialBoard, payload.solution);
@@ -2187,11 +2384,20 @@ function broadcast(event, payload) {
 
 function leaveRoom() {
   if (state.channel) {
-    state.channel.unsubscribe();
+    if (state.roomCode && state.peersCount >= 2 && state.gameStarted && !state.isGameOver) {
+      try {
+        broadcast('OPPONENT_LEFT', { username: state.profile.username || 'Gegner' });
+      } catch (_) {}
+    }
+    try {
+      state.channel.unsubscribe();
+    } catch (_) {}
     state.channel = null;
   }
   state.roomCode = null;
   state.isHost = false;
+  state.peersCount = 0;
+  if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
   dom.roomDisplay.classList.add('hidden');
   setConnectionStatus('disconnected', t('statusDisconnected'));
 }
@@ -2453,13 +2659,61 @@ function switchLeaderboardTab(diff) {
 async function renderLeaderboard() {
   const mode = state.leadMode || state.mode || 'zen';
   const diff = state.leadDifficulty || 'medium';
-  const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
+  const d = I18N[state.currentLang] || I18N.de;
+  const myName = state.profile.username || 'Spieler';
+
+  if (mode === 'versus') {
+    // Versus Modus: All-Time Duellsiege Rangliste
+    if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'none';
+    if (dom.thBestTime) dom.thBestTime.textContent = d.thWins || 'Siege';
+    if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankWins || 'Deine Duellsiege:';
+    if (dom.myRankTime) dom.myRankTime.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
+
+    let vList = (boards['versus_wins'] || []).filter(e => e && !e.id?.startsWith('bot-'));
+    let myEntry = vList.find(e => e.id === 'player-me' || e.username === myName);
+    if (!myEntry && (state.profile.versus_wins || 0) > 0) {
+      myEntry = { id: 'player-me', username: myName, wins: state.profile.versus_wins };
+      vList.push(myEntry);
+    }
+    vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+
+    dom.leaderboardBody.innerHTML = '';
+    if (vList.length === 0) {
+      const emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = `
+        <td colspan="3" style="text-align: center; color: var(--muted); padding: 32px 14px; font-size: 0.82rem;">
+          ${state.currentLang === 'de' ? 'Noch keine Duellsiege erfasst. Gewinne ein Versus-Spiel!' : 'No duel wins recorded yet. Win a versus match!'}
+        </td>
+      `;
+      dom.leaderboardBody.appendChild(emptyRow);
+      return;
+    }
+
+    vList.forEach((entry, idx) => {
+      const isMe = entry.id === 'player-me' || entry.username === myName;
+      const rank = idx + 1;
+      const tr = document.createElement('tr');
+      if (isMe) tr.className = 'my-row';
+      tr.innerHTML = `
+        <td>#${rank}</td>
+        <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
+        <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${entry.wins || 0} ${d.winsUnit || 'Siege'}</td>
+      `;
+      dom.leaderboardBody.appendChild(tr);
+    });
+    return;
+  }
+
+  // Einzelspieler & Co-Op Swap: Bestzeiten
+  if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'flex';
+  if (dom.thBestTime) dom.thBestTime.textContent = d.thBestTime || 'Beste Zeit';
+  if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankLabel || 'Deine Bestzeit:';
+
+  const key = `${mode}_${diff}`;
   let list = (boards[key] || []).filter(e => e && !e.id.startsWith('bot-')).sort((a, b) => a.time - b.time);
 
-  const myName = state.profile.username || 'Spieler';
   let myTime = '--:--';
-
   const myEntry = list.find(e => e.id === 'player-me' || e.username === myName);
   if (myEntry) {
     myTime = formatTime(myEntry.time);
@@ -2930,6 +3184,16 @@ function bindEvents() {
   dom.joinRoom.addEventListener('click', () => joinRoom(dom.roomInput.value.trim()));
   dom.roomInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') joinRoom(dom.roomInput.value.trim());
+  });
+  if (dom.btnStartDuel) dom.btnStartDuel.addEventListener('click', hostStartDuel);
+
+  window.addEventListener('beforeunload', () => {
+    if (state.channel && state.roomCode) {
+      try {
+        broadcast('OPPONENT_LEFT', { username: state.profile.username || 'Gegner' });
+        state.channel.unsubscribe();
+      } catch (_) {}
+    }
   });
 
   // Spielsteuerung (Toolbar)

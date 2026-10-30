@@ -130,6 +130,12 @@
               </button>
             </div>
 
+            <!-- Match Countdown Overlay: 3... 2... 1... LOS! -->
+            <div class="match-countdown-overlay hidden" id="matchCountdownOverlay">
+              <div class="countdown-number" id="countdownNumber">3</div>
+              <div class="countdown-label" id="countdownLabel">Duell startet...</div>
+            </div>
+
             <!-- Board Result Overlay: Zentrierter Glückwunsch oder Niederlage direkt im Spielfeld -->
             <div class="board-result-overlay hidden" id="boardResultOverlay">
               <div class="board-result-card" id="boardResultCard">
@@ -212,6 +218,10 @@
                   <span class="dot" id="connDot"></span>
                   <span id="connText">Nicht verbunden</span>
                 </span>
+              </div>
+              <!-- Duell Start-Button für Host sobald 2 Spieler im Raum sind -->
+              <div class="online-start-row hidden" id="onlineStartRow">
+                <button class="btn btn-primary" id="btnStartDuel">Duell starten</button>
               </div>
             </div>
 
