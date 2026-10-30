@@ -771,6 +771,132 @@ body {
   font-size: 0.85rem;
 }
 
+/* Board Result Overlay (Glückwunsch & Niederlage zentriert im Spielfeld) */
+.board-result-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.board-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 24px 26px;
+  text-align: center;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+}
+
+.result-badge {
+  font-size: 2.2rem;
+  line-height: 1;
+  color: var(--user-val);
+}
+
+.board-result-card h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.board-result-card p.result-desc {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.result-stats {
+  display: flex;
+  gap: 12px;
+  background: var(--surface-hover);
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-size: 0.78rem;
+  width: 100%;
+  justify-content: center;
+}
+
+.result-stat-item {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.result-stat-item .stat-lbl {
+  color: var(--muted);
+}
+
+.result-stat-item .stat-val {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.result-actions .btn {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+}
+
+/* Fliegender Peek-Button zum Wiederöffnen nach "Spielfeld ansehen" */
+.result-peek-btn {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.result-peek-btn:hover {
+  transform: translateX(-50%) scale(1.04);
+  background: var(--surface-hover);
+}
+
+/* Tipp-Hervorhebung (Pulsieren) */
+@keyframes hintCellPulse {
+  0% { transform: scale(1); background-color: rgba(34, 197, 94, 0.25); }
+  50% { transform: scale(1.06); background-color: rgba(34, 197, 94, 0.5); }
+  100% { transform: scale(1); }
+}
+
+.cell.cell-hint {
+  animation: hintCellPulse 0.7s ease-in-out;
+  z-index: 2;
+}
+
 /* Sudoku Zellen */
 .cell {
   position: relative;
@@ -863,6 +989,12 @@ body {
   line-height: 1;
 }
 
+.cell .notes span.note-wrong {
+  color: var(--err-text) !important;
+  font-weight: 700;
+  text-decoration: line-through;
+}
+
 /* Controls: Toolbar & Ziffernblock rechts unter den Modi */
 .controls {
   display: flex;
@@ -943,13 +1075,17 @@ body {
 
 /* Ausgegraute Zahl wenn komplett belegt */
 .num.completed {
-  opacity: 0.22;
+  opacity: 0.38;
   background: var(--num-completed);
   border-color: transparent;
   box-shadow: none;
+  transform: none;
+}
+
+.num.completed.locked {
   pointer-events: none;
   cursor: default;
-  transform: none;
+  opacity: 0.22;
 }
 
 /* Footer: Impressum & Datenschutz ganz unten */
@@ -1016,12 +1152,12 @@ body {
   }
 
   .grid-container {
-    width: min(440px, 50vh);
-    height: min(440px, 50vh);
+    width: min(440px, 92vw, 54vh);
+    height: min(440px, 92vw, 54vh);
   }
 
   .hud {
-    max-width: min(440px, 50vh);
+    max-width: min(440px, 92vw, 54vh);
   }
 
   .controls {
@@ -1051,6 +1187,37 @@ body {
   .app-footer {
     order: 4;
     padding-top: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header h1 {
+    font-size: 1.12rem;
+  }
+  .header-actions {
+    gap: 4px;
+  }
+  .pill-btn, .icon-toggle {
+    padding: 3px 6px;
+    font-size: 0.72rem;
+  }
+  .toolbar {
+    gap: 3px;
+  }
+  .tool-btn {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+    height: 30px;
+  }
+  .numpad {
+    gap: 2px;
+  }
+  .num {
+    height: 35px;
+    font-size: 0.95rem;
+  }
+  .cell .val {
+    font-size: 1.05rem;
   }
 }
 
@@ -1465,6 +1632,134 @@ body {
   font-size: 0.85rem;
   font-weight: 600;
   margin-top: 6px;
+}
+
+/* Rangliste Modus Tabs */
+.lead-mode-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--surface-hover);
+  padding: 4px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.lead-mode-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 6px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lead-mode-btn:hover {
+  color: var(--text);
+}
+
+.lead-mode-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* Audio & Musik Modal */
+.audio-card {
+  max-width: 380px;
+}
+
+.audio-play-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface-hover);
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.audio-label-text {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.audio-track-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.track-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.track-item:hover {
+  background: var(--surface-hover);
+}
+
+.track-item.active {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.track-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.track-badge {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.audio-volume-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.audio-volume-row label {
+  font-size: 0.78rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.audio-volume-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--user-val);
+  cursor: pointer;
 }
 
 /* Toast */

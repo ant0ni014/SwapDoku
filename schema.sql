@@ -8,15 +8,35 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 2. PROFILES TABLE
--- Speichert Benutzerdaten, aggregierte Sync-Points und das aktive CSS-Theme.
+-- Speichert Benutzerdaten, aggregierte Sync-Points, das aktive CSS-Theme
+-- sowie persönliche Bestzeiten strukturiert nach Spielmodi ('zen', 'versus', 'swap') in Sekunden.
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT DEFAULT 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6),
     sync_points INTEGER NOT NULL DEFAULT 0 CHECK (sync_points >= 0),
     active_theme TEXT NOT NULL DEFAULT 'nordic-light',
+    -- Strukturierte Bestzeiten pro Spielmodus (JSONB-Mapping: { "easy": INTEGER, "medium": INTEGER, "hard": INTEGER })
+    best_times_zen JSONB NOT NULL DEFAULT '{"easy": null, "medium": null, "hard": null}'::jsonb,
+    best_times_versus JSONB NOT NULL DEFAULT '{"easy": null, "medium": null, "hard": null}'::jsonb,
+    best_times_swap JSONB NOT NULL DEFAULT '{"easy": null, "medium": null, "hard": null}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );
+
+-- 2.1 LEADERBOARD SCORES TABLE (Relationale Rangliste für Einzelspieler, Versus und Swap)
+CREATE TABLE IF NOT EXISTS public.leaderboard_scores (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    username TEXT NOT NULL,
+    mode TEXT NOT NULL CHECK (mode IN ('zen', 'versus', 'swap')),
+    difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
+    time_seconds INTEGER NOT NULL CHECK (time_seconds > 0),
+    remaining_lives INTEGER NOT NULL DEFAULT 3 CHECK (remaining_lives >= 0 AND remaining_lives <= 3),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboard_mode_diff_time 
+    ON public.leaderboard_scores (mode, difficulty, time_seconds ASC);
 
 -- 3. UNLOCKED THEMES TABLE
 -- Hält fest, welche Farbpaletten ein Benutzer bereits mit Punkten freigeschaltet hat.
@@ -32,6 +52,21 @@ CREATE TABLE IF NOT EXISTS public.unlocked_themes (
 -- Gewährleistet strikte Datentrennung: Jeder anonyme Nutzer kann nur seine Daten manipulieren.
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.unlocked_themes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.leaderboard_scores ENABLE ROW LEVEL SECURITY;
+
+-- Leaderboard: Jeder darf Scores lesen
+CREATE POLICY "Public leaderboard scores read"
+    ON public.leaderboard_scores
+    FOR SELECT
+    TO authenticated, anon
+    USING (true);
+
+-- Leaderboard: Authentifizierte oder anonyme Nutzer dürfen Einträge erstellen
+CREATE POLICY "Users can insert own score"
+    ON public.leaderboard_scores
+    FOR INSERT
+    TO authenticated, anon
+    WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 
 -- Profiles: Jeder authentifizierte/anonyme Nutzer darf Profile für die Rangliste lesen
 CREATE POLICY "Public leaderboard profiles read"
@@ -88,6 +123,130 @@ CREATE TRIGGER on_auth_user_created
 
 -- 6. STORED PROCEDURES / RPCs (Sichere Punkteverwaltung & Theme-Kauf)
 -- Verhindert Cheating durch clientseitiges Überschreiben von sync_points.
+
+-- Bestzeit eintragen & Profilstatistiken aktualisieren (mit strikter 3-Leben-Validierung)
+CREATE OR REPLACE FUNCTION public.submit_score(
+    p_mode TEXT,
+    p_difficulty TEXT,
+    p_time_seconds INTEGER,
+    p_remaining_lives INTEGER DEFAULT 3
+)
+RETURNS JSONB AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+    v_username TEXT;
+    v_col_name TEXT;
+    v_current_best INTEGER;
+    v_is_new_best BOOLEAN := FALSE;
+    v_score_id UUID;
+BEGIN
+    -- Validierung 1: Spielmodus prüfen
+    IF p_mode NOT IN ('zen', 'versus', 'swap') THEN
+        RAISE EXCEPTION 'Ungültiger Spielmodus: %. Erlaubt sind zen, versus, swap.', p_mode;
+    END IF;
+
+    -- Validierung 2: Schwierigkeitsgrad prüfen
+    IF p_difficulty NOT IN ('easy', 'medium', 'hard') THEN
+        RAISE EXCEPTION 'Ungültige Schwierigkeitsstufe: %. Erlaubt sind easy, medium, hard.', p_difficulty;
+    END IF;
+
+    -- Validierung 3: Einheitlich max. 3 Leben / Versuche serverseitig sicherstellen
+    -- Erlaubt: 1 bis 3 verbleibende Leben (0 bedeutet Game Over, kein gültiger Win-Score)
+    IF p_remaining_lives < 1 OR p_remaining_lives > 3 THEN
+        RAISE EXCEPTION 'Ungültige Anzahl an Leben (%). Maximal 3 Leben erlaubt.', p_remaining_lives;
+    END IF;
+
+    -- Validierung 4: Zeit muss plausibel sein (> 0 Sekunden)
+    IF p_time_seconds <= 0 THEN
+        RAISE EXCEPTION 'Ungültige Spielzeit: % Sekunden.', p_time_seconds;
+    END IF;
+
+    -- Ermitteln des Benutzernamens (falls vorhanden, sonst Fallback)
+    IF v_user_id IS NOT NULL THEN
+        SELECT username INTO v_username FROM public.profiles WHERE id = v_user_id;
+    END IF;
+    IF v_username IS NULL OR TRIM(v_username) = '' THEN
+        v_username := 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6);
+    END IF;
+
+    -- Score in Leaderboard-Tabelle persistieren
+    INSERT INTO public.leaderboard_scores (
+        user_id, username, mode, difficulty, time_seconds, remaining_lives
+    ) VALUES (
+        v_user_id, v_username, p_mode, p_difficulty, p_time_seconds, p_remaining_lives
+    ) RETURNING id INTO v_score_id;
+
+    -- Falls authentifiziert: Bestzeiten im Profil (profiles) modusspezifisch prüfen & updaten
+    IF v_user_id IS NOT NULL THEN
+        IF p_mode = 'zen' THEN
+            SELECT (best_times_zen->>p_difficulty)::INTEGER INTO v_current_best FROM public.profiles WHERE id = v_user_id;
+            IF v_current_best IS NULL OR p_time_seconds < v_current_best THEN
+                UPDATE public.profiles
+                SET best_times_zen = jsonb_set(best_times_zen, ARRAY[p_difficulty], to_jsonb(p_time_seconds)),
+                    updated_at = timezone('utc'::text, now())
+                WHERE id = v_user_id;
+                v_is_new_best := TRUE;
+            END IF;
+        ELSIF p_mode = 'versus' THEN
+            SELECT (best_times_versus->>p_difficulty)::INTEGER INTO v_current_best FROM public.profiles WHERE id = v_user_id;
+            IF v_current_best IS NULL OR p_time_seconds < v_current_best THEN
+                UPDATE public.profiles
+                SET best_times_versus = jsonb_set(best_times_versus, ARRAY[p_difficulty], to_jsonb(p_time_seconds)),
+                    updated_at = timezone('utc'::text, now())
+                WHERE id = v_user_id;
+                v_is_new_best := TRUE;
+            END IF;
+        ELSIF p_mode = 'swap' THEN
+            SELECT (best_times_swap->>p_difficulty)::INTEGER INTO v_current_best FROM public.profiles WHERE id = v_user_id;
+            IF v_current_best IS NULL OR p_time_seconds < v_current_best THEN
+                UPDATE public.profiles
+                SET best_times_swap = jsonb_set(best_times_swap, ARRAY[p_difficulty], to_jsonb(p_time_seconds)),
+                    updated_at = timezone('utc'::text, now())
+                WHERE id = v_user_id;
+                v_is_new_best := TRUE;
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'success', true,
+        'score_id', v_score_id,
+        'is_new_best', v_is_new_best,
+        'mode', p_mode,
+        'difficulty', p_difficulty,
+        'time_seconds', p_time_seconds,
+        'remaining_lives', p_remaining_lives
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Rangliste nach Modus & Schwierigkeit abrufen
+CREATE OR REPLACE FUNCTION public.get_leaderboard(
+    p_mode TEXT,
+    p_difficulty TEXT,
+    p_limit INTEGER DEFAULT 20
+)
+RETURNS TABLE (
+    id UUID,
+    username TEXT,
+    time_seconds INTEGER,
+    remaining_lives INTEGER,
+    created_at TIMESTAMPTZ
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        ls.id,
+        ls.username,
+        ls.time_seconds,
+        ls.remaining_lives,
+        ls.created_at
+    FROM public.leaderboard_scores ls
+    WHERE ls.mode = p_mode AND ls.difficulty = p_difficulty
+    ORDER BY ls.time_seconds ASC, ls.created_at ASC
+    LIMIT LEAST(p_limit, 100);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Punkte gutschreiben (z.B. +50 bei Zen, +100 bei Versus, +75 bei Co-Op)
 CREATE OR REPLACE FUNCTION public.add_sync_points(points_to_add INTEGER)

@@ -88,9 +88,9 @@ const I18N = {
     modeSwap: 'Co-Op Swap',
     modeHelpTitle: 'Spielregeln & Modus-Info',
     
-    zenEasy: 'Einfach (5 ✦)',
-    zenMedium: 'Mittel (3 ✦)',
-    zenHard: 'Schwer (1 ✦)',
+    zenEasy: 'Einfach',
+    zenMedium: 'Mittel',
+    zenHard: 'Schwer',
     
     versusDiffLabel: 'Rätsel:',
     versusEasy: 'Einfach',
@@ -98,9 +98,13 @@ const I18N = {
     versusHard: 'Schwer',
     
     botSpeedLabel: 'Bot-Stufe:',
-    diffEasy: 'Einfach',
+    partnerSpeedLabel: 'Partner-Stufe:',
+    diffEasy: 'Leicht',
     diffMedium: 'Mittel',
     diffHard: 'Schwer',
+    partnerEasy: 'Entspannt',
+    partnerMedium: 'Verlässlich',
+    partnerHard: 'Profi',
     btnStartBotGame: 'Spiel gegen Bot starten',
     
     // Lobby
@@ -116,11 +120,24 @@ const I18N = {
     statusDisconnected: 'Nicht verbunden',
     statusPlayers: 'Spieler',
     
-    // Controls
+    // Controls & Tipps
+    btnNotes: 'Notizen',
     notesOff: 'Notizen: Aus',
     notesOn: 'Notizen: An',
+    btnHint: 'Tipp',
     erase: 'Löschen',
     newGame: 'Neu',
+    
+    // Board Result Overlay
+    resTitleWin: 'Hervorragend gelöst!',
+    resDescWin: 'Sudoku fehlerfrei gemeistert.',
+    resTitleGameOver: 'Keine Leben mehr',
+    resDescGameOver: 'Alle 3 Leben aufgebraucht.',
+    resBtnNewGame: 'Neues Spiel',
+    resBtnInspect: 'Spielfeld ansehen',
+    resBtnPeek: 'Ergebnis anzeigen',
+    resStatTime: 'Zeit:',
+    resStatDiff: 'Modus:',
     
     // Pause Overlay
     pauseOverlayTitle: 'Spiel pausiert',
@@ -170,9 +187,9 @@ const I18N = {
     rulesModalZen: `
       <p><strong>Ziel:</strong> Fülle das gesamte 9x9-Gitter so aus, dass in jeder Zeile, Spalte und jedem 3x3-Block jede Zahl von 1 bis 9 genau einmal vorkommt.</p>
       <ul>
-        <li><strong>Einfach:</strong> 5 Versuche (✦). Viele Startzahlen.</li>
+        <li><strong>Einfach:</strong> 3 Versuche (✦). Viele Startzahlen.</li>
         <li><strong>Mittel:</strong> 3 Versuche (✦). Ausgeglichene Herausforderung.</li>
-        <li><strong>Schwer:</strong> Nur 1 Versuch (✦)! Keine Fehler erlaubt.</li>
+        <li><strong>Schwer:</strong> 3 Versuche (✦). Anspruchsvolles Rätsel.</li>
       </ul>
       <p>Starte durch Antippen eines Feldes, einer Zahl oder des Play-Buttons.</p>
     `,
@@ -207,6 +224,8 @@ const I18N = {
     toastGameOver: 'Keine Versuche mehr übrig!',
     toastGameWon: 'Hervorragend gelöst in ',
     toastNewBestTime: 'Neue Bestzeit aufgestellt! ✦',
+    toastHintUsed: 'Tipp eingesetzt!',
+    toastNoHints: 'Keine Tipps mehr übrig!',
     toastEnterCode: '4-stelligen Code eingeben',
     toastSynced: 'Board synchronisiert',
     toastOpponentWon: 'Gegner war schneller',
@@ -242,9 +261,9 @@ const I18N = {
     modeSwap: 'Co-Op Swap',
     modeHelpTitle: 'Game Rules & Info',
     
-    zenEasy: 'Easy (5 ✦)',
-    zenMedium: 'Medium (3 ✦)',
-    zenHard: 'Hard (1 ✦)',
+    zenEasy: 'Easy',
+    zenMedium: 'Medium',
+    zenHard: 'Hard',
     
     versusDiffLabel: 'Puzzle:',
     versusEasy: 'Easy',
@@ -252,9 +271,13 @@ const I18N = {
     versusHard: 'Hard',
     
     botSpeedLabel: 'Bot Speed:',
+    partnerSpeedLabel: 'Partner Level:',
     diffEasy: 'Easy',
     diffMedium: 'Medium',
     diffHard: 'Hard',
+    partnerEasy: 'Relaxed',
+    partnerMedium: 'Reliable',
+    partnerHard: 'Expert',
     btnStartBotGame: 'Start match vs Bot',
     
     // Lobby
@@ -270,11 +293,24 @@ const I18N = {
     statusDisconnected: 'Not connected',
     statusPlayers: 'Players',
     
-    // Controls
+    // Controls & Hints
+    btnNotes: 'Notes',
     notesOff: 'Notes: Off',
     notesOn: 'Notes: On',
+    btnHint: 'Hint',
     erase: 'Erase',
     newGame: 'New',
+    
+    // Board Result Overlay
+    resTitleWin: 'Solved Successfully!',
+    resDescWin: 'Sudoku completed with flying colors.',
+    resTitleGameOver: 'Game Over',
+    resDescGameOver: 'All 3 attempts used up.',
+    resBtnNewGame: 'New Game',
+    resBtnInspect: 'View Board',
+    resBtnPeek: 'Show Results',
+    resStatTime: 'Time:',
+    resStatDiff: 'Mode:',
     
     // Pause Overlay
     pauseOverlayTitle: 'Game Paused',
@@ -324,9 +360,9 @@ const I18N = {
     rulesModalZen: `
       <p><strong>Goal:</strong> Fill the 9x9 grid so every row, column, and 3x3 box contains digits 1 to 9 exactly once.</p>
       <ul>
-        <li><strong>Easy:</strong> 5 attempts (✦). Generous starting clues.</li>
+        <li><strong>Easy:</strong> 3 attempts (✦). Generous starting clues.</li>
         <li><strong>Medium:</strong> 3 attempts (✦). Balanced challenge.</li>
-        <li><strong>Hard:</strong> Only 1 attempt (✦)! No mistakes allowed.</li>
+        <li><strong>Hard:</strong> 3 attempts (✦). Demanding challenge.</li>
       </ul>
       <p>Start simply by tapping any cell, number, or the Play button.</p>
     `,
@@ -406,27 +442,35 @@ const state = {
 
   // Ranglisten Filter
   leadDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
+  leadMode: 'zen', // 'zen' | 'versus' | 'swap'
 
   // Auth & Benutzerkonto
   authMode: 'login', // 'login' | 'register'
   authEmail: null,
 
-  // Lofi Ambient Synth
+  // Audio & Soundtrack (KI Tracks & Web Audio Synth)
   audioPlaying: false,
   audioContext: null,
   audioMasterGain: null,
   ambientChordTimer: null,
   ambientChordIndex: 0,
   activeVoices: [],
+  currentAudioTrack: 'synth', // 'zen' | 'lofi' | 'synth'
+  audioVolume: 0.6,
+  audioElement: null,
 
   // Sudoku Board Arrays (Länge 81)
   solution: Array(81).fill(0),
   initialBoard: Array(81).fill(0),
   currentBoard: Array(81).fill(0),
   notes: Array.from({ length: 81 }, () => new Set()),
+  savedNotes: Array.from({ length: 81 }, () => new Set()),
+  wrongNotes: Array.from({ length: 81 }, () => new Set()),
   
   selectedIndex: null,
   notesActive: false,
+  hintsRemaining: 3,
+  autoLockCompleted: false, // Erlaubt Weiterklicken auch wenn 9 Ziffern platziert sind
 
   // Realtime
   channel: null,
@@ -446,9 +490,54 @@ const state = {
 };
 
 // =============================================================================
-// SUDOKU GENERATOR (AUSGEGLICHEN, KEINE LEEREN 3x3 BLÖCKE)
+// SUDOKU GENERATOR (STRIKTE EINDEUTIGKEITS-GARANTIE, KEINE DEADLY PATTERNS)
 // =============================================================================
 class SudokuEngine {
+  static countSolutions(board, limit = 2) {
+    let count = 0;
+    function solveRec(b) {
+      if (count >= limit) return;
+      let minCandidates = 10;
+      let bestIdx = -1;
+      let bestCandidates = null;
+
+      for (let i = 0; i < 81; i++) {
+        if (b[i] === 0) {
+          const r = Math.floor(i / 9);
+          const c = i % 9;
+          const candidates = [];
+          for (let n = 1; n <= 9; n++) {
+            if (SudokuEngine.isValid(b, r, c, n)) {
+              candidates.push(n);
+            }
+          }
+          if (candidates.length === 0) return; // Widerspruch
+          if (candidates.length < minCandidates) {
+            minCandidates = candidates.length;
+            bestCandidates = candidates;
+            bestIdx = i;
+            if (minCandidates === 1) break; // MRV Optimum
+          }
+        }
+      }
+
+      if (bestIdx === -1) {
+        count++;
+        return;
+      }
+
+      for (const num of bestCandidates) {
+        b[bestIdx] = num;
+        solveRec(b);
+        b[bestIdx] = 0;
+        if (count >= limit) return;
+      }
+    }
+
+    solveRec([...board]);
+    return count;
+  }
+
   static generate(clues = 34) {
     const board = Array(81).fill(0);
     this.fillBoxes(board);
@@ -458,13 +547,11 @@ class SudokuEngine {
     const puzzle = [...solution];
     let toRemove = 81 - clues;
 
-    // Wir tracken Clues pro Zeile, Spalte und 3x3-Block, damit kein Bereich leer bleibt
     const rowCounts = Array(9).fill(9);
     const colCounts = Array(9).fill(9);
     const boxCounts = Array(9).fill(9);
 
     const minPerUnit = clues >= 38 ? 3 : 2;
-
     const indices = Array.from({ length: 81 }, (_, i) => i).sort(() => Math.random() - 0.5);
 
     for (const idx of indices) {
@@ -474,15 +561,20 @@ class SudokuEngine {
       const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
 
       if (rowCounts[r] > minPerUnit && colCounts[c] > minPerUnit && boxCounts[b] > minPerUnit) {
+        const prev = puzzle[idx];
         puzzle[idx] = 0;
-        rowCounts[r]--;
-        colCounts[c]--;
-        boxCounts[b]--;
-        toRemove--;
+        // Strikte Eindeutigkeit: Rätsel darf NIEMALS 2 Lösungen haben
+        if (this.countSolutions(puzzle, 2) === 1) {
+          rowCounts[r]--;
+          colCounts[c]--;
+          boxCounts[b]--;
+          toRemove--;
+        } else {
+          puzzle[idx] = prev;
+        }
       }
     }
 
-    // Falls noch Zahlen zu entfernen sind, sanfte Entspannung (mindestens 2 Clues pro 3x3 Block garantiert!)
     if (toRemove > 0) {
       for (const idx of indices) {
         if (toRemove <= 0) break;
@@ -492,11 +584,16 @@ class SudokuEngine {
         const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
 
         if (boxCounts[b] > 2 && rowCounts[r] > 1 && colCounts[c] > 1) {
+          const prev = puzzle[idx];
           puzzle[idx] = 0;
-          rowCounts[r]--;
-          colCounts[c]--;
-          boxCounts[b]--;
-          toRemove--;
+          if (this.countSolutions(puzzle, 2) === 1) {
+            rowCounts[r]--;
+            colCounts[c]--;
+            boxCounts[b]--;
+            toRemove--;
+          } else {
+            puzzle[idx] = prev;
+          }
         }
       }
     }
@@ -614,6 +711,10 @@ const dom = {
   leaderboardModal: document.getElementById('leaderboardModal'),
   closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
   leadModalTitle: document.getElementById('leadModalTitle'),
+  leadModeTabs: document.getElementById('leadModeTabs'),
+  leadModeZen: document.getElementById('leadModeZen'),
+  leadModeVersus: document.getElementById('leadModeVersus'),
+  leadModeSwap: document.getElementById('leadModeSwap'),
   leadTabEasy: document.getElementById('leadTabEasy'),
   leadTabMedium: document.getElementById('leadTabMedium'),
   leadTabHard: document.getElementById('leadTabHard'),
@@ -722,12 +823,37 @@ const dom = {
   pauseOverlayDesc: document.getElementById('pauseOverlayDesc'),
   btnResumeGame: document.getElementById('btnResumeGame'),
 
+  // Board Result Overlay
+  boardResultOverlay: document.getElementById('boardResultOverlay'),
+  boardResultCard: document.getElementById('boardResultCard'),
+  resultBadge: document.getElementById('resultBadge'),
+  resultTitle: document.getElementById('resultTitle'),
+  resultDesc: document.getElementById('resultDesc'),
+  resStatTimeLbl: document.getElementById('resStatTimeLbl'),
+  resStatTimeVal: document.getElementById('resStatTimeVal'),
+  resStatDiffLbl: document.getElementById('resStatDiffLbl'),
+  resStatDiffVal: document.getElementById('resStatDiffVal'),
+  btnResultNewGame: document.getElementById('btnResultNewGame'),
+  btnResultInspect: document.getElementById('btnResultInspect'),
+  btnResultPeek: document.getElementById('btnResultPeek'),
+
   // Steuerung & Ziffern
   btnNotes: document.getElementById('btnNotes'),
+  btnHint: document.getElementById('btnHint'),
+  hintCount: document.getElementById('hintCount'),
   btnErase: document.getElementById('btnErase'),
   btnNewGame: document.getElementById('btnNewGame'),
   numpad: document.getElementById('numpad'),
-  toast: document.getElementById('toast')
+  toast: document.getElementById('toast'),
+
+  // Audio Modal
+  audioModal: document.getElementById('audioModal'),
+  closeAudioBtn: document.getElementById('closeAudioBtn'),
+  btnAudioTogglePlay: document.getElementById('btnAudioTogglePlay'),
+  audioStatusText: document.getElementById('audioStatusText'),
+  audioTrackList: document.getElementById('audioTrackList'),
+  audioVolumeSlider: document.getElementById('audioVolumeSlider'),
+  volValue: document.getElementById('volValue')
 };
 
 // =============================================================================
@@ -800,13 +926,27 @@ function applyLanguageToDOM() {
 
   // Steuerung
   if (dom.btnNotes) dom.btnNotes.textContent = state.notesActive ? d.notesOn : d.notesOff;
+  if (dom.btnHint) {
+    dom.btnHint.innerHTML = `${d.btnHint} (<span id="hintCount">${state.hintsRemaining}</span>)`;
+    dom.hintCount = document.getElementById('hintCount');
+  }
   if (dom.btnErase) dom.btnErase.textContent = d.erase;
   if (dom.btnNewGame) dom.btnNewGame.textContent = d.newGame;
+
+  // Bot vs Partner Labels
+  updateBotPartnerDifficultyLabels();
 
   // Pause Overlay
   if (dom.pauseOverlayTitle) dom.pauseOverlayTitle.textContent = d.pauseOverlayTitle;
   if (dom.pauseOverlayDesc) dom.pauseOverlayDesc.textContent = d.pauseOverlayDesc;
   if (dom.btnResumeGame) dom.btnResumeGame.textContent = d.resumeBtn;
+
+  // Result Overlay
+  if (dom.resStatTimeLbl) dom.resStatTimeLbl.textContent = d.resStatTime;
+  if (dom.resStatDiffLbl) dom.resStatDiffLbl.textContent = d.resStatDiff;
+  if (dom.btnResultNewGame) dom.btnResultNewGame.textContent = d.resBtnNewGame;
+  if (dom.btnResultInspect) dom.btnResultInspect.textContent = d.resBtnInspect;
+  if (dom.btnResultPeek) dom.btnResultPeek.textContent = d.resBtnPeek;
 
   // Leaderboard Modal
   if (dom.leadModalTitle) dom.leadModalTitle.textContent = d.leadModalTitle;
@@ -1062,8 +1202,59 @@ function resumeGame() {
 }
 
 // =============================================================================
-// PROCEDURAL LOFI CHILL AMBIENT SYNTHESIZER (WEB AUDIO API)
+// AUDIO ENGINE: KI-TRACKS (GOOGLE AI STUDIO) & PROZEDURALER SYNTHESIZER
 // =============================================================================
+function openAudioModal() {
+  if (dom.audioModal) dom.audioModal.classList.remove('hidden');
+  updateAudioModalUI();
+}
+
+function closeAudioModal() {
+  if (dom.audioModal) dom.audioModal.classList.add('hidden');
+}
+
+function updateAudioModalUI() {
+  const d = I18N[state.currentLang] || I18N.de;
+  if (dom.btnAudioTogglePlay) {
+    dom.btnAudioTogglePlay.textContent = state.audioPlaying ? (d.audioPause || 'Musik pausieren') : (d.audioPlay || 'Musik starten');
+  }
+  if (dom.audioStatusText) {
+    dom.audioStatusText.textContent = state.audioPlaying ? (d.audioStatusPlaying || 'Wiedergabe: Aktiv') : (d.audioStatusPaused || 'Wiedergabe: Inaktiv');
+  }
+  if (dom.audioTrackList) {
+    const trackBtns = dom.audioTrackList.querySelectorAll('.track-item');
+    trackBtns.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.track === state.currentAudioTrack);
+    });
+  }
+  if (dom.audioVolumeSlider) {
+    dom.audioVolumeSlider.value = Math.round(state.audioVolume * 100);
+  }
+  if (dom.volValue) {
+    dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
+  }
+}
+
+function setAudioTrack(trackId) {
+  state.currentAudioTrack = trackId;
+  updateAudioModalUI();
+  if (state.audioPlaying) {
+    stopAmbientSound();
+    startAmbientSound();
+  }
+}
+
+function setAudioVolume(vol) {
+  state.audioVolume = Math.max(0, Math.min(1, vol));
+  if (dom.volValue) dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
+  if (state.audioMasterGain && state.audioContext) {
+    state.audioMasterGain.gain.setValueAtTime(0.06 * state.audioVolume, state.audioContext.currentTime);
+  }
+  if (state.audioElement) {
+    state.audioElement.volume = state.audioVolume;
+  }
+}
+
 function toggleAmbientSound() {
   if (state.audioPlaying) {
     stopAmbientSound();
@@ -1073,6 +1264,39 @@ function toggleAmbientSound() {
 }
 
 function startAmbientSound() {
+  // Wenn ein KI-Track gewählt ist, versuchen wir die MP3-Audiodatei abzuspielen
+  if (state.currentAudioTrack === 'zen' || state.currentAudioTrack === 'lofi') {
+    try {
+      if (!state.audioElement) {
+        state.audioElement = new Audio();
+        state.audioElement.loop = true;
+      }
+      const trackSrc = state.currentAudioTrack === 'zen' ? 'audio/ai_zen_garden.mp3' : 'audio/midnight_lofi.mp3';
+      state.audioElement.src = trackSrc;
+      state.audioElement.volume = state.audioVolume;
+      const playPromise = state.audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          state.audioPlaying = true;
+          dom.audioToggleBtn.classList.add('active');
+          updateAudioModalUI();
+          toast(t('toastMusicOn'));
+        }).catch(() => {
+          // Fallback zum prozeduralen Web Audio Synthesizer, falls MP3 nicht vorhanden ist
+          startProceduralSynth();
+        });
+        return;
+      }
+    } catch (_) {
+      startProceduralSynth();
+      return;
+    }
+  }
+
+  startProceduralSynth();
+}
+
+function startProceduralSynth() {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
@@ -1086,7 +1310,7 @@ function startAmbientSound() {
     }
 
     state.audioMasterGain = state.audioContext.createGain();
-    state.audioMasterGain.gain.setValueAtTime(0.06, state.audioContext.currentTime);
+    state.audioMasterGain.gain.setValueAtTime(0.06 * state.audioVolume, state.audioContext.currentTime);
     state.audioMasterGain.connect(state.audioContext.destination);
 
     // Warm Rhodes / Lofi Akkordprogression (Fmaj7 -> Em7 -> Dm7 -> Cmaj7)
@@ -1108,6 +1332,7 @@ function startAmbientSound() {
 
     state.audioPlaying = true;
     dom.audioToggleBtn.classList.add('active');
+    updateAudioModalUI();
     toast(t('toastMusicOn'));
   } catch (err) {
     console.warn('Lofi-Audio Init:', err);
@@ -1151,6 +1376,12 @@ function playLofiChord(notes) {
 }
 
 function stopAmbientSound() {
+  if (state.audioElement) {
+    try {
+      state.audioElement.pause();
+      state.audioElement.currentTime = 0;
+    } catch (_) {}
+  }
   if (state.ambientChordTimer) {
     clearInterval(state.ambientChordTimer);
     state.ambientChordTimer = null;
@@ -1163,6 +1394,7 @@ function stopAmbientSound() {
   }
   state.audioPlaying = false;
   dom.audioToggleBtn.classList.remove('active');
+  updateAudioModalUI();
   toast(t('toastMusicOff'));
 }
 
@@ -1170,16 +1402,7 @@ function stopAmbientSound() {
 // STERNE & LEBENSZEICHEN (✦ AKTIV, ✧ VERLOREN)
 // =============================================================================
 function setupHeartsForDifficulty() {
-  if (state.mode === 'zen') {
-    switch (state.zenDifficulty) {
-      case 'easy': state.maxHearts = 5; break;
-      case 'hard': state.maxHearts = 1; break;
-      case 'medium':
-      default: state.maxHearts = 3; break;
-    }
-  } else {
-    state.maxHearts = 3;
-  }
+  state.maxHearts = 3;
   state.currentHearts = state.maxHearts;
   state.isGameOver = false;
   renderHearts();
@@ -1209,7 +1432,7 @@ function handleGameOver() {
   stopBot();
   stopSwapCountdown();
   stopStopwatch();
-  toast(t('toastGameOver'));
+  showResultOverlay(false);
 }
 
 // =============================================================================
@@ -1277,6 +1500,12 @@ function startNewGame(customBoard = null, customSol = null) {
   }
 
   state.notes = Array.from({ length: 81 }, () => new Set());
+  state.savedNotes = Array.from({ length: 81 }, () => new Set());
+  state.wrongNotes = Array.from({ length: 81 }, () => new Set());
+  state.hintsRemaining = 3;
+  if (dom.hintCount) dom.hintCount.textContent = '3';
+  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
+  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
   state.selectedIndex = null;
 
   updateProgressBars(0, 0);
@@ -1311,11 +1540,17 @@ function render() {
       valSpan.style.display = 'none';
 
       const cellNotes = state.notes[i];
-      if (cellNotes.size > 0) {
+      if (cellNotes && cellNotes.size > 0) {
         notesDiv.style.display = 'grid';
         for (let n = 1; n <= 9; n++) {
           const noteSpan = notesDiv.children[n - 1];
-          noteSpan.textContent = cellNotes.has(n) ? n : '';
+          const hasNote = cellNotes.has(n);
+          noteSpan.textContent = hasNote ? n : '';
+          if (hasNote && state.wrongNotes[i] && state.wrongNotes[i].has(n)) {
+            noteSpan.classList.add('note-wrong');
+          } else {
+            noteSpan.classList.remove('note-wrong');
+          }
         }
       } else {
         notesDiv.style.display = 'none';
@@ -1351,7 +1586,10 @@ function updateNumpadCompletedState() {
   const numButtons = dom.numpad.querySelectorAll('.num');
   numButtons.forEach(btn => {
     const digit = parseInt(btn.dataset.num, 10);
-    btn.classList.toggle('completed', completedDigits.has(digit));
+    const isCompleted = completedDigits.has(digit);
+    btn.classList.toggle('completed', isCompleted);
+    // Sperrung mit pointer-events nur wenn autoLockCompleted explizit gewünscht ist
+    btn.classList.toggle('locked', isCompleted && state.autoLockCompleted);
   });
 }
 
@@ -1360,6 +1598,24 @@ function selectCell(idx) {
   ensureGameStarted();
   state.selectedIndex = idx;
   render();
+}
+
+function cleanPeerNotes(idx, num) {
+  const r = Math.floor(idx / 9);
+  const c = idx % 9;
+  const b = Math.floor(r / 3) * 3 + Math.floor(c / 3);
+
+  for (let i = 0; i < 81; i++) {
+    if (i === idx) continue;
+    const ir = Math.floor(i / 9);
+    const ic = i % 9;
+    const ib = Math.floor(ir / 3) * 3 + Math.floor(ic / 3);
+
+    if (ir === r || ic === c || ib === b) {
+      if (state.notes[i]) state.notes[i].delete(num);
+      if (state.savedNotes[i]) state.savedNotes[i].delete(num);
+    }
+  }
 }
 
 function handleNumberInput(num) {
@@ -1374,16 +1630,31 @@ function handleNumberInput(num) {
     } else {
       state.notes[idx].add(num);
     }
+    state.savedNotes[idx] = new Set(state.notes[idx]);
     state.currentBoard[idx] = 0;
   } else {
     const wasEmpty = state.currentBoard[idx] === 0;
     const isCorrect = (num === state.solution[idx]);
 
-    state.currentBoard[idx] = num;
-    state.notes[idx].clear();
+    // Bisherige Notizen sichern, falls die Zahl fehlerhaft ist
+    if (state.notes[idx].size > 0) {
+      state.savedNotes[idx] = new Set(state.notes[idx]);
+    }
 
-    if (!isCorrect && wasEmpty) {
-      deductHeart();
+    state.currentBoard[idx] = num;
+
+    if (isCorrect) {
+      // Richtige Zahl: Notizen dieser Zelle löschen & aus Peers entfernen
+      state.notes[idx].clear();
+      state.savedNotes[idx].clear();
+      state.wrongNotes[idx].clear();
+      cleanPeerNotes(idx, num);
+    } else {
+      // Falsche Zahl: Fehler im Notiz-Gedächtnis merken & Leben abziehen
+      state.wrongNotes[idx].add(num);
+      if (wasEmpty) {
+        deductHeart();
+      }
     }
 
     checkProgress();
@@ -1399,11 +1670,115 @@ function clearCell() {
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
 
-  state.currentBoard[idx] = 0;
-  state.notes[idx].clear();
+  if (state.currentBoard[idx] !== 0) {
+    // Wenn eine Zahl gelöscht wird, die Notizen wiederherstellen!
+    if (state.savedNotes[idx] && state.savedNotes[idx].size > 0) {
+      state.notes[idx] = new Set(state.savedNotes[idx]);
+    }
+    state.currentBoard[idx] = 0;
+  } else {
+    // Zelle war schon leer: Notizen löschen
+    state.notes[idx].clear();
+    state.savedNotes[idx].clear();
+    state.wrongNotes[idx].clear();
+  }
+
   checkProgress();
   updateNumpadCompletedState();
   render();
+}
+
+function useHint() {
+  if (state.isPaused || state.isGameOver) return;
+  ensureGameStarted();
+
+  if (state.hintsRemaining <= 0) {
+    toast(t('toastNoHints'));
+    return;
+  }
+
+  // Zielzelle ermitteln: bevorzugt aktuell gewählte Zelle, sonst erste leere/falsche Zelle
+  let targetIdx = state.selectedIndex;
+  const isGiven = targetIdx !== null && state.initialBoard[targetIdx] !== 0;
+  const isAlreadyCorrect = targetIdx !== null && state.currentBoard[targetIdx] === state.solution[targetIdx];
+
+  if (targetIdx === null || isGiven || isAlreadyCorrect) {
+    const candidates = [];
+    for (let i = 0; i < 81; i++) {
+      if (state.initialBoard[i] === 0 && state.currentBoard[i] !== state.solution[i]) {
+        candidates.push(i);
+      }
+    }
+    if (candidates.length === 0) return;
+    targetIdx = candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  const correctNum = state.solution[targetIdx];
+  state.currentBoard[targetIdx] = correctNum;
+  state.notes[targetIdx].clear();
+  state.savedNotes[targetIdx].clear();
+  state.wrongNotes[targetIdx].clear();
+  cleanPeerNotes(targetIdx, correctNum);
+
+  state.hintsRemaining--;
+  if (dom.hintCount) dom.hintCount.textContent = state.hintsRemaining;
+  state.selectedIndex = targetIdx;
+
+  render();
+  updateNumpadCompletedState();
+
+  // Pulsierende Hervorhebung auf dem Spielfeld
+  const cell = dom.grid.children[targetIdx];
+  if (cell) {
+    cell.classList.add('cell-hint');
+    setTimeout(() => cell.classList.remove('cell-hint'), 750);
+  }
+
+  toast(t('toastHintUsed'));
+  checkProgress();
+}
+
+function showResultOverlay(isWin) {
+  if (!dom.boardResultOverlay) return;
+  const d = I18N[state.currentLang] || I18N.de;
+  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
+
+  if (isWin) {
+    if (dom.resultBadge) {
+      dom.resultBadge.textContent = '✦';
+      dom.resultBadge.style.color = 'var(--user-val)';
+    }
+    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleWin || 'Hervorragend gelöst!';
+    if (dom.resultDesc) dom.resultDesc.textContent = d.resDescWin || 'Sudoku fehlerfrei gemeistert.';
+  } else {
+    if (dom.resultBadge) {
+      dom.resultBadge.textContent = '✕';
+      dom.resultBadge.style.color = 'var(--err-text)';
+    }
+    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleGameOver || 'Keine Leben mehr';
+    if (dom.resultDesc) dom.resultDesc.textContent = d.resDescGameOver || 'Alle 3 Leben aufgebraucht.';
+  }
+
+  if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
+  if (dom.resStatDiffVal) {
+    let modeText = d.modeZen || 'Einzelspieler';
+    if (state.mode === 'versus') modeText = d.modeVersus || 'Versus';
+    if (state.mode === 'swap') modeText = d.modeSwap || 'Co-Op Swap';
+    dom.resStatDiffVal.textContent = modeText;
+  }
+
+  dom.boardResultOverlay.classList.remove('hidden');
+  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
+}
+
+function hideResultOverlayForInspection() {
+  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
+  if (dom.btnResultPeek) dom.btnResultPeek.classList.remove('hidden');
+}
+
+function restoreResultOverlay() {
+  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.remove('hidden');
+  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
 }
 
 function checkProgress() {
@@ -1442,6 +1817,8 @@ async function gameWon() {
   } else {
     toast(`${t('toastGameWon')}${formattedTime}!`);
   }
+
+  showResultOverlay(true);
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
@@ -1551,6 +1928,7 @@ function setVersusDifficulty(diff) {
 // =============================================================================
 function setMode(mode) {
   state.mode = mode;
+  state.leadMode = mode; // Rangliste passt sich automatisch an den aktuellen Modus an!
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
 
   dom.zenDifficultyBar.classList.toggle('hidden', mode !== 'zen');
@@ -1568,6 +1946,7 @@ function setMode(mode) {
     dom.tabSwap.classList.add('active');
   }
 
+  updateBotPartnerDifficultyLabels();
   updateOpponentLabels();
   startNewGame();
 }
@@ -1805,57 +2184,103 @@ function showModeRules() {
 }
 
 // =============================================================================
-// RANGLISTE (NACH SCHWIERIGKEITSGRAD & ZEIT GEFILTERT)
+// RANGLISTE (PRO MODUS & SCHWIERIGKEITSGRAD)
 // =============================================================================
-function getLeaderboardSeed(diff) {
-  switch (diff) {
-    case 'easy':
-      return [
-        { id: 'bot-1', username: 'SudokuMaster', time: 114 },
-        { id: 'bot-2', username: 'NordicSolver', time: 138 },
-        { id: 'bot-3', username: 'ZenSeeker', time: 165 },
-        { id: 'bot-4', username: 'GridRunner', time: 198 },
-        { id: 'bot-5', username: 'ChillBrain', time: 240 }
-      ];
-    case 'hard':
-      return [
-        { id: 'bot-1', username: 'SudokuMaster', time: 345 },
-        { id: 'bot-2', username: 'ZenMaster', time: 412 },
-        { id: 'bot-3', username: 'GridRunner', time: 489 },
-        { id: 'bot-4', username: 'LogicKing', time: 540 },
-        { id: 'bot-5', username: 'DeepFocus', time: 615 }
-      ];
-    case 'medium':
-    default:
-      return [
-        { id: 'bot-1', username: 'SudokuMaster', time: 192 },
-        { id: 'bot-2', username: 'ZenSeeker', time: 228 },
-        { id: 'bot-3', username: 'NordicSolver', time: 275 },
-        { id: 'bot-4', username: 'GridRunner', time: 330 },
-        { id: 'bot-5', username: 'PuzzleMind', time: 384 }
-      ];
-  }
+function getLeaderboardSeed(mode, diff) {
+  const seeds = {
+    zen: {
+      easy: [
+        { id: 'bot-1', username: 'ZenMaster', time: 108 },
+        { id: 'bot-2', username: 'NordicSolver', time: 132 },
+        { id: 'bot-3', username: 'ChillBrain', time: 165 },
+        { id: 'bot-4', username: 'GridSeeker', time: 195 },
+        { id: 'bot-5', username: 'CalmThinker', time: 230 }
+      ],
+      medium: [
+        { id: 'bot-1', username: 'ZenMaster', time: 185 },
+        { id: 'bot-2', username: 'NordicSolver', time: 220 },
+        { id: 'bot-3', username: 'LogicPioneer', time: 265 },
+        { id: 'bot-4', username: 'QuietFocus', time: 310 },
+        { id: 'bot-5', username: 'GridMaster', time: 360 }
+      ],
+      hard: [
+        { id: 'bot-1', username: 'ZenMaster', time: 320 },
+        { id: 'bot-2', username: 'NordicSolver', time: 395 },
+        { id: 'bot-3', username: 'DeepFocus', time: 470 },
+        { id: 'bot-4', username: 'LogicKing', time: 535 },
+        { id: 'bot-5', username: 'MindFlow', time: 610 }
+      ]
+    },
+    versus: {
+      easy: [
+        { id: 'bot-v1', username: 'SpeedDemon', time: 88 },
+        { id: 'bot-v2', username: 'FastFingers', time: 104 },
+        { id: 'bot-v3', username: 'RivalX', time: 125 },
+        { id: 'bot-v4', username: 'QuickSolve', time: 145 },
+        { id: 'bot-v5', username: 'TurboLogic', time: 180 }
+      ],
+      medium: [
+        { id: 'bot-v1', username: 'SpeedDemon', time: 145 },
+        { id: 'bot-v2', username: 'RivalX', time: 178 },
+        { id: 'bot-v3', username: 'VersusPro', time: 215 },
+        { id: 'bot-v4', username: 'FastFingers', time: 260 },
+        { id: 'bot-v5', username: 'GridRacer', time: 310 }
+      ],
+      hard: [
+        { id: 'bot-v1', username: 'VersusPro', time: 280 },
+        { id: 'bot-v2', username: 'SpeedDemon', time: 330 },
+        { id: 'bot-v3', username: 'HardcoreDuel', time: 390 },
+        { id: 'bot-v4', username: 'RivalX', time: 450 },
+        { id: 'bot-v5', username: 'TitanSolver', time: 520 }
+      ]
+    },
+    swap: {
+      easy: [
+        { id: 'bot-s1', username: 'Team Alpha', time: 110 },
+        { id: 'bot-s2', username: 'SwapTwin 1', time: 128 },
+        { id: 'bot-s3', username: 'TeamNordic', time: 150 },
+        { id: 'bot-s4', username: 'SyncSquad', time: 175 },
+        { id: 'bot-s5', username: 'GridPartners', time: 205 }
+      ],
+      medium: [
+        { id: 'bot-s1', username: 'Team Alpha', time: 175 },
+        { id: 'bot-s2', username: 'TeamNordic', time: 210 },
+        { id: 'bot-s3', username: 'SyncSquad', time: 250 },
+        { id: 'bot-s4', username: 'SwapTwin 1', time: 295 },
+        { id: 'bot-s5', username: 'PartnerFlow', time: 340 }
+      ],
+      hard: [
+        { id: 'bot-s1', username: 'Team Alpha', time: 295 },
+        { id: 'bot-s2', username: 'TeamNordic', time: 360 },
+        { id: 'bot-s3', username: 'MasterSwappers', time: 430 },
+        { id: 'bot-s4', username: 'SyncSquad', time: 510 },
+        { id: 'bot-s5', username: 'TwoMinds', time: 590 }
+      ]
+    }
+  };
+
+  const m = mode || 'zen';
+  const d = diff || 'medium';
+  return (seeds[m] && seeds[m][d]) ? seeds[m][d] : seeds.zen[d] || seeds.zen.medium;
 }
 
 function loadSavedLeaderboards() {
-  const saved = localStorage.getItem('swapdoku_leaderboards_v2');
+  const saved = localStorage.getItem('swapdoku_leaderboards_v3');
   if (saved) {
     try { return JSON.parse(saved); } catch (_) {}
   }
-  return {
-    easy: getLeaderboardSeed('easy'),
-    medium: getLeaderboardSeed('medium'),
-    hard: getLeaderboardSeed('hard')
-  };
+  return {};
 }
 
 function saveLeaderboards(data) {
-  localStorage.setItem('swapdoku_leaderboards_v2', JSON.stringify(data));
+  localStorage.setItem('swapdoku_leaderboards_v3', JSON.stringify(data));
 }
 
 function recordBestTime(diff, seconds) {
+  const mode = state.mode || 'zen';
+  const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const currentDiffList = boards[diff] || getLeaderboardSeed(diff);
+  const currentDiffList = boards[key] || getLeaderboardSeed(mode, diff);
   const myName = state.profile.username || 'Spieler';
 
   let existing = currentDiffList.find(e => e.id === 'player-me' || e.username === myName);
@@ -1877,20 +2302,37 @@ function recordBestTime(diff, seconds) {
   }
 
   currentDiffList.sort((a, b) => a.time - b.time);
-  boards[diff] = currentDiffList;
+  boards[key] = currentDiffList;
   saveLeaderboards(boards);
+
+  // Supabase Backend Sync (RPC submit_score)
+  if (state.supabase) {
+    state.supabase.rpc('submit_score', {
+      p_mode: mode,
+      p_difficulty: diff,
+      p_time_seconds: seconds,
+      p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3))
+    }).catch(err => {
+      console.warn('Backend sync submit_score skipped/failed:', err.message);
+    });
+  }
+
   return isNewBest;
 }
 
 function getMyBestTimeForDiff(diff) {
+  const mode = state.mode || 'zen';
+  const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const list = boards[diff] || [];
+  const list = boards[key] || getLeaderboardSeed(mode, diff);
   const myName = state.profile.username || 'Spieler';
   const entry = list.find(e => e.id === 'player-me' || e.username === myName);
   return entry ? formatTime(entry.time) : '--:--';
 }
 
 function openLeaderboard() {
+  state.leadMode = state.mode; // Rangliste passt sich automatisch dem aktuellen Spielmodus an!
+  syncLeaderboardModeTabs();
   dom.leaderboardModal.classList.remove('hidden');
   renderLeaderboard();
 }
@@ -1899,21 +2341,36 @@ function closeLeaderboard() {
   dom.leaderboardModal.classList.add('hidden');
 }
 
+function switchLeaderboardMode(mode) {
+  state.leadMode = mode;
+  syncLeaderboardModeTabs();
+  renderLeaderboard();
+}
+
+function syncLeaderboardModeTabs() {
+  if (!dom.leadModeTabs) return;
+  const btns = dom.leadModeTabs.querySelectorAll('.lead-mode-btn');
+  btns.forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === state.leadMode);
+  });
+}
+
 function switchLeaderboardTab(diff) {
   state.leadDifficulty = diff;
   [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard].forEach(b => {
-    b.classList.toggle('active', b.dataset.diff === diff);
+    if (b) b.classList.toggle('active', b.dataset.diff === diff);
   });
   renderLeaderboard();
 }
 
 function renderLeaderboard() {
-  const diff = state.leadDifficulty;
+  const mode = state.leadMode || state.mode || 'zen';
+  const diff = state.leadDifficulty || 'medium';
+  const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const list = (boards[diff] || getLeaderboardSeed(diff)).slice().sort((a, b) => a.time - b.time);
+  const list = (boards[key] || getLeaderboardSeed(mode, diff)).slice().sort((a, b) => a.time - b.time);
 
   const myName = state.profile.username || 'Spieler';
-  let myRank = '-';
   let myTime = '--:--';
 
   dom.leaderboardBody.innerHTML = '';
@@ -1922,7 +2379,6 @@ function renderLeaderboard() {
     const isMe = entry.id === 'player-me' || entry.username === myName;
     const rank = idx + 1;
     if (isMe) {
-      myRank = rank;
       myTime = formatTime(entry.time);
     }
 
@@ -1936,7 +2392,7 @@ function renderLeaderboard() {
     dom.leaderboardBody.appendChild(tr);
   });
 
-  dom.myRankTime.textContent = myTime;
+  if (dom.myRankTime) dom.myRankTime.textContent = myTime;
 }
 
 // =============================================================================
@@ -2222,8 +2678,13 @@ function bindEvents() {
   // Sprachwechsel DE / EN
   dom.langToggleBtn.addEventListener('click', toggleLanguage);
 
-  // Audio Toggle
-  dom.audioToggleBtn.addEventListener('click', toggleAmbientSound);
+  // Audio Toggle & Modal
+  dom.audioToggleBtn.addEventListener('click', () => {
+    if (!state.audioPlaying) {
+      startAmbientSound();
+    }
+    openAudioModal();
+  });
 
   // Theme Toggle (Hell/Dunkel)
   dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
@@ -2234,6 +2695,9 @@ function bindEvents() {
   dom.leaderboardModal.addEventListener('click', e => {
     if (e.target === dom.leaderboardModal) closeLeaderboard();
   });
+  if (dom.leadModeZen) dom.leadModeZen.addEventListener('click', () => switchLeaderboardMode('zen'));
+  if (dom.leadModeVersus) dom.leadModeVersus.addEventListener('click', () => switchLeaderboardMode('versus'));
+  if (dom.leadModeSwap) dom.leadModeSwap.addEventListener('click', () => switchLeaderboardMode('swap'));
   dom.leadTabEasy.addEventListener('click', () => switchLeaderboardTab('easy'));
   dom.leadTabMedium.addEventListener('click', () => switchLeaderboardTab('medium'));
   dom.leadTabHard.addEventListener('click', () => switchLeaderboardTab('hard'));
@@ -2241,6 +2705,25 @@ function bindEvents() {
   // Pause & Play Steuerung
   if (dom.btnPauseGame) dom.btnPauseGame.addEventListener('click', togglePause);
   if (dom.btnResumeGame) dom.btnResumeGame.addEventListener('click', resumeGame);
+
+  // Board Result Overlay
+  if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', () => startNewGame());
+  if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
+  if (dom.btnResultPeek) dom.btnResultPeek.addEventListener('click', restoreResultOverlay);
+
+  // Audio & Soundtrack Modal
+  if (dom.closeAudioBtn) dom.closeAudioBtn.addEventListener('click', closeAudioModal);
+  if (dom.audioModal) dom.audioModal.addEventListener('click', e => {
+    if (e.target === dom.audioModal) closeAudioModal();
+  });
+  if (dom.btnAudioTogglePlay) dom.btnAudioTogglePlay.addEventListener('click', toggleAmbientSound);
+  if (dom.audioVolumeSlider) dom.audioVolumeSlider.addEventListener('input', e => setAudioVolume(e.target.value / 100));
+  if (dom.audioTrackList) {
+    dom.audioTrackList.addEventListener('click', e => {
+      const btn = e.target.closest('.track-item');
+      if (btn && btn.dataset.track) setAudioTrack(btn.dataset.track);
+    });
+  }
 
   // Account & Authentifizierung
   dom.openAccountBtn.addEventListener('click', openAccount);
@@ -2321,6 +2804,7 @@ function bindEvents() {
   // Spielsteuerung (Toolbar)
   dom.btnErase.addEventListener('click', clearCell);
   dom.btnNewGame.addEventListener('click', () => startNewGame());
+  if (dom.btnHint) dom.btnHint.addEventListener('click', useHint);
   dom.btnNotes.addEventListener('click', () => {
     ensureGameStarted();
     state.notesActive = !state.notesActive;
@@ -2332,7 +2816,9 @@ function bindEvents() {
   // Numpad Klicks
   dom.numpad.addEventListener('click', e => {
     const btn = e.target.closest('.num');
-    if (!btn || btn.classList.contains('completed')) return;
+    if (!btn) return;
+    // Wenn autoLockCompleted aktiv ist, wird das Anklicken vollendeter Zahlen gesperrt; sonst bleibt es frei!
+    if (state.autoLockCompleted && btn.classList.contains('locked')) return;
     handleNumberInput(parseInt(btn.dataset.num, 10));
   });
 
@@ -2360,6 +2846,8 @@ function bindEvents() {
       clearCell();
     } else if (e.key.toLowerCase() === 'n') {
       dom.btnNotes.click();
+    } else if (e.key.toLowerCase() === 'h') {
+      useHint();
     } else if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       moveSelection(e.key);
     }
