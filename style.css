@@ -698,6 +698,48 @@ body {
   font-size: 0.8rem;
 }
 
+/* Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach 'Feld ansehen' (oberhalb des Boards, verdeckt keine Zahlen) */
+.hud-result-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 3px;
+  animation: fadeIn 0.2s ease;
+}
+
+.hud-result-btn {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.hud-result-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--accent);
+}
+
+.hud-result-btn.primary {
+  background: var(--text);
+  color: var(--surface);
+  border-color: var(--text);
+}
+
+.hud-result-btn.primary:hover {
+  opacity: 0.9;
+}
+
 /* 9x9 Grid & Pause Overlay */
 .grid-wrap {
   width: 100%;

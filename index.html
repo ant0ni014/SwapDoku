@@ -105,6 +105,16 @@
             <span id="swapPartnerLabel">Swap in</span>
             <strong id="swapTimer">10s</strong>
           </div>
+
+          <!-- Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach "Feld ansehen" (oberhalb des Boards, verdeckt keine Zahlen) -->
+          <div class="hud-result-bar hidden" id="hudResultBar">
+            <button class="hud-result-btn primary" id="btnHudReopen">
+              <span id="hudReopenIcon">✧</span> <span id="hudReopenText">Ergebnis &amp; Stats</span>
+            </button>
+            <button class="hud-result-btn" id="btnHudSolution">
+              <span id="hudSolutionText">Lösung anzeigen</span>
+            </button>
+          </div>
         </div>
 
         <!-- 9x9 Sudoku Feld mit Pause-Overlay & Board Result Overlay (Großzügig) -->
