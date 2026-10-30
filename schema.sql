@@ -84,6 +84,13 @@ CREATE POLICY "Users can update own profile"
     USING (auth.uid() = id)
     WITH CHECK (auth.uid() = id);
 
+-- Profiles: Nutzer darf eigenes Profil erstellen (falls Trigger aussteht oder Offline-Sync)
+CREATE POLICY "Users can insert own profile"
+    ON public.profiles
+    FOR INSERT
+    TO authenticated, anon
+    WITH CHECK (auth.uid() = id);
+
 -- Unlocked Themes: Eigene freigeschaltete Themes lesen
 CREATE POLICY "Users can read own unlocked themes"
     ON public.unlocked_themes
@@ -130,7 +137,8 @@ CREATE OR REPLACE FUNCTION public.submit_score(
     p_mode TEXT,
     p_difficulty TEXT,
     p_time_seconds INTEGER,
-    p_remaining_lives INTEGER DEFAULT 3
+    p_remaining_lives INTEGER DEFAULT 3,
+    p_username TEXT DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -162,12 +170,23 @@ BEGIN
         RAISE EXCEPTION 'Ungültige Spielzeit: % Sekunden.', p_time_seconds;
     END IF;
 
-    -- Ermitteln des Benutzernamens (falls vorhanden, sonst Fallback)
+    -- Sicherstellen, dass das Profil existiert & Username synchronisieren
     IF v_user_id IS NOT NULL THEN
+        INSERT INTO public.profiles (id, username, sync_points, versus_wins, active_theme)
+        VALUES (v_user_id, COALESCE(NULLIF(TRIM(p_username), ''), 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6)), 0, 0, 'nordic-light')
+        ON CONFLICT (id) DO UPDATE SET
+            username = CASE
+                WHEN NULLIF(TRIM(p_username), '') IS NOT NULL AND (public.profiles.username IS NULL OR public.profiles.username LIKE 'Player_%' OR public.profiles.username = 'Spieler')
+                THEN TRIM(p_username)
+                ELSE public.profiles.username
+            END,
+            updated_at = timezone('utc'::text, now());
+
         SELECT username INTO v_username FROM public.profiles WHERE id = v_user_id;
     END IF;
+
     IF v_username IS NULL OR TRIM(v_username) = '' THEN
-        v_username := 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6);
+        v_username := COALESCE(NULLIF(TRIM(p_username), ''), 'Player_' || SUBSTRING(gen_random_uuid()::text, 1, 6));
     END IF;
 
     -- Score in Leaderboard-Tabelle persistieren

@@ -2053,6 +2053,28 @@ body {
   }
 }
 
+/* Co-Op Swap Inspect Tabs */
+.swap-inspect-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.swap-inspect-label {
+  font-size: 0.76rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.swap-inspect-btns {
+  display: flex;
+  gap: 6px;
+}
+
 .hidden {
   display: none !important;
 }

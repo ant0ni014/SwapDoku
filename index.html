@@ -108,6 +108,10 @@
 
           <!-- Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach "Feld ansehen" (oberhalb des Boards, verdeckt keine Zahlen) -->
           <div class="hud-result-bar hidden" id="hudResultBar">
+            <div class="swap-inspect-tabs hidden" id="swapHudInspectTabs" style="margin: 0; gap: 4px;">
+              <button class="diff-btn active" id="btnHudInspectBoardA" style="font-size: 0.72rem; padding: 4px 8px;">Feld A (Blau)</button>
+              <button class="diff-btn" id="btnHudInspectBoardB" style="font-size: 0.72rem; padding: 4px 8px;">Feld B (Rot)</button>
+            </div>
             <button class="hud-result-btn primary" id="btnHudReopen">
               <span id="hudReopenIcon">✧</span> <span id="hudReopenText">Ergebnis &amp; Stats</span>
             </button>
@@ -149,6 +153,14 @@
                   </div>
                 </div>
                 <div class="result-actions">
+                  <!-- Swap-Modus Feld-Umschalter zur Lösung- & Feld-Inspektion -->
+                  <div class="swap-inspect-tabs hidden" id="swapInspectTabs">
+                    <span class="swap-inspect-label">Feld ansehen:</span>
+                    <div class="swap-inspect-btns">
+                      <button class="diff-btn active" id="btnInspectBoardA">Feld A (Blau)</button>
+                      <button class="diff-btn" id="btnInspectBoardB">Feld B (Rot)</button>
+                    </div>
+                  </div>
                   <button class="btn btn-primary" id="btnResultNewGame">Neues Spiel</button>
                   <div class="result-sub-actions">
                     <button class="btn btn-secondary" id="btnResultSolution">Lösung anzeigen</button>
@@ -336,6 +348,7 @@
         <button class="lead-tab-btn active" data-diff="easy" id="leadTabEasy">Einfach</button>
         <button class="lead-tab-btn" data-diff="medium" id="leadTabMedium">Mittel</button>
         <button class="lead-tab-btn" data-diff="hard" id="leadTabHard">Schwer</button>
+        <button class="lead-tab-btn hidden" data-diff="wins" id="leadTabWins">Siege</button>
       </div>
       <div class="my-rank-info" id="myRankInfo">
         <span id="myRankLabel">Deine Bestzeit:</span> <strong id="myRankTime">--:--</strong>
@@ -388,11 +401,15 @@
               <div class="record-card">
                 <span class="record-mode-title" id="recVersusTitle">Versus Duell</span>
                 <div class="record-line"><span>Siege:</span><strong id="recVersusWins">0 Siege</strong></div>
-                <div class="record-line"><span>Bestzeit:</span><strong id="recVersusTime">--:--</strong></div>
+                <div class="record-line"><span>Einfach:</span><strong id="recVersusEasy">--:--</strong></div>
+                <div class="record-line"><span>Mittel:</span><strong id="recVersusMedium">--:--</strong></div>
+                <div class="record-line"><span>Schwer:</span><strong id="recVersusHard">--:--</strong></div>
               </div>
               <div class="record-card">
                 <span class="record-mode-title" id="recSwapTitle">Co-Op Swap</span>
-                <div class="record-line"><span>Bestzeit:</span><strong id="recSwapTime">--:--</strong></div>
+                <div class="record-line"><span>Einfach:</span><strong id="recSwapEasy">--:--</strong></div>
+                <div class="record-line"><span>Mittel:</span><strong id="recSwapMedium">--:--</strong></div>
+                <div class="record-line"><span>Schwer:</span><strong id="recSwapHard">--:--</strong></div>
               </div>
             </div>
           </div>

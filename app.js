@@ -172,6 +172,9 @@ const I18N = {
     leadTabEasy: 'Einfach',
     leadTabMedium: 'Mittel',
     leadTabHard: 'Schwer',
+    leadTabWins: 'Siege',
+    swapTeamWonTitle: 'Team-Sieg!',
+    swapTeamWonDesc: 'Beide Sudoku-Felder erfolgreich im Team gelöst!',
     myRankLabel: 'Deine Bestzeit:',
     thRank: 'Rang',
     thPlayer: 'Spieler',
@@ -359,6 +362,9 @@ const I18N = {
     leadTabEasy: 'Easy',
     leadTabMedium: 'Medium',
     leadTabHard: 'Hard',
+    leadTabWins: 'Wins',
+    swapTeamWonTitle: 'Team Victory!',
+    swapTeamWonDesc: 'Both Sudoku boards successfully completed as a team!',
     myRankLabel: 'Your Best Time:',
     thRank: 'Rank',
     thPlayer: 'Player',
@@ -466,8 +472,11 @@ const state = {
   currentHearts: 3,
   isGameOver: false,
 
-  // Co-Op Swap Farbmarkierung
+  // Co-Op Swap Farbmarkierung & Dual-Board-Verwaltung
   activeBoard: 'A', // 'A' (Blau) | 'B' (Rot)
+  swapBoards: null,
+  swapBoardSolved: { A: false, B: false },
+  isSolutionRevealed: false,
 
   // Ranglisten Filter
   leadDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
@@ -780,6 +789,7 @@ const dom = {
   leadTabEasy: document.getElementById('leadTabEasy'),
   leadTabMedium: document.getElementById('leadTabMedium'),
   leadTabHard: document.getElementById('leadTabHard'),
+  leadTabWins: document.getElementById('leadTabWins'),
   myRankInfo: document.getElementById('myRankInfo'),
   myRankLabel: document.getElementById('myRankLabel'),
   myRankTime: document.getElementById('myRankTime'),
@@ -799,8 +809,12 @@ const dom = {
   recZenMedium: document.getElementById('recZenMedium'),
   recZenHard: document.getElementById('recZenHard'),
   recVersusWins: document.getElementById('recVersusWins'),
-  recVersusTime: document.getElementById('recVersusTime'),
-  recSwapTime: document.getElementById('recSwapTime'),
+  recVersusEasy: document.getElementById('recVersusEasy'),
+  recVersusMedium: document.getElementById('recVersusMedium'),
+  recVersusHard: document.getElementById('recVersusHard'),
+  recSwapEasy: document.getElementById('recSwapEasy'),
+  recSwapMedium: document.getElementById('recSwapMedium'),
+  recSwapHard: document.getElementById('recSwapHard'),
   authLoggedInSection: document.getElementById('authLoggedInSection'),
   authLoggedInEmail: document.getElementById('authLoggedInEmail'),
   btnLogout: document.getElementById('btnLogout'),
@@ -918,6 +932,12 @@ const dom = {
   btnResultNewGame: document.getElementById('btnResultNewGame'),
   btnResultSolution: document.getElementById('btnResultSolution'),
   btnResultInspect: document.getElementById('btnResultInspect'),
+  swapInspectTabs: document.getElementById('swapInspectTabs'),
+  btnInspectBoardA: document.getElementById('btnInspectBoardA'),
+  btnInspectBoardB: document.getElementById('btnInspectBoardB'),
+  swapHudInspectTabs: document.getElementById('swapHudInspectTabs'),
+  btnHudInspectBoardA: document.getElementById('btnHudInspectBoardA'),
+  btnHudInspectBoardB: document.getElementById('btnHudInspectBoardB'),
 
   // HUD Result Bar (Wiederaufrufen nach Feld-Inspektion)
   hudResultBar: document.getElementById('hudResultBar'),
@@ -1043,6 +1063,7 @@ function applyLanguageToDOM() {
   if (dom.leadTabEasy) dom.leadTabEasy.textContent = d.leadTabEasy;
   if (dom.leadTabMedium) dom.leadTabMedium.textContent = d.leadTabMedium;
   if (dom.leadTabHard) dom.leadTabHard.textContent = d.leadTabHard;
+  if (dom.leadTabWins) dom.leadTabWins.textContent = d.leadTabWins || (state.currentLang === 'de' ? 'Siege' : 'Wins');
   if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankLabel;
   if (dom.thRank) dom.thRank.textContent = d.thRank;
   if (dom.thPlayer) dom.thPlayer.textContent = d.thPlayer;
@@ -1174,6 +1195,9 @@ async function initAuth() {
       if (session) {
         state.user = session.user;
         state.authEmail = session.user.email || null;
+        if (session.user.email) {
+          localStorage.setItem('swapdoku_auth_email', session.user.email);
+        }
         await syncProfileFromDB();
       }
     } else {
@@ -1188,11 +1212,16 @@ async function initAuth() {
 async function syncProfileFromDB() {
   if (!state.supabase || !state.user) return;
   try {
-    const { data } = await state.supabase.from('profiles').select('username, active_theme, versus_wins').eq('id', state.user.id).single();
+    const { data } = await state.supabase
+      .from('profiles')
+      .select('username, active_theme, versus_wins, best_times_zen, best_times_versus, best_times_swap')
+      .eq('id', state.user.id)
+      .maybeSingle();
+
     if (data) {
-      if (data.username && !data.username.startsWith('Player_')) {
+      if (data.username && !data.username.startsWith('Player_') && data.username !== 'Spieler') {
         state.profile.username = data.username;
-      } else if (state.profile.username && !state.profile.username.startsWith('Player_')) {
+      } else if (state.profile.username && !state.profile.username.startsWith('Player_') && state.profile.username !== 'Spieler') {
         state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id).catch(() => {});
       } else if (data.username) {
         state.profile.username = data.username;
@@ -1203,7 +1232,50 @@ async function syncProfileFromDB() {
         state.profile.versus_wins = Math.max(state.profile.versus_wins || 0, data.versus_wins);
         localStorage.setItem('swapdoku_versus_wins', state.profile.versus_wins.toString());
       }
+
+      // Bestzeiten aus DB in lokale Leaderboards synchronisieren
+      const boards = loadSavedLeaderboards();
+      let boardsChanged = false;
+
+      const mergeBest = (mode, json) => {
+        if (!json || typeof json !== 'object') return;
+        ['easy', 'medium', 'hard'].forEach(diff => {
+          const sec = json[diff];
+          if (typeof sec === 'number' && sec > 0) {
+            const key = `${mode}_${diff}`;
+            if (!boards[key]) boards[key] = [];
+            let entry = boards[key].find(e => e.id === 'player-me' || e.username === state.profile.username);
+            if (!entry) {
+              boards[key].push({ id: 'player-me', username: state.profile.username || 'Spieler', time: sec });
+              boards[key].sort((a, b) => a.time - b.time);
+              boardsChanged = true;
+            } else if (sec < entry.time) {
+              entry.time = sec;
+              entry.username = state.profile.username || 'Spieler';
+              boards[key].sort((a, b) => a.time - b.time);
+              boardsChanged = true;
+            }
+          }
+        });
+      };
+
+      mergeBest('zen', data.best_times_zen);
+      mergeBest('versus', data.best_times_versus);
+      mergeBest('swap', data.best_times_swap);
+
+      if (boardsChanged) {
+        saveLeaderboards(boards);
+      }
+    } else {
+      const initialName = state.profile.username && state.profile.username !== 'Spieler' ? state.profile.username : 'Spieler';
+      await state.supabase.from('profiles').insert({
+        id: state.user.id,
+        username: initialName,
+        active_theme: state.profile.active_theme || 'nordic-light',
+        versus_wins: state.profile.versus_wins || 0
+      }).catch(() => {});
     }
+
     setTheme(state.profile.active_theme);
     saveLocalState();
     updateAccountUI();
@@ -1219,23 +1291,29 @@ function loadLocalState() {
     if (accounts[savedEmail]) {
       state.profile = { ...state.profile, ...accounts[savedEmail] };
     }
-  } else {
-    const saved = localStorage.getItem('swapdoku_state');
-    if (saved) {
-      try { 
-        const parsed = JSON.parse(saved);
-        state.profile = { ...state.profile, ...parsed };
-      } catch (_) {}
-    }
+  }
+  const saved = localStorage.getItem('swapdoku_state');
+  if (saved) {
+    try { 
+      const parsed = JSON.parse(saved);
+      if (parsed.username && parsed.username !== 'Spieler') {
+        state.profile.username = parsed.username;
+      }
+      if (parsed.active_theme) {
+        state.profile.active_theme = parsed.active_theme;
+      }
+    } catch (_) {}
   }
   setTheme(state.profile.active_theme);
 }
 
 function saveLocalState() {
   localStorage.setItem('swapdoku_state', JSON.stringify(state.profile));
-  if (state.authEmail) {
+  const currentEmail = state.authEmail || state.user?.email;
+  if (currentEmail) {
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
-    accounts[state.authEmail] = {
+    accounts[currentEmail] = {
+      ...(accounts[currentEmail] || {}),
       username: state.profile.username,
       active_theme: state.profile.active_theme
     };
@@ -1625,6 +1703,10 @@ function startNewGame(customBoard = null, customSol = null) {
   
   state.gameStarted = false;
   state.isGameOver = false;
+  state.isSolutionRevealed = false;
+  state.swapBoardSolved = { A: false, B: false };
+  if (dom.swapInspectTabs) dom.swapInspectTabs.classList.add('hidden');
+  if (dom.swapHudInspectTabs) dom.swapHudInspectTabs.classList.add('hidden');
   state.gameSeconds = 0;
   updateStopwatchDisplay();
   dom.pauseBtnIcon.textContent = '▶';
@@ -1938,25 +2020,44 @@ function showResultOverlay(isWin, customTitle = null, customDesc = null) {
     dom.resStatDiffVal.textContent = modeText;
   }
 
+  if (state.mode === 'swap' && state.swapBoards) {
+    if (dom.swapInspectTabs) dom.swapInspectTabs.classList.remove('hidden');
+    updateSwapInspectButtons();
+  } else {
+    if (dom.swapInspectTabs) dom.swapInspectTabs.classList.add('hidden');
+  }
+
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
   dom.boardResultOverlay.classList.remove('hidden');
   dom.boardResultOverlay.style.display = 'flex';
 }
 
 function showFullSolution() {
-  state.currentBoard = [...state.solution];
-  state.notes = Array.from({ length: 81 }, () => new Set());
-  state.savedNotes = Array.from({ length: 81 }, () => new Set());
-  state.wrongNotes = Array.from({ length: 81 }, () => new Set());
-  state.selectedIndex = null;
-  render();
-  updateNumpadCompletedState();
+  state.isSolutionRevealed = true;
+  if (state.mode === 'swap' && state.swapBoards) {
+    if (state.swapBoards.A) state.swapBoards.A.current = [...state.swapBoards.A.solution];
+    if (state.swapBoards.B) state.swapBoards.B.current = [...state.swapBoards.B.solution];
+    showSwapInspectionBoard(state.activeBoard || 'A');
+  } else {
+    state.currentBoard = [...state.solution];
+    state.notes = Array.from({ length: 81 }, () => new Set());
+    state.savedNotes = Array.from({ length: 81 }, () => new Set());
+    state.wrongNotes = Array.from({ length: 81 }, () => new Set());
+    state.selectedIndex = null;
+    render();
+    updateNumpadCompletedState();
+  }
+
   if (dom.boardResultOverlay) {
     dom.boardResultOverlay.classList.add('hidden');
     dom.boardResultOverlay.style.display = 'none';
   }
   if (dom.hudResultBar) {
     dom.hudResultBar.classList.remove('hidden');
+    if (state.mode === 'swap' && state.swapBoards) {
+      if (dom.swapHudInspectTabs) dom.swapHudInspectTabs.classList.remove('hidden');
+      updateSwapInspectButtons();
+    }
     if (dom.btnHudSolution) dom.btnHudSolution.classList.add('hidden');
   }
   toast(state.currentLang === 'de' ? 'Lösung aufgedeckt' : 'Solution revealed');
@@ -1969,6 +2070,12 @@ function hideResultOverlayForInspection() {
   }
   if (dom.hudResultBar) {
     dom.hudResultBar.classList.remove('hidden');
+    if (state.mode === 'swap' && state.swapBoards) {
+      if (dom.swapHudInspectTabs) dom.swapHudInspectTabs.classList.remove('hidden');
+      updateSwapInspectButtons();
+    } else {
+      if (dom.swapHudInspectTabs) dom.swapHudInspectTabs.classList.add('hidden');
+    }
     const isWin = SudokuEngine.isComplete(state.currentBoard, state.solution);
     if (dom.hudReopenIcon) dom.hudReopenIcon.textContent = isWin ? '✦' : '✧';
     if (dom.btnHudSolution) {
@@ -1981,6 +2088,35 @@ function hideResultOverlayForInspection() {
   }
   const d = I18N[state.currentLang] || I18N.de;
   toast(d.toastInspectHint || 'Tippe oben auf „Ergebnis & Stats“, um zurückzukehren');
+}
+
+function showSwapInspectionBoard(boardKey) {
+  if (!state.swapBoards || !state.swapBoards[boardKey]) return;
+  state.activeBoard = boardKey;
+  updateSwapVisualTheme();
+
+  const bData = state.swapBoards[boardKey];
+  state.initialBoard = [...bData.initial];
+  state.solution = [...bData.solution];
+  state.currentBoard = state.isSolutionRevealed ? [...bData.solution] : [...bData.current];
+  state.notes = bData.notes || Array.from({ length: 81 }, () => new Set());
+  state.savedNotes = bData.savedNotes || Array.from({ length: 81 }, () => new Set());
+  state.wrongNotes = bData.wrongNotes || Array.from({ length: 81 }, () => new Set());
+  state.selectedIndex = null;
+
+  updateSwapInspectButtons();
+  render();
+  updateNumpadCompletedState();
+}
+
+function updateSwapInspectButtons() {
+  const currentKey = state.activeBoard || 'A';
+  [dom.btnInspectBoardA, dom.btnHudInspectBoardA].forEach(b => {
+    if (b) b.classList.toggle('active', currentKey === 'A');
+  });
+  [dom.btnInspectBoardB, dom.btnHudInspectBoardB].forEach(b => {
+    if (b) b.classList.toggle('active', currentKey === 'B');
+  });
 }
 
 function restoreResultOverlay() {
@@ -2000,6 +2136,52 @@ function checkProgress() {
     broadcast('PROGRESS', { progressPct: pct });
   }
 
+  if (state.mode === 'swap') {
+    if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
+      if (SudokuEngine.isValidSudoku(state.currentBoard)) {
+        state.solution = [...state.currentBoard];
+      }
+      const currentBoardKey = state.activeBoard || 'A';
+      if (state.swapBoards && state.swapBoards[currentBoardKey]) {
+        state.swapBoards[currentBoardKey].current = [...state.currentBoard];
+        state.swapBoards[currentBoardKey].solution = [...state.solution];
+      }
+
+      if (!state.swapBoardSolved[currentBoardKey]) {
+        state.swapBoardSolved[currentBoardKey] = true;
+        if (state.swapBoards && state.swapBoards[currentBoardKey]) {
+          state.swapBoards[currentBoardKey].isSolved = true;
+        }
+
+        if (state.channel && state.opponentType === 'online') {
+          broadcast('SWAP_BOARD_SOLVED', {
+            board: currentBoardKey,
+            username: state.profile.username || 'Partner'
+          });
+        }
+
+        const otherBoardKey = currentBoardKey === 'A' ? 'B' : 'A';
+        const otherSolved = state.swapBoardSolved[otherBoardKey];
+        if (!otherSolved) {
+          toast(state.currentLang === 'de'
+            ? `🎉 Feld ${currentBoardKey} komplett gelöst! Jetzt noch Feld ${otherBoardKey}!`
+            : `🎉 Board ${currentBoardKey} completely solved! Now complete Board ${otherBoardKey}!`);
+        }
+      }
+
+      if (state.swapBoardSolved.A && state.swapBoardSolved.B) {
+        if (state.channel && state.opponentType === 'online') {
+          broadcast('SWAP_TEAM_WON', {
+            seconds: state.gameSeconds,
+            username: state.profile.username || 'Spieler'
+          });
+        }
+        gameWon();
+      }
+    }
+    return;
+  }
+
   if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
     if (SudokuEngine.isValidSudoku(state.currentBoard)) {
       state.solution = [...state.currentBoard];
@@ -2015,15 +2197,21 @@ function updateProgressBars(playerPct, oppPct) {
   if (dom.opponentLabel) dom.opponentLabel.textContent = `${oppPct}%`;
 }
 
-async function gameWon() {
+async function gameWon(isRemoteTeamWin = false) {
   state.isGameOver = true;
   stopBot();
+  stopSwapCountdown();
   stopStopwatch();
   state.selectedIndex = null;
 
-  // 1. ZUERST den Sieg-Dialog anzeigen - GARANTIERT und OHNE Blockade!
+  // 1. ZUERST den Sieg-Dialog anzeigen
   try {
-    showResultOverlay(true);
+    if (state.mode === 'swap') {
+      const d = I18N[state.currentLang] || I18N.de;
+      showResultOverlay(true, d.swapTeamWonTitle || 'Team-Sieg!', d.swapTeamWonDesc || 'Beide Sudoku-Felder erfolgreich im Team gelöst!');
+    } else {
+      showResultOverlay(true);
+    }
   } catch (err) {
     console.error('Error showing result overlay:', err);
     if (dom.boardResultOverlay) {
@@ -2033,9 +2221,9 @@ async function gameWon() {
   }
 
   const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
-  const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : 'medium');
+  const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : (state.versusDifficulty || 'medium'));
 
-  // 2. Zeit in Bestenliste aufnehmen (im try-catch, damit keine Exceptions den Sieg stören)
+  // 2. Zeit in Bestenliste aufnehmen
   let isBest = false;
   try {
     isBest = recordBestTime(currentDiff, state.gameSeconds);
@@ -2053,7 +2241,7 @@ async function gameWon() {
 
   // 3. Versus Broadcast & Account UI
   try {
-    if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
+    if (state.mode === 'versus' && state.channel && state.opponentType === 'online' && !isRemoteTeamWin) {
       broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
     }
     updateAccountUI();
@@ -2084,10 +2272,33 @@ function startBotMatch() {
     state.botBoard = [...state.initialBoard];
     state.botSolution = [...state.solution];
   } else if (state.mode === 'swap') {
-    const botPuzzle = SudokuEngine.generate(34);
+    const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
+    const botPuzzle = SudokuEngine.generate(clues);
     state.botInitial = [...botPuzzle.initialBoard];
     state.botBoard = [...botPuzzle.initialBoard];
     state.botSolution = [...botPuzzle.solution];
+
+    state.swapBoards = {
+      A: {
+        initial: [...state.initialBoard],
+        solution: [...state.solution],
+        current: [...state.currentBoard],
+        notes: Array.from({ length: 81 }, () => new Set()),
+        savedNotes: Array.from({ length: 81 }, () => new Set()),
+        wrongNotes: Array.from({ length: 81 }, () => new Set()),
+        isSolved: false
+      },
+      B: {
+        initial: [...botPuzzle.initialBoard],
+        solution: [...botPuzzle.solution],
+        current: [...botPuzzle.initialBoard],
+        notes: Array.from({ length: 81 }, () => new Set()),
+        savedNotes: Array.from({ length: 81 }, () => new Set()),
+        wrongNotes: Array.from({ length: 81 }, () => new Set()),
+        isSolved: false
+      }
+    };
+    state.swapBoardSolved = { A: false, B: false };
     startSwapCountdown();
   }
 
@@ -2118,11 +2329,27 @@ function botStep() {
   }
 
   if (emptyIndices.length === 0) {
-    stopBot();
     if (state.mode === 'versus') {
+      stopBot();
+      state.isGameOver = true;
+      stopStopwatch();
+      const d = I18N[state.currentLang] || I18N.de;
+      showResultOverlay(false, d.duelLostTitle || 'Duell verloren', d.toastBotWon || 'Der Bot hat das Rätsel zuerst gelöst!');
       toast(t('toastBotWon'));
     } else if (state.mode === 'swap') {
-      toast(t('toastBotPartDone'));
+      const botBoardKey = state.activeBoard === 'A' ? 'B' : 'A';
+      state.swapBoardSolved[botBoardKey] = true;
+      if (state.swapBoards && state.swapBoards[botBoardKey]) {
+        state.swapBoards[botBoardKey].isSolved = true;
+        state.swapBoards[botBoardKey].current = [...state.botBoard];
+      }
+      toast(state.currentLang === 'de'
+        ? `🤖 Der Bot hat Feld ${botBoardKey} gelöst!`
+        : `🤖 The bot solved Board ${botBoardKey}!`);
+      if (state.swapBoardSolved.A && state.swapBoardSolved.B) {
+        stopBot();
+        gameWon();
+      }
     }
     return;
   }
@@ -2390,6 +2617,28 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
   }
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
 
+  state.swapBoards = {
+    A: {
+      initial: [...puzzleA.initialBoard],
+      solution: [...puzzleA.solution],
+      current: [...puzzleA.initialBoard],
+      notes: Array.from({ length: 81 }, () => new Set()),
+      savedNotes: Array.from({ length: 81 }, () => new Set()),
+      wrongNotes: Array.from({ length: 81 }, () => new Set()),
+      isSolved: false
+    },
+    B: {
+      initial: [...puzzleB.initialBoard],
+      solution: [...puzzleB.solution],
+      current: [...puzzleB.initialBoard],
+      notes: Array.from({ length: 81 }, () => new Set()),
+      savedNotes: Array.from({ length: 81 }, () => new Set()),
+      wrongNotes: Array.from({ length: 81 }, () => new Set()),
+      isSolved: false
+    }
+  };
+  state.swapBoardSolved = { A: false, B: false };
+
   // Host beginnt auf Board A (Blau), Partner auf Board B (Rot)
   if (isHost) {
     state.activeBoard = 'A';
@@ -2445,6 +2694,30 @@ function handlePartnerLeft(partnerName) {
   toast(d.toastPartnerLeft || `${partnerName || 'Partner'} hat das Spiel verlassen.`);
   setConnectionStatus('connecting', state.currentLang === 'de' ? 'Partner hat Raum verlassen' : 'Partner left room');
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+}
+
+function handleSwapBoardSolved(payload) {
+  const solvedBoard = payload?.board || 'A';
+  state.swapBoardSolved[solvedBoard] = true;
+  if (state.swapBoards && state.swapBoards[solvedBoard]) {
+    state.swapBoards[solvedBoard].isSolved = true;
+  }
+  const otherBoard = solvedBoard === 'A' ? 'B' : 'A';
+  if (!state.swapBoardSolved[otherBoard]) {
+    toast(state.currentLang === 'de'
+      ? `🎉 ${payload?.username || 'Partner'} hat Feld ${solvedBoard} gelöst! Noch Feld ${otherBoard}!`
+      : `🎉 ${payload?.username || 'Partner'} solved Board ${solvedBoard}! Still need Board ${otherBoard}!`);
+  }
+}
+
+function handleSwapTeamWon(payload) {
+  state.swapBoardSolved.A = true;
+  state.swapBoardSolved.B = true;
+  if (state.swapBoards) {
+    if (state.swapBoards.A) state.swapBoards.A.isSolved = true;
+    if (state.swapBoards.B) state.swapBoards.B.isSolved = true;
+  }
+  gameWon(true);
 }
 
 function handleSwapPartnerEliminated(partnerName) {
@@ -2611,6 +2884,12 @@ async function joinRoom(code, asHost = false) {
     .on('broadcast', { event: 'SWAP_PARTNER_ELIMINATED' }, ({ payload }) => {
       handleSwapPartnerEliminated(payload?.username || 'Partner');
     })
+    .on('broadcast', { event: 'SWAP_BOARD_SOLVED' }, ({ payload }) => {
+      handleSwapBoardSolved(payload);
+    })
+    .on('broadcast', { event: 'SWAP_TEAM_WON' }, ({ payload }) => {
+      handleSwapTeamWon(payload);
+    })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
       if (state.mode === 'swap') {
         handlePartnerLeft(payload?.username || 'Partner');
@@ -2715,6 +2994,16 @@ function doBoardSwap() {
   }
 
   if (state.opponentType === 'bot') {
+    if (state.swapBoards) {
+      if (state.activeBoard === 'A') {
+        state.swapBoards.A.current = [...state.currentBoard];
+        state.swapBoards.B.current = [...state.botBoard];
+      } else {
+        state.swapBoards.B.current = [...state.currentBoard];
+        state.swapBoards.A.current = [...state.botBoard];
+      }
+    }
+
     state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
     updateSwapVisualTheme();
 
@@ -2736,8 +3025,14 @@ function doBoardSwap() {
     updateNumpadCompletedState();
     toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
   } else if (state.channel && state.roomCode) {
+    if (state.swapBoards && state.swapBoards[state.activeBoard]) {
+      state.swapBoards[state.activeBoard].current = [...state.currentBoard];
+      state.swapBoards[state.activeBoard].notes = state.notes;
+      state.swapBoards[state.activeBoard].savedNotes = state.savedNotes;
+      state.swapBoards[state.activeBoard].wrongNotes = state.wrongNotes;
+    }
+
     if (state.isHost) {
-      // Host packt sein aktuelles Board ein und sendet Tauschbefehl
       broadcast('DO_SWAP_EXCHANGE', {
         currentBoard: [...state.currentBoard],
         initialBoard: [...state.initialBoard],
@@ -2745,7 +3040,8 @@ function doBoardSwap() {
         notes: serializeNotes(state.notes),
         savedNotes: serializeNotes(state.savedNotes),
         wrongNotes: serializeNotes(state.wrongNotes),
-        fromBoard: state.activeBoard
+        fromBoard: state.activeBoard,
+        isSolved: state.swapBoardSolved[state.activeBoard] || false
       });
     }
   } else {
@@ -2761,7 +3057,13 @@ function doBoardSwap() {
 }
 
 function handleDoSwapExchange(payload) {
-  // Partner packt sein eigenes Board ein und schickt es als Antwort an den Host
+  if (state.swapBoards && state.swapBoards[state.activeBoard]) {
+    state.swapBoards[state.activeBoard].current = [...state.currentBoard];
+    state.swapBoards[state.activeBoard].notes = state.notes;
+    state.swapBoards[state.activeBoard].savedNotes = state.savedNotes;
+    state.swapBoards[state.activeBoard].wrongNotes = state.wrongNotes;
+  }
+
   const partnerState = {
     currentBoard: [...state.currentBoard],
     initialBoard: [...state.initialBoard],
@@ -2769,11 +3071,11 @@ function handleDoSwapExchange(payload) {
     notes: serializeNotes(state.notes),
     savedNotes: serializeNotes(state.savedNotes),
     wrongNotes: serializeNotes(state.wrongNotes),
-    fromBoard: state.activeBoard
+    fromBoard: state.activeBoard,
+    isSolved: state.swapBoardSolved[state.activeBoard] || false
   };
   broadcast('SWAP_EXCHANGE_REPLY', partnerState);
 
-  // Partner übernimmt das Board des Hosts
   applyIncomingSwapData(payload);
 }
 
@@ -2798,6 +3100,16 @@ function applyIncomingSwapData(payload) {
   state.savedNotes = deserializeNotes(payload.savedNotes);
   state.wrongNotes = deserializeNotes(payload.wrongNotes);
   state.selectedIndex = null;
+
+  if (state.swapBoards && state.swapBoards[payload.fromBoard]) {
+    state.swapBoards[payload.fromBoard].current = [...payload.currentBoard];
+    state.swapBoards[payload.fromBoard].initial = [...payload.initialBoard];
+    state.swapBoards[payload.fromBoard].solution = [...payload.solution];
+    if (payload.isSolved) {
+      state.swapBoards[payload.fromBoard].isSolved = true;
+      state.swapBoardSolved[payload.fromBoard] = true;
+    }
+  }
 
   render();
   checkProgress();
@@ -2831,8 +3143,11 @@ function getLeaderboardSeed(mode, diff) {
 }
 
 function loadSavedLeaderboards() {
-  const cleanList = (arr) => {
+  const cleanList = (arr, key) => {
     if (!Array.isArray(arr)) return [];
+    if (key === 'versus_wins') {
+      return arr.filter(e => e && e.id && !e.id.startsWith('bot-') && typeof e.wins === 'number' && e.wins >= 0);
+    }
     return arr.filter(e => e && e.id && !e.id.startsWith('bot-') && typeof e.time === 'number' && e.time > 0);
   };
 
@@ -2841,7 +3156,7 @@ function loadSavedLeaderboards() {
     try {
       const parsed = JSON.parse(saved);
       for (const k in parsed) {
-        parsed[k] = cleanList(parsed[k]);
+        parsed[k] = cleanList(parsed[k], k);
       }
       return parsed;
     } catch (_) {}
@@ -2905,7 +3220,10 @@ function recordBestTime(diff, seconds) {
         p_mode: mode,
         p_difficulty: diff,
         p_time_seconds: seconds,
-        p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3))
+        p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3)),
+        p_username: myName
+      }).then(() => {
+        syncProfileFromDB().catch(() => {});
       }).catch(err => {
         console.warn('Backend sync submit_score skipped/failed:', err?.message || err);
       });
@@ -2950,11 +3268,24 @@ function syncLeaderboardModeTabs() {
   btns.forEach(b => {
     b.classList.toggle('active', b.dataset.mode === state.leadMode);
   });
+  if (dom.leadTabWins) {
+    if (state.leadMode === 'versus') {
+      dom.leadTabWins.classList.remove('hidden');
+    } else {
+      dom.leadTabWins.classList.add('hidden');
+      if (state.leadDifficulty === 'wins') {
+        state.leadDifficulty = 'medium';
+      }
+    }
+  }
+  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard, dom.leadTabWins].forEach(b => {
+    if (b) b.classList.toggle('active', b.dataset.diff === (state.leadDifficulty || 'medium'));
+  });
 }
 
 function switchLeaderboardTab(diff) {
   state.leadDifficulty = diff;
-  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard].forEach(b => {
+  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard, dom.leadTabWins].forEach(b => {
     if (b) b.classList.toggle('active', b.dataset.diff === diff);
   });
   renderLeaderboard();
@@ -2962,14 +3293,20 @@ function switchLeaderboardTab(diff) {
 
 async function renderLeaderboard() {
   const mode = state.leadMode || state.mode || 'zen';
-  const diff = state.leadDifficulty || 'medium';
+  let diff = state.leadDifficulty || 'medium';
+  if (mode !== 'versus' && diff === 'wins') {
+    diff = 'medium';
+    state.leadDifficulty = 'medium';
+  }
   const boards = loadSavedLeaderboards();
   const d = I18N[state.currentLang] || I18N.de;
   const myName = state.profile.username || 'Spieler';
 
-  if (mode === 'versus') {
+  if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'flex';
+  syncLeaderboardModeTabs();
+
+  if (mode === 'versus' && diff === 'wins') {
     // Versus Modus: All-Time Duellsiege Rangliste
-    if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'none';
     if (dom.thBestTime) dom.thBestTime.textContent = d.thWins || 'Siege';
     if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankWins || 'Deine Duellsiege:';
     if (dom.myRankTime) dom.myRankTime.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
@@ -3009,8 +3346,7 @@ async function renderLeaderboard() {
     return;
   }
 
-  // Einzelspieler & Co-Op Swap: Bestzeiten
-  if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'flex';
+  // Einzelspieler, Versus (nach Schwierigkeit) & Co-Op Swap: Bestzeiten
   if (dom.thBestTime) dom.thBestTime.textContent = d.thBestTime || 'Beste Zeit';
   if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankLabel || 'Deine Bestzeit:';
 
@@ -3112,8 +3448,13 @@ function updateAccountUI() {
   if (dom.recZenHard) dom.recZenHard.textContent = getTime('zen', 'hard');
 
   if (dom.recVersusWins) dom.recVersusWins.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
-  if (dom.recVersusTime) dom.recVersusTime.textContent = getTime('versus', 'medium');
-  if (dom.recSwapTime) dom.recSwapTime.textContent = getTime('swap', 'medium');
+  if (dom.recVersusEasy) dom.recVersusEasy.textContent = getTime('versus', 'easy');
+  if (dom.recVersusMedium) dom.recVersusMedium.textContent = getTime('versus', 'medium');
+  if (dom.recVersusHard) dom.recVersusHard.textContent = getTime('versus', 'hard');
+
+  if (dom.recSwapEasy) dom.recSwapEasy.textContent = getTime('swap', 'easy');
+  if (dom.recSwapMedium) dom.recSwapMedium.textContent = getTime('swap', 'medium');
+  if (dom.recSwapHard) dom.recSwapHard.textContent = getTime('swap', 'hard');
 
   const currentEmail = state.authEmail || state.user?.email;
   if (currentEmail) {
@@ -3196,6 +3537,7 @@ async function loginUser(email, password) {
     }
     state.user = data.user;
     state.authEmail = data.user.email;
+    localStorage.setItem('swapdoku_auth_email', data.user.email);
     await syncProfileFromDB();
     toast(state.currentLang === 'de' ? 'Erfolgreich angemeldet!' : 'Signed in successfully!');
     updateAccountUI();
@@ -3231,8 +3573,13 @@ async function registerUser(email, password) {
     }
     state.user = data.user;
     state.authEmail = data.user.email;
+    localStorage.setItem('swapdoku_auth_email', data.user.email);
     if (state.profile.username) {
-      state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id).catch(() => {});
+      state.supabase.from('profiles').upsert({
+        id: state.user.id,
+        username: state.profile.username,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' }).catch(() => {});
     }
     saveLocalState();
     toast(state.currentLang === 'de' ? 'Konto erfolgreich registriert!' : 'Account registered successfully!');
@@ -3276,21 +3623,49 @@ async function saveUsername() {
   state.profile.username = newName;
   saveLocalState();
 
-  if (state.authEmail) {
+  const currentEmail = state.authEmail || state.user?.email;
+  if (currentEmail) {
+    localStorage.setItem('swapdoku_auth_email', currentEmail);
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
-    accounts[state.authEmail] = {
-      ...(accounts[state.authEmail] || {}),
+    accounts[currentEmail] = {
+      ...(accounts[currentEmail] || {}),
       username: newName,
       active_theme: state.profile.active_theme
     };
     localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(accounts));
   }
 
+  // Lokale Leaderboard-Einträge dieses Spielers sofort aktualisieren
+  const boards = loadSavedLeaderboards();
+  let boardsUpdated = false;
+  for (const k in boards) {
+    if (Array.isArray(boards[k])) {
+      boards[k].forEach(e => {
+        if (e && (e.id === 'player-me' || e.username === 'Spieler')) {
+          e.username = newName;
+          boardsUpdated = true;
+        }
+      });
+    }
+  }
+  if (boardsUpdated) {
+    saveLeaderboards(boards);
+  }
+
   toast(state.currentLang === 'de' ? 'Spielername gespeichert' : 'Player name saved');
 
   if (!state.isOffline && state.supabase && state.user) {
     try {
-      await state.supabase.from('profiles').update({ username: newName }).eq('id', state.user.id);
+      await state.supabase.from('profiles').upsert({
+        id: state.user.id,
+        username: newName,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+      // Auch in leaderboard_scores persistieren
+      await state.supabase.from('leaderboard_scores')
+        .update({ username: newName })
+        .eq('user_id', state.user.id);
     } catch (err) {
       console.warn('Could not update username in Supabase:', err);
     }
@@ -3415,6 +3790,7 @@ function bindEvents() {
   dom.leadTabEasy.addEventListener('click', () => switchLeaderboardTab('easy'));
   dom.leadTabMedium.addEventListener('click', () => switchLeaderboardTab('medium'));
   dom.leadTabHard.addEventListener('click', () => switchLeaderboardTab('hard'));
+  if (dom.leadTabWins) dom.leadTabWins.addEventListener('click', () => switchLeaderboardTab('wins'));
 
   // Pause & Play Steuerung
   if (dom.btnPauseGame) dom.btnPauseGame.addEventListener('click', togglePause);
@@ -3425,6 +3801,10 @@ function bindEvents() {
   if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', () => startNewGame());
   if (dom.btnResultSolution) dom.btnResultSolution.addEventListener('click', showFullSolution);
   if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
+  if (dom.btnInspectBoardA) dom.btnInspectBoardA.addEventListener('click', () => showSwapInspectionBoard('A'));
+  if (dom.btnInspectBoardB) dom.btnInspectBoardB.addEventListener('click', () => showSwapInspectionBoard('B'));
+  if (dom.btnHudInspectBoardA) dom.btnHudInspectBoardA.addEventListener('click', () => showSwapInspectionBoard('A'));
+  if (dom.btnHudInspectBoardB) dom.btnHudInspectBoardB.addEventListener('click', () => showSwapInspectionBoard('B'));
   if (dom.btnHudReopen) dom.btnHudReopen.addEventListener('click', restoreResultOverlay);
   if (dom.btnHudSolution) dom.btnHudSolution.addEventListener('click', showFullSolution);
 
