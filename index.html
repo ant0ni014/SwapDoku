@@ -147,10 +147,6 @@
                     <span class="stat-lbl" id="resStatTimeLbl">Zeit:</span>
                     <strong class="stat-val" id="resStatTimeVal">04:12</strong>
                   </div>
-                  <div class="result-stat-item">
-                    <span class="stat-lbl" id="resStatDiffLbl">Modus:</span>
-                    <strong class="stat-val" id="resStatDiffVal">Einzelspieler</strong>
-                  </div>
                 </div>
                 <div class="result-actions">
                   <button class="btn btn-primary" id="btnResultNewGame">Neues Spiel</button>
@@ -204,11 +200,27 @@
 
             <!-- Online Bereich (Raum erstellen / beitreten) -->
             <div class="online-box" id="onlineSection">
+              <!-- Rätsel-Schwierigkeitsgrad im Online-Modus -->
+              <div class="bot-difficulty-row" id="onlineDiffRow">
+                <span class="diff-label" id="onlineDiffLabel">Rätsel:</span>
+                <div class="diff-buttons">
+                  <button class="diff-btn" data-diff="easy" id="onlineDiffEasy">Einfach</button>
+                  <button class="diff-btn active" data-diff="medium" id="onlineDiffMedium">Mittel</button>
+                  <button class="diff-btn" data-diff="hard" id="onlineDiffHard">Schwer</button>
+                </div>
+              </div>
+
+              <!-- Co-Op Swap Rollen-Hinweis (Board A Blau / Board B Rot) -->
+              <div class="swap-role-hint hidden" id="swapRoleHint">
+                <span class="swap-badge-dot" id="swapBadgeDot"></span>
+                <span id="swapRoleText">Board A (Blau) — Starter</span>
+              </div>
+
               <div class="lobby-row">
                 <button class="btn" id="createRoomBtn">Raum erstellen</button>
                 <span class="divider">oder</span>
                 <div class="join-box">
-                  <input type="text" id="roomCodeInput" maxlength="4" placeholder="CODE" spellcheck="false" autocomplete="off">
+                  <input type="text" id="roomCodeInput" maxlength="4" placeholder="Code" spellcheck="false" autocomplete="off">
                   <button class="btn" id="joinRoomBtn">Beitreten</button>
                 </div>
               </div>
@@ -363,18 +375,25 @@
               <button class="btn" id="btnSaveUsername">Speichern</button>
             </div>
           </div>
-          <div class="account-stats">
-            <div class="stat-item">
-              <span class="stat-label" id="accountBestTimeLabel">Bestzeit (Mittel)</span>
-              <span class="stat-val" id="accountBestTimeVal">--:--</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label" id="accountThemeLabel">Aktives Theme</span>
-              <span class="stat-val" id="accountThemeVal">Nordic Light</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label" id="accountStatusLabel">Status</span>
-              <span class="stat-val" id="accountAuthStatus">Gast</span>
+          <!-- Strukturierte Bestzeiten je Modus -->
+          <div class="account-records-box">
+            <div class="records-header" id="accountRecordsTitle">Persönliche Bestzeiten</div>
+            <div class="records-grid">
+              <div class="record-card">
+                <span class="record-mode-title" id="recZenTitle">Einzelspieler</span>
+                <div class="record-line"><span>Einfach:</span><strong id="recZenEasy">--:--</strong></div>
+                <div class="record-line"><span>Mittel:</span><strong id="recZenMedium">--:--</strong></div>
+                <div class="record-line"><span>Schwer:</span><strong id="recZenHard">--:--</strong></div>
+              </div>
+              <div class="record-card">
+                <span class="record-mode-title" id="recVersusTitle">Versus Duell</span>
+                <div class="record-line"><span>Siege:</span><strong id="recVersusWins">0 Siege</strong></div>
+                <div class="record-line"><span>Bestzeit:</span><strong id="recVersusTime">--:--</strong></div>
+              </div>
+              <div class="record-card">
+                <span class="record-mode-title" id="recSwapTitle">Co-Op Swap</span>
+                <div class="record-line"><span>Bestzeit:</span><strong id="recSwapTime">--:--</strong></div>
+              </div>
             </div>
           </div>
         </div>
@@ -515,6 +534,19 @@
           <label for="audioVolumeSlider" id="audioVolLabel">Lautstärke: <span id="volValue">60%</span></label>
           <input type="range" id="audioVolumeSlider" min="0" max="100" value="60">
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cookie- & Datenschutzeinstellungen Banner -->
+  <div class="cookie-banner hidden" id="cookieBanner">
+    <div class="cookie-banner-inner">
+      <div class="cookie-text" id="cookieBannerText">
+        <strong>Datenschutz & Cookies:</strong> SwapDoku speichert Spieleinstellungen, Themes und Bestzeiten lokal in Ihrem Browser (HTML5 Local Storage) und nutzt WebSockets für den Echtzeit-Multiplayer.
+      </div>
+      <div class="cookie-actions">
+        <button class="btn btn-secondary" id="btnCookieNecessary">Nur notwendige</button>
+        <button class="btn btn-primary" id="btnCookieAccept">Alle akzeptieren</button>
       </div>
     </div>
   </div>

@@ -1055,6 +1055,10 @@ body {
 }
 
 .cell.selected .val {
+  color: var(--user-val);
+}
+
+.cell.selected.given .val {
   color: var(--text);
 }
 
@@ -1071,6 +1075,10 @@ body {
 
 .cell.same-num .val {
   font-weight: 700;
+  color: var(--user-val);
+}
+
+.cell.same-num.given .val {
   color: var(--text);
 }
 
@@ -1888,10 +1896,11 @@ body {
   cursor: pointer;
 }
 
-/* Toast */
+/* Toast (oben zentriert, sofort sichtbar und niemals vom Footer überdeckt) */
 .toast {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
+  bottom: auto;
   left: 50%;
   transform: translateX(-50%);
   background: var(--text);
@@ -1900,8 +1909,148 @@ body {
   border-radius: 8px;
   font-size: 0.78rem;
   font-weight: 500;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* Online- und Bot-Box Harmonisierung & Rollen-Hinweis */
+.online-box,
+.bot-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 120px;
+}
+
+.swap-role-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--highlight);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.swap-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2563eb;
+  display: inline-block;
+}
+
+.swap-badge-dot.red {
+  background: #dc2626;
+}
+
+/* Account Modal: Strukturierte Bestzeiten-Übersicht */
+.account-records-box {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.records-header {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.record-card {
+  background: var(--highlight);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.record-mode-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.record-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.record-line strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Cookie Consent Banner */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border-top: 1px solid var(--border-strong);
+  padding: 12px 18px;
+  z-index: 999;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.cookie-banner-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cookie-text {
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.cookie-text strong {
+  color: var(--text);
+}
+
+.cookie-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .records-grid {
+    grid-template-columns: 1fr;
+  }
+  .cookie-banner-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cookie-actions {
+    justify-content: flex-end;
+  }
 }
 
 .hidden {

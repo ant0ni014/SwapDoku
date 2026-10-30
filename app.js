@@ -112,7 +112,7 @@ const I18N = {
     btnPlayBot: 'Mit Bot spielen',
     createRoomBtn: 'Raum erstellen',
     joinRoomBtn: 'Beitreten',
-    roomInputPlaceholder: 'Code eingeben',
+    roomInputPlaceholder: 'Code',
     roomCodeLabel: 'Raum-Code:',
     leaveRoom: 'Verlassen',
     statusConnecting: 'Verbinde...',
@@ -145,7 +145,7 @@ const I18N = {
     opponentLeftTitle: 'Sieg durch Aufgabe!',
     opponentLeftDesc: 'Der Gegner hat das Spiel verlassen.',
     toastOpponentLeft: 'Gegner hat das Duell verlassen.',
-    resTitleGameOver: 'Keine Leben mehr',
+    resTitleGameOver: 'Game Over',
     resDescGameOver: 'Alle 3 Leben aufgebraucht.',
     resBtnNewGame: 'Neues Spiel',
     resBtnSolution: 'Lösung anzeigen',
@@ -299,7 +299,7 @@ const I18N = {
     btnPlayBot: 'Play vs Bot',
     createRoomBtn: 'Create Room',
     joinRoomBtn: 'Join',
-    roomInputPlaceholder: 'Enter code',
+    roomInputPlaceholder: 'Code',
     roomCodeLabel: 'Room Code:',
     leaveRoom: 'Leave',
     statusConnecting: 'Connecting...',
@@ -795,12 +795,12 @@ const dom = {
   usernameLabel: document.getElementById('usernameLabel'),
   usernameInput: document.getElementById('usernameInput'),
   btnSaveUsername: document.getElementById('btnSaveUsername'),
-  accountBestTimeLabel: document.getElementById('accountBestTimeLabel'),
-  accountBestTimeVal: document.getElementById('accountBestTimeVal'),
-  accountThemeLabel: document.getElementById('accountThemeLabel'),
-  accountThemeVal: document.getElementById('accountThemeVal'),
-  accountStatusLabel: document.getElementById('accountStatusLabel'),
-  accountAuthStatus: document.getElementById('accountAuthStatus'),
+  recZenEasy: document.getElementById('recZenEasy'),
+  recZenMedium: document.getElementById('recZenMedium'),
+  recZenHard: document.getElementById('recZenHard'),
+  recVersusWins: document.getElementById('recVersusWins'),
+  recVersusTime: document.getElementById('recVersusTime'),
+  recSwapTime: document.getElementById('recSwapTime'),
   authLoggedInSection: document.getElementById('authLoggedInSection'),
   authLoggedInEmail: document.getElementById('authLoggedInEmail'),
   btnLogout: document.getElementById('btnLogout'),
@@ -851,6 +851,14 @@ const dom = {
   btnPlayOnline: document.getElementById('btnPlayOnline'),
   btnPlayBot: document.getElementById('btnPlayBot'),
   onlineSection: document.getElementById('onlineSection'),
+  onlineDiffRow: document.getElementById('onlineDiffRow'),
+  onlineDiffLabel: document.getElementById('onlineDiffLabel'),
+  onlineDiffEasy: document.getElementById('onlineDiffEasy'),
+  onlineDiffMedium: document.getElementById('onlineDiffMedium'),
+  onlineDiffHard: document.getElementById('onlineDiffHard'),
+  swapRoleHint: document.getElementById('swapRoleHint'),
+  swapBadgeDot: document.getElementById('swapBadgeDot'),
+  swapRoleText: document.getElementById('swapRoleText'),
   botSection: document.getElementById('botSection'),
   createRoom: document.getElementById('createRoomBtn'),
   joinRoom: document.getElementById('joinRoomBtn'),
@@ -892,6 +900,11 @@ const dom = {
   pauseResumeText: document.getElementById('pauseResumeText'),
   btnResumeGame: document.getElementById('btnResumeGame'),
 
+  // Cookie Banner
+  cookieBanner: document.getElementById('cookieBanner'),
+  btnCookieAccept: document.getElementById('btnCookieAccept'),
+  btnCookieNecessary: document.getElementById('btnCookieNecessary'),
+  
   // Board Result Overlay
   boardResultOverlay: document.getElementById('boardResultOverlay'),
   boardResultCard: document.getElementById('boardResultCard'),
@@ -1088,10 +1101,34 @@ function updateBotPartnerDifficultyLabels() {
 // =============================================================================
 // INITIALISIERUNG
 // =============================================================================
+function initCookieConsent() {
+  const consent = localStorage.getItem('swapdoku_cookie_consent');
+  if (!consent && dom.cookieBanner) {
+    dom.cookieBanner.classList.remove('hidden');
+  }
+
+  if (dom.btnCookieAccept) {
+    dom.btnCookieAccept.addEventListener('click', () => {
+      localStorage.setItem('swapdoku_cookie_consent', 'accepted');
+      if (dom.cookieBanner) dom.cookieBanner.classList.add('hidden');
+      toast(state.currentLang === 'de' ? 'Datenschutzeinstellungen gespeichert' : 'Privacy settings saved');
+    });
+  }
+
+  if (dom.btnCookieNecessary) {
+    dom.btnCookieNecessary.addEventListener('click', () => {
+      localStorage.setItem('swapdoku_cookie_consent', 'necessary_only');
+      if (dom.cookieBanner) dom.cookieBanner.classList.add('hidden');
+      toast(state.currentLang === 'de' ? 'Nur notwendige Cookies aktiviert' : 'Necessary cookies enabled');
+    });
+  }
+}
+
 async function init() {
   buildGrid();
   loadLocalState();
   bindEvents();
+  initCookieConsent();
   setLanguage(state.currentLang);
   startNewGame(); // Sofortiges Erzeugen & Rendern des Rätsels ohne Wartezeit
   initAuth();     // Läuft im Hintergrund ohne Blockieren des Spielfelds
@@ -1153,7 +1190,14 @@ async function syncProfileFromDB() {
   try {
     const { data } = await state.supabase.from('profiles').select('username, active_theme, versus_wins').eq('id', state.user.id).single();
     if (data) {
-      state.profile.username = data.username || 'Spieler';
+      if (data.username && !data.username.startsWith('Player_')) {
+        state.profile.username = data.username;
+      } else if (state.profile.username && !state.profile.username.startsWith('Player_')) {
+        state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id).catch(() => {});
+      } else if (data.username) {
+        state.profile.username = data.username;
+      }
+
       state.profile.active_theme = data.active_theme || 'nordic-light';
       if (typeof data.versus_wins === 'number') {
         state.profile.versus_wins = Math.max(state.profile.versus_wins || 0, data.versus_wins);
@@ -1161,6 +1205,7 @@ async function syncProfileFromDB() {
       }
     }
     setTheme(state.profile.active_theme);
+    saveLocalState();
     updateAccountUI();
   } catch (_) {}
 }
@@ -1203,6 +1248,10 @@ function saveLocalState() {
 // =============================================================================
 function ensureGameStarted() {
   if (state.gameStarted || state.isGameOver) return;
+  // In Online-Multiplayer (Versus / Co-Op Swap) wird das Spiel synchron über den Countdown gestartet
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel && !state.gameStarted) {
+    return;
+  }
   state.gameStarted = true;
   startStopwatch(false);
   dom.pauseBtnIcon.textContent = '⏸';
@@ -1210,7 +1259,7 @@ function ensureGameStarted() {
 
   if (state.mode === 'versus' && state.opponentType === 'bot' && !state.botRunning) {
     startBotMatch();
-  } else if (state.mode === 'swap') {
+  } else if (state.mode === 'swap' && (!state.channel || state.isOffline)) {
     startSwapCountdown();
   }
 }
@@ -1269,6 +1318,11 @@ function updateStopwatchDisplay() {
 
 function togglePause() {
   if (state.isGameOver) return;
+  // Im Live-Multiplayer ist Pause deaktiviert, um Desynchronisation zu verhindern
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel) {
+    toast(state.currentLang === 'de' ? 'Pause im Online-Multiplayer deaktiviert' : 'Pause disabled in multiplayer');
+    return;
+  }
   if (!state.gameStarted) {
     ensureGameStarted();
     return;
@@ -1352,7 +1406,7 @@ function setAudioVolume(vol) {
   if (dom.volValue) dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
   if (state.audioMasterGain && state.audioContext) {
     try {
-      state.audioMasterGain.gain.setValueAtTime(0.35 * state.audioVolume, state.audioContext.currentTime);
+      state.audioMasterGain.gain.setValueAtTime(0.70 * state.audioVolume, state.audioContext.currentTime);
     } catch (_) {}
   }
 }
@@ -1384,7 +1438,7 @@ async function startAmbientSound() {
     }
 
     state.audioMasterGain = state.audioContext.createGain();
-    state.audioMasterGain.gain.setValueAtTime(0.35 * state.audioVolume, state.audioContext.currentTime);
+    state.audioMasterGain.gain.setValueAtTime(0.70 * state.audioVolume, state.audioContext.currentTime);
     state.audioMasterGain.connect(state.audioContext.destination);
 
     state.ambientChordIndex = 0;
@@ -1394,7 +1448,7 @@ async function startAmbientSound() {
     state.ambientChordTimer = setInterval(() => {
       if (!state.audioPlaying) return;
       playGenerativeTrack();
-    }, 4600);
+    }, 4500);
 
     if (dom.audioToggleBtn) dom.audioToggleBtn.classList.add('active');
     updateAudioModalUI();
@@ -1406,13 +1460,15 @@ async function startAmbientSound() {
 
 function playGenerativeTrack() {
   if (!state.audioContext || !state.audioPlaying) return;
+  if (state.audioContext.state === 'suspended') {
+    state.audioContext.resume().catch(() => {});
+  }
 
   const now = state.audioContext.currentTime;
-  const duration = 4.5;
+  const duration = 4.4;
 
   let chords;
-  let filterFreq = 1200;
-  let qVal = 0.8;
+  let filterFreq = 1600;
   let oscTypes = ['triangle', 'sine'];
 
   if (state.currentAudioTrack === 'zen') {
@@ -1422,8 +1478,8 @@ function playGenerativeTrack() {
       [174.61, 261.63, 349.23, 440.00], // F3, C4, F4, A4
       [164.81, 246.94, 329.63, 392.00]  // E3, B3, E4, G4
     ];
-    filterFreq = 1600;
-    oscTypes = ['sine', 'sine'];
+    filterFreq = 1800;
+    oscTypes = ['sine', 'triangle'];
   } else if (state.currentAudioTrack === 'lofi') {
     chords = [
       [174.61, 220.00, 261.63, 329.63], // Fmaj7
@@ -1431,7 +1487,7 @@ function playGenerativeTrack() {
       [146.83, 174.61, 220.00, 261.63], // Dm7
       [130.81, 164.81, 196.00, 246.94]  // Cmaj7
     ];
-    filterFreq = 1100;
+    filterFreq = 1400;
     oscTypes = ['triangle', 'sine'];
   } else {
     // synth / nordic ambient
@@ -1441,8 +1497,7 @@ function playGenerativeTrack() {
       [110.00, 164.81, 220.00, 329.63], // A2, E3, A3, E4
       [174.61, 261.63, 349.23, 523.25]  // F3, C4, F4, C5
     ];
-    filterFreq = 950;
-    qVal = 1.2;
+    filterFreq = 1500;
     oscTypes = ['triangle', 'triangle'];
   }
 
@@ -1453,7 +1508,7 @@ function playGenerativeTrack() {
     const filter = state.audioContext.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(filterFreq, now);
-    filter.Q.setValueAtTime(qVal, now);
+    filter.Q.setValueAtTime(0.7, now);
     filter.connect(state.audioMasterGain);
 
     notes.forEach((freq, idx) => {
@@ -1465,7 +1520,7 @@ function playGenerativeTrack() {
       osc.frequency.setValueAtTime(freq + detune * 0.04, now);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0.38, now + 0.6);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
       osc.connect(gain);
@@ -1534,6 +1589,8 @@ function handleGameOver() {
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('OPPONENT_ELIMINATED', { username: state.profile.username || 'Spieler' });
+  } else if (state.mode === 'swap' && state.channel) {
+    broadcast('SWAP_PARTNER_ELIMINATED', { username: state.profile.username || 'Partner' });
   }
 
   showResultOverlay(false);
@@ -1696,6 +1753,9 @@ function updateNumpadCompletedState() {
 
 function selectCell(idx) {
   if (state.isPaused || state.isGameOver) return;
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel && !state.gameStarted) {
+    return;
+  }
   ensureGameStarted();
   state.selectedIndex = idx;
   render();
@@ -1721,6 +1781,9 @@ function cleanPeerNotes(idx, num) {
 
 function handleNumberInput(num) {
   if (state.isPaused || state.isGameOver) return;
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel && !state.gameStarted) {
+    return;
+  }
   
   // Wenn die Zahl bereits vollständig belegt ist, kann sie nicht mehr ausgewählt/eingesetzt werden
   if (state.autoLockCompleted) {
@@ -1847,26 +1910,23 @@ function useHint() {
   checkProgress();
 }
 
-function showResultOverlay(isWin) {
+function showResultOverlay(isWin, customTitle = null, customDesc = null) {
   if (!dom.boardResultOverlay) return;
   const d = I18N[state.currentLang] || I18N.de;
   const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
 
+  if (dom.resultBadge) {
+    dom.resultBadge.style.display = 'none';
+    dom.resultBadge.textContent = '';
+  }
+
   if (isWin) {
-    if (dom.resultBadge) {
-      dom.resultBadge.style.display = 'none';
-      dom.resultBadge.textContent = '';
-    }
-    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleWin || 'Gelöst!';
-    if (dom.resultDesc) dom.resultDesc.textContent = d.resDescWin || 'Sudoku fehlerfrei gemeistert.';
+    if (dom.resultTitle) dom.resultTitle.textContent = customTitle || d.resTitleWin || 'Gelöst!';
+    if (dom.resultDesc) dom.resultDesc.textContent = customDesc || d.resDescWin || 'Sudoku fehlerfrei gemeistert.';
     if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
   } else {
-    if (dom.resultBadge) {
-      dom.resultBadge.style.display = 'none';
-      dom.resultBadge.textContent = '';
-    }
-    if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleGameOver || 'Keine Leben mehr';
-    if (dom.resultDesc) dom.resultDesc.textContent = d.resDescGameOver || 'Alle 3 Leben aufgebraucht.';
+    if (dom.resultTitle) dom.resultTitle.textContent = customTitle || d.resTitleGameOver || 'Game Over';
+    if (dom.resultDesc) dom.resultDesc.textContent = customDesc || d.resDescGameOver || 'Alle 3 Leben aufgebraucht.';
     if (dom.btnResultSolution) dom.btnResultSolution.style.display = '';
   }
 
@@ -2093,9 +2153,38 @@ function setBotDifficulty(diff) {
 function setVersusDifficulty(diff) {
   state.versusDifficulty = diff;
   [dom.versusDiffEasy, dom.versusDiffMedium, dom.versusDiffHard].forEach(b => {
-    b.classList.toggle('active', b.dataset.diff === diff);
+    if (b) b.classList.toggle('active', b.dataset.diff === diff);
   });
-  startNewGame();
+  [dom.onlineDiffEasy, dom.onlineDiffMedium, dom.onlineDiffHard].forEach(b => {
+    if (b) b.classList.toggle('active', b.dataset.diff === diff);
+  });
+  if (state.mode === 'versus' && state.opponentType === 'bot') {
+    startNewGame();
+  }
+}
+
+function updateSwapRoleHint() {
+  if (!dom.swapRoleHint) return;
+  if (state.mode !== 'swap' || !state.roomCode) {
+    dom.swapRoleHint.classList.add('hidden');
+    return;
+  }
+  dom.swapRoleHint.classList.remove('hidden');
+  if (state.isHost) {
+    if (dom.swapBadgeDot) dom.swapBadgeDot.className = 'swap-badge-dot';
+    if (dom.swapRoleText) {
+      dom.swapRoleText.textContent = state.currentLang === 'de'
+        ? 'Du startest mit Board A (Blau) — Partner startet Board B (Rot)'
+        : 'You start on Board A (Blue) — Partner starts on Board B (Red)';
+    }
+  } else {
+    if (dom.swapBadgeDot) dom.swapBadgeDot.className = 'swap-badge-dot red';
+    if (dom.swapRoleText) {
+      dom.swapRoleText.textContent = state.currentLang === 'de'
+        ? 'Du startest mit Board B (Rot) — Host startet Board A (Blau)'
+        : 'You start on Board B (Red) — Host starts on Board A (Blue)';
+    }
+  }
 }
 
 // =============================================================================
@@ -2126,6 +2215,7 @@ function setMode(mode) {
 
   updateBotPartnerDifficultyLabels();
   updateOpponentLabels();
+  updateSwapRoleHint();
   startNewGame();
 }
 
@@ -2263,10 +2353,11 @@ function hostStartDuel() {
   if (!state.isHost || !state.channel) return;
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 
+  const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
   if (state.mode === 'swap') {
     // Generiere ZWEI voneinander unabhängige Rätsel: Board A und Board B
-    const puzzleA = SudokuEngine.generate(34);
-    const puzzleB = SudokuEngine.generate(34);
+    const puzzleA = SudokuEngine.generate(clues);
+    const puzzleB = SudokuEngine.generate(clues);
 
     broadcast('START_SWAP_COUNTDOWN', {
       puzzleA: { initialBoard: puzzleA.initialBoard, solution: puzzleA.solution },
@@ -2356,6 +2447,21 @@ function handlePartnerLeft(partnerName) {
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 }
 
+function handleSwapPartnerEliminated(partnerName) {
+  state.isGameOver = true;
+  stopSwapCountdown();
+  stopStopwatch();
+  stopBot();
+
+  const title = 'Game Over';
+  const desc = state.currentLang === 'de'
+    ? `${partnerName || 'Dein Partner'} hat alle 3 Leben aufgebraucht.`
+    : `${partnerName || 'Your partner'} used up all 3 attempts.`;
+
+  showResultOverlay(false, title, desc);
+  toast(desc);
+}
+
 function handleVersusWinByElimination(oppName) {
   state.isGameOver = true;
   stopStopwatch();
@@ -2432,6 +2538,7 @@ async function joinRoom(code, asHost = false) {
     state.activeBoard = state.isHost ? 'A' : 'B';
     updateSwapVisualTheme();
   }
+  updateSwapRoleHint();
 
   if (state.isOffline || !state.supabase) {
     setConnectionStatus('connected', `Demo ${state.roomCode}`);
@@ -2500,6 +2607,9 @@ async function joinRoom(code, asHost = false) {
     })
     .on('broadcast', { event: 'OPPONENT_ELIMINATED' }, ({ payload }) => {
       handleVersusWinByElimination(payload?.username || 'Gegner');
+    })
+    .on('broadcast', { event: 'SWAP_PARTNER_ELIMINATED' }, ({ payload }) => {
+      handleSwapPartnerEliminated(payload?.username || 'Partner');
     })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
       if (state.mode === 'swap') {
@@ -2988,22 +3098,31 @@ function updateAccountUI() {
   const d = I18N[state.currentLang] || I18N.de;
   if (dom.usernameInput) dom.usernameInput.value = state.profile.username || '';
   
-  const bestMed = getMyBestTimeForDiff('medium');
-  if (dom.accountBestTimeVal) dom.accountBestTimeVal.textContent = bestMed;
+  const boards = loadSavedLeaderboards();
+  const myName = state.profile.username || 'Spieler';
 
-  const activeObj = THEMES.find(t => t.id === state.profile.active_theme);
-  if (dom.accountThemeVal) dom.accountThemeVal.textContent = activeObj ? activeObj.name : state.profile.active_theme;
+  function getTime(m, diff) {
+    const list = boards[`${m}_${diff}`] || [];
+    const entry = list.find(e => e.id === 'player-me' || e.username === myName);
+    return entry ? formatTime(entry.time) : '--:--';
+  }
+
+  if (dom.recZenEasy) dom.recZenEasy.textContent = getTime('zen', 'easy');
+  if (dom.recZenMedium) dom.recZenMedium.textContent = getTime('zen', 'medium');
+  if (dom.recZenHard) dom.recZenHard.textContent = getTime('zen', 'hard');
+
+  if (dom.recVersusWins) dom.recVersusWins.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
+  if (dom.recVersusTime) dom.recVersusTime.textContent = getTime('versus', 'medium');
+  if (dom.recSwapTime) dom.recSwapTime.textContent = getTime('swap', 'medium');
 
   const currentEmail = state.authEmail || state.user?.email;
   if (currentEmail) {
     if (dom.authLoggedInSection) dom.authLoggedInSection.classList.remove('hidden');
     if (dom.authGuestSection) dom.authGuestSection.classList.add('hidden');
     if (dom.authLoggedInEmail) dom.authLoggedInEmail.textContent = currentEmail;
-    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = d.statusLoggedIn;
   } else {
     if (dom.authLoggedInSection) dom.authLoggedInSection.classList.add('hidden');
     if (dom.authGuestSection) dom.authGuestSection.classList.remove('hidden');
-    if (dom.accountAuthStatus) dom.accountAuthStatus.textContent = d.statusGuest;
   }
 }
 
@@ -3112,6 +3231,10 @@ async function registerUser(email, password) {
     }
     state.user = data.user;
     state.authEmail = data.user.email;
+    if (state.profile.username) {
+      state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id).catch(() => {});
+    }
+    saveLocalState();
     toast(state.currentLang === 'de' ? 'Konto erfolgreich registriert!' : 'Account registered successfully!');
     updateAccountUI();
     dom.authEmail.value = '';
@@ -3152,13 +3275,27 @@ async function saveUsername() {
 
   state.profile.username = newName;
   saveLocalState();
+
+  if (state.authEmail) {
+    const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+    accounts[state.authEmail] = {
+      ...(accounts[state.authEmail] || {}),
+      username: newName,
+      active_theme: state.profile.active_theme
+    };
+    localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(accounts));
+  }
+
   toast(state.currentLang === 'de' ? 'Spielername gespeichert' : 'Player name saved');
 
   if (!state.isOffline && state.supabase && state.user) {
     try {
       await state.supabase.from('profiles').update({ username: newName }).eq('id', state.user.id);
-    } catch (_) {}
+    } catch (err) {
+      console.warn('Could not update username in Supabase:', err);
+    }
   }
+  updateAccountUI();
   renderLeaderboard();
 }
 
@@ -3256,9 +3393,10 @@ function bindEvents() {
 
   // Audio Toggle & Modal
   dom.audioToggleBtn.addEventListener('click', () => {
-    if (!state.audioPlaying) {
-      startAmbientSound();
-    }
+    toggleAmbientSound();
+  });
+  dom.audioToggleBtn.addEventListener('contextmenu', e => {
+    e.preventDefault();
     openAudioModal();
   });
 
@@ -3354,6 +3492,12 @@ function bindEvents() {
   dom.zenDiffEasy.addEventListener('click', () => setZenDifficulty('easy'));
   dom.zenDiffMedium.addEventListener('click', () => setZenDifficulty('medium'));
   dom.zenDiffHard.addEventListener('click', () => setZenDifficulty('hard'));
+
+
+  // Online Rätsel-Schwierigkeitsgrade
+  if (dom.onlineDiffEasy) dom.onlineDiffEasy.addEventListener('click', () => setVersusDifficulty('easy'));
+  if (dom.onlineDiffMedium) dom.onlineDiffMedium.addEventListener('click', () => setVersusDifficulty('medium'));
+  if (dom.onlineDiffHard) dom.onlineDiffHard.addEventListener('click', () => setVersusDifficulty('hard'));
 
   // Versus Rätsel-Schwierigkeit
   dom.versusDiffEasy.addEventListener('click', () => setVersusDifficulty('easy'));
