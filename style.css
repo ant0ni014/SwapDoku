@@ -803,39 +803,43 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 10;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(3px);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(4px);
   border-radius: 8px;
+  cursor: pointer;
 }
 
-.pause-card {
+.pause-minimal-btn {
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  padding: 24px 30px;
-  text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  color: var(--text);
+  padding: 16px 28px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease;
 }
 
-.pause-icon {
-  font-size: 2rem;
+.pause-minimal-btn:hover {
+  transform: scale(1.05);
+  background: var(--surface-hover);
+}
+
+.pause-minimal-btn .pause-icon {
+  font-size: 1.8rem;
+  letter-spacing: 2px;
   line-height: 1;
   color: var(--text);
 }
 
-.pause-card h3 {
-  font-size: 1.1rem;
+.pause-minimal-btn .pause-resume-text {
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text);
-}
-
-.pause-card p {
-  font-size: 0.8rem;
-  color: var(--muted);
 }
 
 .pause-card .btn {
@@ -1131,18 +1135,16 @@ body {
 }
 
 /* Ausgegraute Zahl wenn komplett belegt */
-.num.completed {
-  opacity: 0.38;
+.num.completed,
+.num.completed.locked,
+.num:disabled {
+  pointer-events: none;
+  cursor: default;
+  opacity: 0.22;
   background: var(--num-completed);
   border-color: transparent;
   box-shadow: none;
   transform: none;
-}
-
-.num.completed.locked {
-  pointer-events: none;
-  cursor: default;
-  opacity: 0.22;
 }
 
 /* Footer: Impressum & Datenschutz ganz unten */

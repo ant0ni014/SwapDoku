@@ -122,14 +122,12 @@
           <div class="grid-container">
             <div class="sudoku-grid" id="sudokuGrid"></div>
 
-            <!-- Pause-Overlay: deckt das Spielfeld während der Pause blicksicher ab -->
+            <!-- Pause-Overlay: Minimalistisch mit Pause-Zeichen & Weiter -->
             <div class="pause-overlay hidden" id="pauseOverlay">
-              <div class="pause-card">
-                <div class="pause-icon">⏸</div>
-                <h3 id="pauseOverlayTitle">Spiel pausiert</h3>
-                <p id="pauseOverlayDesc">Die Zeit ist angehalten.</p>
-                <button class="btn btn-primary" id="btnResumeGame">Fortsetzen</button>
-              </div>
+              <button class="pause-minimal-btn" id="btnResumeGame" title="Weiter">
+                <span class="pause-icon">❚❚</span>
+                <span class="pause-resume-text" id="pauseResumeText">Weiter</span>
+              </button>
             </div>
 
             <!-- Board Result Overlay: Zentrierter Glückwunsch oder Niederlage direkt im Spielfeld -->

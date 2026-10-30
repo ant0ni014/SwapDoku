@@ -142,9 +142,7 @@ const I18N = {
     resStatDiff: 'Modus:',
     
     // Pause Overlay
-    pauseOverlayTitle: 'Spiel pausiert',
-    pauseOverlayDesc: 'Die Zeit ist angehalten.',
-    resumeBtn: 'Fortsetzen',
+    resumeBtn: 'Weiter',
     
     // Footer
     imprintLink: 'Impressum',
@@ -317,8 +315,6 @@ const I18N = {
     resStatDiff: 'Mode:',
     
     // Pause Overlay
-    pauseOverlayTitle: 'Game Paused',
-    pauseOverlayDesc: 'Time is stopped.',
     resumeBtn: 'Resume',
     
     // Footer
@@ -474,7 +470,7 @@ const state = {
   selectedIndex: null,
   notesActive: false,
   hintsRemaining: 3,
-  autoLockCompleted: false, // Erlaubt Weiterklicken auch wenn 9 Ziffern platziert sind
+  autoLockCompleted: true, // Sperrt Ziffern im Numpad & Tastatur, sobald alle 9 platziert sind
 
   // Realtime
   channel: null,
@@ -667,11 +663,41 @@ class SudokuEngine {
     return Math.round((correctlyFilled / emptyCount) * 100);
   }
 
-  static isComplete(current, solution) {
+  static isValidSudoku(board) {
+    if (!board || board.length !== 81) return false;
     for (let i = 0; i < 81; i++) {
-      if (current[i] === 0 || current[i] !== solution[i]) return false;
+      if (!board[i] || board[i] < 1 || board[i] > 9) return false;
+    }
+    for (let i = 0; i < 9; i++) {
+      const rowSet = new Set();
+      const colSet = new Set();
+      const boxSet = new Set();
+      const br = Math.floor(i / 3) * 3;
+      const bc = (i % 3) * 3;
+      for (let j = 0; j < 9; j++) {
+        const rVal = board[i * 9 + j];
+        const cVal = board[j * 9 + i];
+        const bVal = board[(br + Math.floor(j / 3)) * 9 + (bc + (j % 3))];
+        if (rowSet.has(rVal) || colSet.has(cVal) || boxSet.has(bVal)) return false;
+        rowSet.add(rVal);
+        colSet.add(cVal);
+        boxSet.add(bVal);
+      }
     }
     return true;
+  }
+
+  static isComplete(current, solution) {
+    if (!current || current.length !== 81) return false;
+    let matchesStored = true;
+    for (let i = 0; i < 81; i++) {
+      if (!current[i] || current[i] === 0) return false;
+      if (solution && current[i] !== solution[i]) {
+        matchesStored = false;
+      }
+    }
+    if (matchesStored) return true;
+    return SudokuEngine.isValidSudoku(current);
   }
 
   static getCompletedDigits(current, solution) {
@@ -679,14 +705,17 @@ class SudokuEngine {
     for (let d = 1; d <= 9; d++) counts[d] = 0;
 
     for (let i = 0; i < 81; i++) {
-      if (current[i] !== 0 && current[i] === solution[i]) {
-        counts[current[i]]++;
+      const val = current[i];
+      if (val >= 1 && val <= 9) {
+        if (!solution || val === solution[i]) {
+          counts[val]++;
+        }
       }
     }
 
     const completed = new Set();
     for (let d = 1; d <= 9; d++) {
-      if (counts[d] === 9) completed.add(d);
+      if (counts[d] >= 9) completed.add(d);
     }
     return completed;
   }
@@ -823,8 +852,7 @@ const dom = {
   swapPartnerLabel: document.getElementById('swapPartnerLabel'),
   grid: document.getElementById('sudokuGrid'),
   pauseOverlay: document.getElementById('pauseOverlay'),
-  pauseOverlayTitle: document.getElementById('pauseOverlayTitle'),
-  pauseOverlayDesc: document.getElementById('pauseOverlayDesc'),
+  pauseResumeText: document.getElementById('pauseResumeText'),
   btnResumeGame: document.getElementById('btnResumeGame'),
 
   // Board Result Overlay
@@ -949,9 +977,7 @@ function applyLanguageToDOM() {
   updateBotPartnerDifficultyLabels();
 
   // Pause Overlay
-  if (dom.pauseOverlayTitle) dom.pauseOverlayTitle.textContent = d.pauseOverlayTitle;
-  if (dom.pauseOverlayDesc) dom.pauseOverlayDesc.textContent = d.pauseOverlayDesc;
-  if (dom.btnResumeGame) dom.btnResumeGame.textContent = d.resumeBtn;
+  if (dom.pauseResumeText) dom.pauseResumeText.textContent = d.resumeBtn || 'Weiter';
 
   // Result Overlay
   if (dom.resStatTimeLbl) dom.resStatTimeLbl.textContent = d.resStatTime;
@@ -1617,8 +1643,8 @@ function updateNumpadCompletedState() {
     const digit = parseInt(btn.dataset.num, 10);
     const isCompleted = completedDigits.has(digit);
     btn.classList.toggle('completed', isCompleted);
-    // Sperrung mit pointer-events nur wenn autoLockCompleted explizit gewünscht ist
-    btn.classList.toggle('locked', isCompleted && state.autoLockCompleted);
+    btn.classList.toggle('locked', isCompleted);
+    btn.disabled = isCompleted;
   });
 }
 
@@ -1649,6 +1675,13 @@ function cleanPeerNotes(idx, num) {
 
 function handleNumberInput(num) {
   if (state.isPaused || state.isGameOver) return;
+  
+  // Wenn die Zahl bereits vollständig belegt ist, kann sie nicht mehr ausgewählt/eingesetzt werden
+  if (state.autoLockCompleted) {
+    const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
+    if (completedDigits.has(num)) return;
+  }
+
   ensureGameStarted();
   const idx = state.selectedIndex;
   if (idx === null || state.initialBoard[idx] !== 0) return;
@@ -1845,30 +1878,34 @@ function restoreResultOverlay() {
 
 function checkProgress() {
   const pct = SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution);
-  dom.playerBar.style.width = `${pct}%`;
-  dom.playerLabel.textContent = `${pct}%`;
+  if (dom.playerBar) dom.playerBar.style.width = `${pct}%`;
+  if (dom.playerLabel) dom.playerLabel.textContent = `${pct}%`;
 
   if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
     broadcast('PROGRESS', { progressPct: pct });
   }
 
   if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
+    if (SudokuEngine.isValidSudoku(state.currentBoard)) {
+      state.solution = [...state.currentBoard];
+    }
     gameWon();
   }
 }
 
 function updateProgressBars(playerPct, oppPct) {
-  dom.playerBar.style.width = `${playerPct}%`;
-  dom.playerLabel.textContent = `${playerPct}%`;
-  dom.opponentBar.style.width = `${oppPct}%`;
-  dom.opponentLabel.textContent = `${oppPct}%`;
+  if (dom.playerBar) dom.playerBar.style.width = `${playerPct}%`;
+  if (dom.playerLabel) dom.playerLabel.textContent = `${playerPct}%`;
+  if (dom.opponentBar) dom.opponentBar.style.width = `${oppPct}%`;
+  if (dom.opponentLabel) dom.opponentLabel.textContent = `${oppPct}%`;
 }
 
 async function gameWon() {
+  state.isGameOver = true;
   stopBot();
   stopStopwatch();
 
-  const formattedTime = dom.gameTimerDisplay.textContent;
+  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
   const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : 'medium');
 
   // Zeit in Bestenliste aufnehmen
@@ -2767,6 +2804,7 @@ function bindEvents() {
   // Pause & Play Steuerung
   if (dom.btnPauseGame) dom.btnPauseGame.addEventListener('click', togglePause);
   if (dom.btnResumeGame) dom.btnResumeGame.addEventListener('click', resumeGame);
+  if (dom.pauseOverlay) dom.pauseOverlay.addEventListener('click', resumeGame);
 
   // Board Result Overlay
   if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', () => startNewGame());
