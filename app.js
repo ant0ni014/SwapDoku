@@ -1571,7 +1571,7 @@ function startNewGame(customBoard = null, customSol = null) {
 
   // Co-Op Swap Board-Farbe setzen
   if (state.mode === 'swap') {
-    if (!state.activeBoard) state.activeBoard = 'A';
+    if (!state.activeBoard) state.activeBoard = (state.roomCode && !state.isHost) ? 'B' : 'A';
     updateSwapVisualTheme();
   } else {
     if (dom.grid) dom.grid.classList.remove('board-theme-a', 'board-theme-b');
@@ -2402,21 +2402,27 @@ function handleVersusWinByForfeit(oppName) {
 
 function createRoom() {
   const code = Math.random().toString(36).substring(2, 6).toUpperCase();
-  state.isHost = true;
-  joinRoom(code);
+  joinRoom(code, true);
 }
 
-async function joinRoom(code) {
+async function joinRoom(code, asHost = false) {
   if (!code || code.length !== 4) {
     toast(t('toastEnterCode'));
     return;
   }
 
   leaveRoom();
+  state.isHost = asHost;
   state.roomCode = code.toUpperCase();
   dom.currentRoom.textContent = state.roomCode;
   dom.roomDisplay.classList.remove('hidden');
   setConnectionStatus('connecting', t('statusConnecting'));
+
+  // Im Co-Op Swap Modus: Host bekommt Board A (Blau), Partner bekommt Board B (Rot)
+  if (state.mode === 'swap') {
+    state.activeBoard = state.isHost ? 'A' : 'B';
+    updateSwapVisualTheme();
+  }
 
   if (state.isOffline || !state.supabase) {
     setConnectionStatus('connected', `Demo ${state.roomCode}`);
@@ -2537,6 +2543,10 @@ function leaveRoom() {
   state.roomCode = null;
   state.isHost = false;
   state.peersCount = 0;
+  if (state.mode === 'swap') {
+    state.activeBoard = 'A';
+    updateSwapVisualTheme();
+  }
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
   dom.roomDisplay.classList.add('hidden');
   setConnectionStatus('disconnected', t('statusDisconnected'));
