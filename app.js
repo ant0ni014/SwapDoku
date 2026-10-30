@@ -3,8 +3,8 @@
  */
 
 const SUPABASE_CONFIG = {
-  url: window.__SUPABASE_URL__ || 'https://xyzcompany.supabase.co',
-  anonKey: window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key'
+  url: window.__SUPABASE_URL__ || 'https://fmiqvjqajqzmxabmokbr.supabase.co',
+  anonKey: window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtaXF2anFhanF6bXhhYm1va2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNjAzMDQsImV4cCI6MjEwODkzNjMwNH0.PG1lVKeI0i9EyrRT_W_7sftK3tvvpy7M3T5UQairlzM'
 };
 
 const THEMES = [
