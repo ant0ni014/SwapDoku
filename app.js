@@ -134,8 +134,8 @@ const I18N = {
     resTitleGameOver: 'Keine Leben mehr',
     resDescGameOver: 'Alle 3 Leben aufgebraucht.',
     resBtnNewGame: 'Neues Spiel',
-    resBtnInspect: 'Spielfeld ansehen',
-    resBtnPeek: 'Ergebnis anzeigen',
+    resBtnSolution: 'Lösung anzeigen',
+    resBtnInspect: 'Feld ansehen',
     resStatTime: 'Zeit:',
     resStatDiff: 'Modus:',
     
@@ -307,8 +307,8 @@ const I18N = {
     resTitleGameOver: 'Game Over',
     resDescGameOver: 'All 3 attempts used up.',
     resBtnNewGame: 'New Game',
+    resBtnSolution: 'Show Solution',
     resBtnInspect: 'View Board',
-    resBtnPeek: 'Show Results',
     resStatTime: 'Time:',
     resStatDiff: 'Mode:',
     
@@ -1648,8 +1648,11 @@ function handleNumberInput(num) {
     state.savedNotes[idx] = new Set(state.notes[idx]);
     state.currentBoard[idx] = 0;
   } else {
-    const wasEmpty = state.currentBoard[idx] === 0;
+    const previousNum = state.currentBoard[idx];
     const isCorrect = (num === state.solution[idx]);
+
+    // Wenn genau die gleiche Zahl nochmals eingetippt wird, keine Aktion
+    if (previousNum === num) return;
 
     // Bisherige Notizen sichern, falls die Zahl fehlerhaft ist
     if (state.notes[idx].size > 0) {
@@ -1665,11 +1668,9 @@ function handleNumberInput(num) {
       state.wrongNotes[idx].clear();
       cleanPeerNotes(idx, num);
     } else {
-      // Falsche Zahl: Fehler im Notiz-Gedächtnis merken & Leben abziehen
+      // Falsche Zahl: Fehler im Notiz-Gedächtnis merken & Leben abziehen (bei jeder falschen Zahleneingabe)
       state.wrongNotes[idx].add(num);
-      if (wasEmpty) {
-        deductHeart();
-      }
+      deductHeart();
     }
 
     checkProgress();
