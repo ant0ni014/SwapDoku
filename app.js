@@ -2283,103 +2283,56 @@ function showModeRules() {
 }
 
 // =============================================================================
-// RANGLISTE (PRO MODUS & SCHWIERIGKEITSGRAD)
+// RANGLISTE (NUR ECHTE, AKTUELLE WERTE — DUMMY-BOTS RESTLOS BEREINIGT)
 // =============================================================================
 function getLeaderboardSeed(mode, diff) {
-  const seeds = {
-    zen: {
-      easy: [
-        { id: 'bot-1', username: 'ZenMaster', time: 108 },
-        { id: 'bot-2', username: 'NordicSolver', time: 132 },
-        { id: 'bot-3', username: 'ChillBrain', time: 165 },
-        { id: 'bot-4', username: 'GridSeeker', time: 195 },
-        { id: 'bot-5', username: 'CalmThinker', time: 230 }
-      ],
-      medium: [
-        { id: 'bot-1', username: 'ZenMaster', time: 185 },
-        { id: 'bot-2', username: 'NordicSolver', time: 220 },
-        { id: 'bot-3', username: 'LogicPioneer', time: 265 },
-        { id: 'bot-4', username: 'QuietFocus', time: 310 },
-        { id: 'bot-5', username: 'GridMaster', time: 360 }
-      ],
-      hard: [
-        { id: 'bot-1', username: 'ZenMaster', time: 320 },
-        { id: 'bot-2', username: 'NordicSolver', time: 395 },
-        { id: 'bot-3', username: 'DeepFocus', time: 470 },
-        { id: 'bot-4', username: 'LogicKing', time: 535 },
-        { id: 'bot-5', username: 'MindFlow', time: 610 }
-      ]
-    },
-    versus: {
-      easy: [
-        { id: 'bot-v1', username: 'SpeedDemon', time: 88 },
-        { id: 'bot-v2', username: 'FastFingers', time: 104 },
-        { id: 'bot-v3', username: 'RivalX', time: 125 },
-        { id: 'bot-v4', username: 'QuickSolve', time: 145 },
-        { id: 'bot-v5', username: 'TurboLogic', time: 180 }
-      ],
-      medium: [
-        { id: 'bot-v1', username: 'SpeedDemon', time: 145 },
-        { id: 'bot-v2', username: 'RivalX', time: 178 },
-        { id: 'bot-v3', username: 'VersusPro', time: 215 },
-        { id: 'bot-v4', username: 'FastFingers', time: 260 },
-        { id: 'bot-v5', username: 'GridRacer', time: 310 }
-      ],
-      hard: [
-        { id: 'bot-v1', username: 'VersusPro', time: 280 },
-        { id: 'bot-v2', username: 'SpeedDemon', time: 330 },
-        { id: 'bot-v3', username: 'HardcoreDuel', time: 390 },
-        { id: 'bot-v4', username: 'RivalX', time: 450 },
-        { id: 'bot-v5', username: 'TitanSolver', time: 520 }
-      ]
-    },
-    swap: {
-      easy: [
-        { id: 'bot-s1', username: 'Team Alpha', time: 110 },
-        { id: 'bot-s2', username: 'SwapTwin 1', time: 128 },
-        { id: 'bot-s3', username: 'TeamNordic', time: 150 },
-        { id: 'bot-s4', username: 'SyncSquad', time: 175 },
-        { id: 'bot-s5', username: 'GridPartners', time: 205 }
-      ],
-      medium: [
-        { id: 'bot-s1', username: 'Team Alpha', time: 175 },
-        { id: 'bot-s2', username: 'TeamNordic', time: 210 },
-        { id: 'bot-s3', username: 'SyncSquad', time: 250 },
-        { id: 'bot-s4', username: 'SwapTwin 1', time: 295 },
-        { id: 'bot-s5', username: 'PartnerFlow', time: 340 }
-      ],
-      hard: [
-        { id: 'bot-s1', username: 'Team Alpha', time: 295 },
-        { id: 'bot-s2', username: 'TeamNordic', time: 360 },
-        { id: 'bot-s3', username: 'MasterSwappers', time: 430 },
-        { id: 'bot-s4', username: 'SyncSquad', time: 510 },
-        { id: 'bot-s5', username: 'TwoMinds', time: 590 }
-      ]
-    }
-  };
-
-  const m = mode || 'zen';
-  const d = diff || 'medium';
-  return (seeds[m] && seeds[m][d]) ? seeds[m][d] : seeds.zen[d] || seeds.zen.medium;
+  return [];
 }
 
 function loadSavedLeaderboards() {
-  const saved = localStorage.getItem('swapdoku_leaderboards_v3');
+  const cleanList = (arr) => {
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(e => e && e.id && !e.id.startsWith('bot-') && typeof e.time === 'number' && e.time > 0);
+  };
+
+  const saved = localStorage.getItem('swapdoku_leaderboards_v4');
   if (saved) {
-    try { return JSON.parse(saved); } catch (_) {}
+    try {
+      const parsed = JSON.parse(saved);
+      for (const k in parsed) {
+        parsed[k] = cleanList(parsed[k]);
+      }
+      return parsed;
+    } catch (_) {}
   }
+
+  // Einmalige Bereinigung: Entfernt alle alten Dummy-Bots aus v3
+  const oldV3 = localStorage.getItem('swapdoku_leaderboards_v3');
+  if (oldV3) {
+    try {
+      const parsed = JSON.parse(oldV3);
+      const cleaned = {};
+      for (const k in parsed) {
+        cleaned[k] = cleanList(parsed[k]);
+      }
+      localStorage.setItem('swapdoku_leaderboards_v4', JSON.stringify(cleaned));
+      localStorage.removeItem('swapdoku_leaderboards_v3');
+      return cleaned;
+    } catch (_) {}
+  }
+
   return {};
 }
 
 function saveLeaderboards(data) {
-  localStorage.setItem('swapdoku_leaderboards_v3', JSON.stringify(data));
+  localStorage.setItem('swapdoku_leaderboards_v4', JSON.stringify(data));
 }
 
 function recordBestTime(diff, seconds) {
   const mode = state.mode || 'zen';
   const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const currentDiffList = boards[key] || getLeaderboardSeed(mode, diff);
+  const currentDiffList = boards[key] || [];
   const myName = state.profile.username || 'Spieler';
 
   let existing = currentDiffList.find(e => e.id === 'player-me' || e.username === myName);
@@ -2423,7 +2376,7 @@ function getMyBestTimeForDiff(diff) {
   const mode = state.mode || 'zen';
   const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const list = boards[key] || getLeaderboardSeed(mode, diff);
+  const list = boards[key] || [];
   const myName = state.profile.username || 'Spieler';
   const entry = list.find(e => e.id === 'player-me' || e.username === myName);
   return entry ? formatTime(entry.time) : '--:--';
@@ -2462,36 +2415,77 @@ function switchLeaderboardTab(diff) {
   renderLeaderboard();
 }
 
-function renderLeaderboard() {
+async function renderLeaderboard() {
   const mode = state.leadMode || state.mode || 'zen';
   const diff = state.leadDifficulty || 'medium';
   const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
-  const list = (boards[key] || getLeaderboardSeed(mode, diff)).slice().sort((a, b) => a.time - b.time);
+  let list = (boards[key] || []).filter(e => e && !e.id.startsWith('bot-')).sort((a, b) => a.time - b.time);
 
   const myName = state.profile.username || 'Spieler';
   let myTime = '--:--';
 
-  dom.leaderboardBody.innerHTML = '';
+  const myEntry = list.find(e => e.id === 'player-me' || e.username === myName);
+  if (myEntry) {
+    myTime = formatTime(myEntry.time);
+  }
+  if (dom.myRankTime) dom.myRankTime.textContent = myTime;
 
-  list.forEach((entry, idx) => {
-    const isMe = entry.id === 'player-me' || entry.username === myName;
-    const rank = idx + 1;
-    if (isMe) {
-      myTime = formatTime(entry.time);
+  function renderRows(items) {
+    dom.leaderboardBody.innerHTML = '';
+    if (!items || items.length === 0) {
+      const emptyRow = document.createElement('tr');
+      emptyRow.innerHTML = `
+        <td colspan="3" style="text-align: center; color: var(--muted); padding: 32px 14px; font-size: 0.82rem;">
+          ${state.currentLang === 'de' ? 'Noch keine Zeiten erfasst. Spiele eine Runde, um dich einzutragen!' : 'No times recorded yet. Complete a game to claim your spot!'}
+        </td>
+      `;
+      dom.leaderboardBody.appendChild(emptyRow);
+      return;
     }
 
-    const tr = document.createElement('tr');
-    if (isMe) tr.className = 'my-row';
-    tr.innerHTML = `
-      <td>#${rank}</td>
-      <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">${formatTime(entry.time)}</td>
-    `;
-    dom.leaderboardBody.appendChild(tr);
-  });
+    items.forEach((entry, idx) => {
+      const isMe = entry.id === 'player-me' || entry.username === myName;
+      const rank = idx + 1;
+      const tr = document.createElement('tr');
+      if (isMe) tr.className = 'my-row';
+      tr.innerHTML = `
+        <td>#${rank}</td>
+        <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
+        <td style="text-align: right; font-variant-numeric: tabular-nums;">${formatTime(entry.time)}</td>
+      `;
+      dom.leaderboardBody.appendChild(tr);
+    });
+  }
 
-  if (dom.myRankTime) dom.myRankTime.textContent = myTime;
+  renderRows(list);
+
+  // Falls Supabase verbunden ist, echte Online-Einträge abrufen
+  if (state.supabase && !state.isOffline) {
+    try {
+      const { data, error } = await state.supabase
+        .from('leaderboard_scores')
+        .select('id, username, time_seconds')
+        .eq('mode', mode)
+        .eq('difficulty', diff)
+        .order('time_seconds', { ascending: true })
+        .limit(20);
+
+      if (!error && data && data.length > 0) {
+        const onlineList = data.map(d => ({
+          id: d.id,
+          username: d.username,
+          time: d.time_seconds
+        }));
+
+        if (myEntry && !onlineList.some(e => e.username === myName)) {
+          onlineList.push(myEntry);
+        }
+        onlineList.sort((a, b) => a.time - b.time);
+        renderRows(onlineList);
+      }
+    } catch (_) {}
+  }
 }
 
 // =============================================================================
