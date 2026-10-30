@@ -834,8 +834,8 @@ const dom = {
   resStatDiffLbl: document.getElementById('resStatDiffLbl'),
   resStatDiffVal: document.getElementById('resStatDiffVal'),
   btnResultNewGame: document.getElementById('btnResultNewGame'),
+  btnResultSolution: document.getElementById('btnResultSolution'),
   btnResultInspect: document.getElementById('btnResultInspect'),
-  btnResultPeek: document.getElementById('btnResultPeek'),
 
   // Steuerung & Ziffern
   btnNotes: document.getElementById('btnNotes'),
@@ -945,8 +945,8 @@ function applyLanguageToDOM() {
   if (dom.resStatTimeLbl) dom.resStatTimeLbl.textContent = d.resStatTime;
   if (dom.resStatDiffLbl) dom.resStatDiffLbl.textContent = d.resStatDiff;
   if (dom.btnResultNewGame) dom.btnResultNewGame.textContent = d.resBtnNewGame;
+  if (dom.btnResultSolution) dom.btnResultSolution.textContent = d.resBtnSolution;
   if (dom.btnResultInspect) dom.btnResultInspect.textContent = d.resBtnInspect;
-  if (dom.btnResultPeek) dom.btnResultPeek.textContent = d.resBtnPeek;
 
   // Leaderboard Modal
   if (dom.leadModalTitle) dom.leadModalTitle.textContent = d.leadModalTitle;
@@ -1520,7 +1520,6 @@ function startNewGame(customBoard = null, customSol = null) {
   state.hintsRemaining = 3;
   if (dom.hintCount) dom.hintCount.textContent = '3';
   if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
-  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
   state.selectedIndex = null;
 
   updateProgressBars(0, 0);
@@ -1761,18 +1760,21 @@ function showResultOverlay(isWin) {
 
   if (isWin) {
     if (dom.resultBadge) {
+      dom.resultBadge.style.display = 'block';
       dom.resultBadge.textContent = '✦';
       dom.resultBadge.style.color = 'var(--user-val)';
     }
     if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleWin || 'Hervorragend gelöst!';
     if (dom.resultDesc) dom.resultDesc.textContent = d.resDescWin || 'Sudoku fehlerfrei gemeistert.';
+    if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
   } else {
     if (dom.resultBadge) {
-      dom.resultBadge.textContent = '✕';
-      dom.resultBadge.style.color = 'var(--err-text)';
+      dom.resultBadge.style.display = 'none';
+      dom.resultBadge.textContent = '';
     }
     if (dom.resultTitle) dom.resultTitle.textContent = d.resTitleGameOver || 'Keine Leben mehr';
     if (dom.resultDesc) dom.resultDesc.textContent = d.resDescGameOver || 'Alle 3 Leben aufgebraucht.';
+    if (dom.btnResultSolution) dom.btnResultSolution.style.display = '';
   }
 
   if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
@@ -1784,17 +1786,22 @@ function showResultOverlay(isWin) {
   }
 
   dom.boardResultOverlay.classList.remove('hidden');
-  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
+}
+
+function showFullSolution() {
+  state.currentBoard = [...state.solution];
+  state.notes = Array.from({ length: 81 }, () => new Set());
+  state.savedNotes = Array.from({ length: 81 }, () => new Set());
+  state.wrongNotes = Array.from({ length: 81 }, () => new Set());
+  state.selectedIndex = null;
+  render();
+  updateNumpadCompletedState();
+  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
+  toast(state.currentLang === 'de' ? 'Lösung aufgedeckt' : 'Solution revealed');
 }
 
 function hideResultOverlayForInspection() {
   if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
-  if (dom.btnResultPeek) dom.btnResultPeek.classList.remove('hidden');
-}
-
-function restoreResultOverlay() {
-  if (dom.boardResultOverlay) dom.boardResultOverlay.classList.remove('hidden');
-  if (dom.btnResultPeek) dom.btnResultPeek.classList.add('hidden');
 }
 
 function checkProgress() {
@@ -2724,8 +2731,8 @@ function bindEvents() {
 
   // Board Result Overlay
   if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', () => startNewGame());
+  if (dom.btnResultSolution) dom.btnResultSolution.addEventListener('click', showFullSolution);
   if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
-  if (dom.btnResultPeek) dom.btnResultPeek.addEventListener('click', restoreResultOverlay);
 
   // Audio & Soundtrack Modal
   if (dom.closeAudioBtn) dom.closeAudioBtn.addEventListener('click', closeAudioModal);
