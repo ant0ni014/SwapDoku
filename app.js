@@ -1212,17 +1212,28 @@ async function initAuth() {
 async function syncProfileFromDB() {
   if (!state.supabase || !state.user) return;
   try {
-    const { data } = await state.supabase
+    let { data, error } = await state.supabase
       .from('profiles')
       .select('username, active_theme, versus_wins, best_times_zen, best_times_versus, best_times_swap')
       .eq('id', state.user.id)
       .maybeSingle();
 
+    if (error) {
+      // Fallback falls Spalte versus_wins in der Live-DB noch nicht existiert
+      const fallback = await state.supabase
+        .from('profiles')
+        .select('username, active_theme, best_times_zen, best_times_versus, best_times_swap')
+        .eq('id', state.user.id)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
+
     if (data) {
       if (data.username && !data.username.startsWith('Player_') && data.username !== 'Spieler') {
         state.profile.username = data.username;
       } else if (state.profile.username && !state.profile.username.startsWith('Player_') && state.profile.username !== 'Spieler') {
-        state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id).catch(() => {});
+        await state.supabase.from('profiles').update({ username: state.profile.username }).eq('id', state.user.id);
       } else if (data.username) {
         state.profile.username = data.username;
       }
@@ -1236,6 +1247,11 @@ async function syncProfileFromDB() {
       // Bestzeiten aus DB in lokale Leaderboards synchronisieren
       const boards = loadSavedLeaderboards();
       let boardsChanged = false;
+      const dbBestMap = {
+        zen: data.best_times_zen || {},
+        versus: data.best_times_versus || {},
+        swap: data.best_times_swap || {}
+      };
 
       const mergeBest = (mode, json) => {
         if (!json || typeof json !== 'object') return;
@@ -1259,27 +1275,39 @@ async function syncProfileFromDB() {
         });
       };
 
-      mergeBest('zen', data.best_times_zen);
-      mergeBest('versus', data.best_times_versus);
-      mergeBest('swap', data.best_times_swap);
+      mergeBest('zen', dbBestMap.zen);
+      mergeBest('versus', dbBestMap.versus);
+      mergeBest('swap', dbBestMap.swap);
 
       if (boardsChanged) {
         saveLeaderboards(boards);
       }
-    } else {
+
+      // Lokale Bestzeiten, die bisher noch nicht in Supabase gelandet sind, einmalig hochladen
+      for (const m of ['zen', 'versus', 'swap']) {
+        for (const d of ['easy', 'medium', 'hard']) {
+          const localEntry = (boards[`${m}_${d}`] || []).find(e => e.id === 'player-me' || e.username === state.profile.username);
+          const dbSec = dbBestMap[m]?.[d];
+          if (localEntry && typeof localEntry.time === 'number' && localEntry.time > 0 && (!dbSec || localEntry.time < dbSec)) {
+            await syncScoreToSupabase(m, d, localEntry.time, 3, state.profile.username);
+          }
+        }
+      }
+    } else if (!error) {
       const initialName = state.profile.username && state.profile.username !== 'Spieler' ? state.profile.username : 'Spieler';
       await state.supabase.from('profiles').insert({
         id: state.user.id,
         username: initialName,
-        active_theme: state.profile.active_theme || 'nordic-light',
-        versus_wins: state.profile.versus_wins || 0
-      }).catch(() => {});
+        active_theme: state.profile.active_theme || 'nordic-light'
+      });
     }
 
     setTheme(state.profile.active_theme);
     saveLocalState();
     updateAccountUI();
-  } catch (_) {}
+  } catch (err) {
+    console.warn('syncProfileFromDB error:', err);
+  }
 }
 
 function loadLocalState() {
@@ -2223,10 +2251,13 @@ async function gameWon(isRemoteTeamWin = false) {
   const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
   const currentDiff = state.mode === 'zen' ? state.zenDifficulty : (state.mode === 'versus' ? state.versusDifficulty : (state.versusDifficulty || 'medium'));
 
-  // 2. Zeit in Bestenliste aufnehmen
+  // 2. Zeit & ggf. Duellsieg in Bestenliste aufnehmen
   let isBest = false;
   try {
     isBest = recordBestTime(currentDiff, state.gameSeconds);
+    if (state.mode === 'versus') {
+      recordVersusWin();
+    }
   } catch (err) {
     console.warn('recordBestTime error:', err);
   }
@@ -2502,7 +2533,7 @@ function recordVersusWin() {
   if (state.supabase && state.user) {
     state.supabase.from('profiles').update({
       versus_wins: state.profile.versus_wins
-    }).eq('id', state.user.id).catch(() => {});
+    }).eq('id', state.user.id).then(() => {}, () => {});
   }
 }
 
@@ -3184,8 +3215,55 @@ function saveLeaderboards(data) {
   localStorage.setItem('swapdoku_leaderboards_v4', JSON.stringify(data));
 }
 
+async function syncScoreToSupabase(mode, diff, seconds, remainingLives, playerName) {
+  if (!state.supabase || state.isOffline) return;
+  const safeSeconds = Math.max(1, Math.round(seconds || 1));
+  const safeLives = Math.max(1, Math.min(3, remainingLives || 3));
+  const safeName = (playerName || state.profile.username || 'Spieler').trim() || 'Spieler';
+
+  try {
+    if (state.user) {
+      if (safeName && safeName !== 'Spieler' && !safeName.startsWith('Player_')) {
+        await state.supabase.from('profiles')
+          .update({ username: safeName })
+          .eq('id', state.user.id);
+      }
+
+      // 1. Primär: RPC submit_score (4 Standard-Parameter passend zum Live-DB-Schema)
+      const { error: rpcError } = await state.supabase.rpc('submit_score', {
+        p_mode: mode,
+        p_difficulty: diff,
+        p_time_seconds: safeSeconds,
+        p_remaining_lives: safeLives
+      });
+
+      if (!rpcError) return;
+      console.warn('submit_score RPC fallback triggered:', rpcError.message || rpcError);
+    }
+
+    // 2. Fallback / Gast-Modus: Direkter INSERT in leaderboard_scores (RLS erlaubt anon & auth)
+    const { error: insertError } = await state.supabase
+      .from('leaderboard_scores')
+      .insert({
+        user_id: state.user ? state.user.id : null,
+        username: safeName,
+        mode: mode,
+        difficulty: diff,
+        time_seconds: safeSeconds,
+        remaining_lives: safeLives
+      });
+
+    if (insertError) {
+      console.warn('Direct leaderboard insert failed:', insertError.message || insertError);
+    }
+  } catch (err) {
+    console.warn('syncScoreToSupabase error:', err);
+  }
+}
+
 function recordBestTime(diff, seconds) {
   const mode = state.mode || 'zen';
+  const safeSeconds = Math.max(1, Math.round(seconds || 1));
   const key = `${mode}_${diff}`;
   const boards = loadSavedLeaderboards();
   const currentDiffList = boards[key] || [];
@@ -3195,8 +3273,8 @@ function recordBestTime(diff, seconds) {
   let isNewBest = false;
 
   if (existing) {
-    if (seconds < existing.time) {
-      existing.time = seconds;
+    if (safeSeconds < existing.time) {
+      existing.time = safeSeconds;
       existing.username = myName;
       isNewBest = true;
     }
@@ -3204,7 +3282,7 @@ function recordBestTime(diff, seconds) {
     currentDiffList.push({
       id: 'player-me',
       username: myName,
-      time: seconds
+      time: safeSeconds
     });
     isNewBest = true;
   }
@@ -3213,24 +3291,8 @@ function recordBestTime(diff, seconds) {
   boards[key] = currentDiffList;
   saveLeaderboards(boards);
 
-  // Supabase Backend Sync (RPC submit_score)
-  if (state.supabase && typeof state.supabase.rpc === 'function') {
-    try {
-      state.supabase.rpc('submit_score', {
-        p_mode: mode,
-        p_difficulty: diff,
-        p_time_seconds: seconds,
-        p_remaining_lives: Math.max(1, Math.min(3, state.currentHearts || 3)),
-        p_username: myName
-      }).then(() => {
-        syncProfileFromDB().catch(() => {});
-      }).catch(err => {
-        console.warn('Backend sync submit_score skipped/failed:', err?.message || err);
-      });
-    } catch (err) {
-      console.warn('Backend sync submit_score error:', err?.message || err);
-    }
-  }
+  // Supabase Backend Sync (asynchron im Hintergrund, mit automatischem Fallback)
+  syncScoreToSupabase(mode, diff, safeSeconds, state.currentHearts || 3, myName);
 
   return isNewBest;
 }
@@ -3247,6 +3309,7 @@ function getMyBestTimeForDiff(diff) {
 
 function openLeaderboard() {
   state.leadMode = state.mode; // Rangliste passt sich automatisch dem aktuellen Spielmodus an!
+  state.leadDifficulty = state.mode === 'zen' ? (state.zenDifficulty || 'easy') : (state.versusDifficulty || 'medium');
   syncLeaderboardModeTabs();
   dom.leaderboardModal.classList.remove('hidden');
   renderLeaderboard();
@@ -3319,30 +3382,58 @@ async function renderLeaderboard() {
     }
     vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
 
-    dom.leaderboardBody.innerHTML = '';
-    if (vList.length === 0) {
-      const emptyRow = document.createElement('tr');
-      emptyRow.innerHTML = `
-        <td colspan="3" style="text-align: center; color: var(--muted); padding: 32px 14px; font-size: 0.82rem;">
-          ${state.currentLang === 'de' ? 'Noch keine Duellsiege erfasst. Gewinne ein Versus-Spiel!' : 'No duel wins recorded yet. Win a versus match!'}
-        </td>
-      `;
-      dom.leaderboardBody.appendChild(emptyRow);
-      return;
+    function renderWinRows(items) {
+      dom.leaderboardBody.innerHTML = '';
+      if (!items || items.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = `
+          <td colspan="3" style="text-align: center; color: var(--muted); padding: 32px 14px; font-size: 0.82rem;">
+            ${state.currentLang === 'de' ? 'Noch keine Duellsiege erfasst. Gewinne ein Versus-Spiel!' : 'No duel wins recorded yet. Win a versus match!'}
+          </td>
+        `;
+        dom.leaderboardBody.appendChild(emptyRow);
+        return;
+      }
+
+      items.forEach((entry, idx) => {
+        const isMe = entry.id === 'player-me' || (state.user && entry.id === state.user.id) || entry.username === myName;
+        const rank = idx + 1;
+        const tr = document.createElement('tr');
+        if (isMe) tr.className = 'my-row';
+        tr.innerHTML = `
+          <td>#${rank}</td>
+          <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${entry.wins || 0} ${d.winsUnit || 'Siege'}</td>
+        `;
+        dom.leaderboardBody.appendChild(tr);
+      });
     }
 
-    vList.forEach((entry, idx) => {
-      const isMe = entry.id === 'player-me' || entry.username === myName;
-      const rank = idx + 1;
-      const tr = document.createElement('tr');
-      if (isMe) tr.className = 'my-row';
-      tr.innerHTML = `
-        <td>#${rank}</td>
-        <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
-        <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${entry.wins || 0} ${d.winsUnit || 'Siege'}</td>
-      `;
-      dom.leaderboardBody.appendChild(tr);
-    });
+    renderWinRows(vList);
+
+    if (state.supabase && !state.isOffline) {
+      try {
+        const { data, error } = await state.supabase
+          .from('profiles')
+          .select('id, username, versus_wins')
+          .gt('versus_wins', 0)
+          .order('versus_wins', { ascending: false })
+          .limit(20);
+
+        if (!error && data && data.length > 0) {
+          const onlineWins = data.map(row => ({
+            id: row.id,
+            username: row.username || 'Spieler',
+            wins: row.versus_wins || 0
+          }));
+          if (myEntry && !onlineWins.some(e => (state.user && e.id === state.user.id) || e.username === myName)) {
+            onlineWins.push(myEntry);
+          }
+          onlineWins.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+          renderWinRows(onlineWins);
+        }
+      } catch (_) {}
+    }
     return;
   }
 
@@ -3374,7 +3465,7 @@ async function renderLeaderboard() {
     }
 
     items.forEach((entry, idx) => {
-      const isMe = entry.id === 'player-me' || entry.username === myName;
+      const isMe = entry.id === 'player-me' || (state.user && entry.user_id === state.user.id) || entry.username === myName;
       const rank = idx + 1;
       const tr = document.createElement('tr');
       if (isMe) tr.className = 'my-row';
@@ -3394,20 +3485,35 @@ async function renderLeaderboard() {
     try {
       const { data, error } = await state.supabase
         .from('leaderboard_scores')
-        .select('id, username, time_seconds')
+        .select('id, user_id, username, time_seconds')
         .eq('mode', mode)
         .eq('difficulty', diff)
         .order('time_seconds', { ascending: true })
-        .limit(20);
+        .limit(100);
 
       if (!error && data && data.length > 0) {
-        const onlineList = data.map(d => ({
-          id: d.id,
-          username: d.username,
-          time: d.time_seconds
-        }));
+        // Pro Spieler (user_id oder username) nur die schnellste Bestzeit anzeigen
+        const bestByPlayer = new Map();
+        for (const row of data) {
+          const playerKey = row.user_id || `name:${(row.username || 'Spieler').toLowerCase()}`;
+          if (!bestByPlayer.has(playerKey)) {
+            bestByPlayer.set(playerKey, {
+              id: row.id,
+              user_id: row.user_id,
+              username: row.username || 'Spieler',
+              time: row.time_seconds
+            });
+          }
+        }
+        const onlineList = Array.from(bestByPlayer.values()).slice(0, 20);
 
-        if (myEntry && !onlineList.some(e => e.username === myName)) {
+        const myOnlineEntry = onlineList.find(e => (state.user && e.user_id === state.user.id) || e.username === myName);
+        if (myOnlineEntry && dom.myRankTime) {
+          const bestLocal = myEntry ? Math.min(myEntry.time, myOnlineEntry.time) : myOnlineEntry.time;
+          dom.myRankTime.textContent = formatTime(bestLocal);
+        }
+
+        if (myEntry && !myOnlineEntry) {
           onlineList.push(myEntry);
         }
         onlineList.sort((a, b) => a.time - b.time);
@@ -3574,12 +3680,11 @@ async function registerUser(email, password) {
     state.user = data.user;
     state.authEmail = data.user.email;
     localStorage.setItem('swapdoku_auth_email', data.user.email);
-    if (state.profile.username) {
-      state.supabase.from('profiles').upsert({
-        id: state.user.id,
-        username: state.profile.username,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' }).catch(() => {});
+    if (state.profile.username && state.profile.username !== 'Spieler') {
+      state.supabase.from('profiles')
+        .update({ username: state.profile.username, updated_at: new Date().toISOString() })
+        .eq('id', state.user.id)
+        .then(() => {}, () => {});
     }
     saveLocalState();
     toast(state.currentLang === 'de' ? 'Konto erfolgreich registriert!' : 'Account registered successfully!');
@@ -3656,13 +3761,21 @@ async function saveUsername() {
 
   if (!state.isOffline && state.supabase && state.user) {
     try {
-      await state.supabase.from('profiles').upsert({
-        id: state.user.id,
-        username: newName,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
+      const { data: updatedRows, error: updateErr } = await state.supabase
+        .from('profiles')
+        .update({ username: newName, updated_at: new Date().toISOString() })
+        .eq('id', state.user.id)
+        .select('id');
 
-      // Auch in leaderboard_scores persistieren
+      if (updateErr || !updatedRows || updatedRows.length === 0) {
+        await state.supabase.from('profiles').insert({
+          id: state.user.id,
+          username: newName,
+          active_theme: state.profile.active_theme || 'nordic-light'
+        });
+      }
+
+      // Auch in leaderboard_scores persistieren (falls Update-Policy aktiv)
       await state.supabase.from('leaderboard_scores')
         .update({ username: newName })
         .eq('user_id', state.user.id);
