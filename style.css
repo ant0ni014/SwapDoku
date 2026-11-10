@@ -123,13 +123,13 @@ body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg);
   color: var(--text);
-  height: 100vh;
-  max-height: 100vh;
-  overflow: hidden;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: flex;
   justify-content: center;
-  align-items: center;
-  padding: 8px 16px;
+  align-items: flex-start;
+  padding: max(18px, 3vh) 16px 14px 16px;
   line-height: 1.35;
   user-select: none;
   -webkit-user-select: none;
@@ -137,7 +137,7 @@ body {
 
 .app {
   width: 100%;
-  max-width: 920px;
+  max-width: 940px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -247,9 +247,10 @@ body {
   width: 100%;
   display: flex;
   flex-direction: row;
-  align-items: center; /* Vertikal exakt zentriert zur Höhe der Sudoku-Spielfläche */
+  align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
+  padding-top: 6px;
 }
 
 .board-column {
@@ -262,12 +263,13 @@ body {
 }
 
 .sidebar-column {
-  width: 320px;
-  flex: 0 0 320px;
+  width: 344px;
+  flex: 0 0 344px;
+  max-width: 344px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-top: 0; /* Perfekt symmetrisch und mittig zum Board */
+  padding-top: 0;
 }
 
 /* Spieloptionen */
@@ -549,6 +551,51 @@ body {
   align-items: center;
   font-size: 0.72rem;
   color: var(--muted);
+}
+
+#roomCodeDisplay {
+  user-select: text;
+  -webkit-user-select: text;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#currentRoomCode {
+  user-select: all;
+  -webkit-user-select: all;
+  cursor: pointer;
+  letter-spacing: 1px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+#currentRoomCode:hover {
+  background: var(--highlight);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+
+.btn-copy-code {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s ease, background-color 0.15s ease, transform 0.1s ease;
+}
+
+.btn-copy-code:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+  transform: translateY(-1px);
 }
 
 .online-start-row {
@@ -869,33 +916,40 @@ body {
   justify-content: center;
   align-items: center;
   z-index: 25;
-  background: rgba(0, 0, 0, 0.62);
-  backdrop-filter: blur(5px);
+  background: rgba(15, 23, 42, 0.72);
   border-radius: 8px;
   animation: fadeIn 0.15s ease;
+  will-change: opacity;
+  pointer-events: none;
 }
 
 .countdown-number {
-  font-size: 5rem;
-  font-weight: 700;
+  font-size: 5.2rem;
+  font-weight: 800;
   color: #ffffff;
   line-height: 1;
-  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  animation: popScale 0.7s ease infinite;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.6);
+  transform: scale(1);
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.countdown-number.pop-tick {
+  animation: popTick 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .countdown-label {
   font-size: 0.95rem;
   font-weight: 600;
-  color: #e2e8f0;
-  margin-top: 10px;
+  color: #cbd5e1;
+  margin-top: 12px;
   letter-spacing: 1px;
 }
 
-@keyframes popScale {
-  0% { transform: scale(0.65); opacity: 0.4; }
-  50% { transform: scale(1.18); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.95; }
+@keyframes popTick {
+  0% { transform: scale(0.6); opacity: 0; }
+  50% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Board Result Overlay (Glückwunsch & Niederlage zentriert im Spielfeld) */
@@ -1104,7 +1158,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: clamp(0.55rem, 1.3vmin, 0.75rem);
+  font-size: 0.6rem;
   color: var(--muted);
   line-height: 1;
 }
@@ -1352,204 +1406,6 @@ body {
   }
   .cell .val {
     font-size: 1.05rem;
-  }
-}
-
-/* -----------------------------------------------------------------------------
-   DYNAMISCHE SKALIERUNG FÜR LAPTOPS & DESKTOP-BILDSCHIRME
-   ----------------------------------------------------------------------------- */
-
-/* 1. Große Desktop-Monitore (Full-HD Desktop, 24"+ Monitore) */
-@media (min-width: 1200px) and (min-height: 750px) {
-  .app {
-    max-width: 1100px;
-    gap: 16px;
-  }
-
-  .main-content {
-    gap: 40px;
-  }
-
-  .grid-container {
-    width: min(600px, 72vh, 48vw);
-    height: min(600px, 72vh, 48vw);
-  }
-
-  .hud {
-    max-width: min(600px, 72vh, 48vw);
-  }
-
-  .sidebar-column {
-    width: 350px;
-    flex: 0 0 350px;
-    gap: 18px;
-  }
-
-  .num {
-    height: 56px;
-    font-size: 1.45rem;
-  }
-
-  .tool-btn {
-    height: 40px;
-    font-size: 0.84rem;
-  }
-
-  .cell .val {
-    font-size: clamp(1.5rem, 5vh, 2.3rem);
-  }
-
-  .cell .notes span {
-    font-size: 0.72rem;
-  }
-}
-
-/* 2. Sehr große 2K / 4K Monitore (ab 1600px Breite & 900px Höhe) */
-@media (min-width: 1600px) and (min-height: 900px) {
-  .app {
-    max-width: 1260px;
-    gap: 22px;
-  }
-
-  .brand h1 {
-    font-size: 1.65rem;
-  }
-
-  .main-content {
-    gap: 48px;
-  }
-
-  .grid-container {
-    width: min(700px, 74vh, 46vw);
-    height: min(700px, 74vh, 46vw);
-  }
-
-  .hud {
-    max-width: min(700px, 74vh, 46vw);
-  }
-
-  .sidebar-column {
-    width: 380px;
-    flex: 0 0 380px;
-    gap: 22px;
-  }
-
-  .num {
-    height: 64px;
-    font-size: 1.62rem;
-  }
-
-  .tool-btn {
-    height: 44px;
-    font-size: 0.9rem;
-  }
-
-  .cell .val {
-    font-size: clamp(1.75rem, 5.2vh, 2.7rem);
-  }
-
-  .cell .notes span {
-    font-size: 0.8rem;
-  }
-}
-
-/* 3. Kompakte Laptops mit geringer Bildschirmhöhe (z.B. 1366x768 oder 125%/150% Windows-Skalierung) */
-@media (min-width: 769px) and (max-height: 720px) {
-  body {
-    padding: 4px 12px;
-  }
-
-  .app {
-    gap: 6px;
-  }
-
-  .header {
-    padding: 0 0 4px 0;
-    min-height: 30px;
-  }
-
-  .brand h1 {
-    font-size: 1.25rem;
-  }
-
-  .main-content {
-    gap: 20px;
-  }
-
-  .grid-container {
-    width: min(430px, 63vh);
-    height: min(430px, 63vh);
-  }
-
-  .hud {
-    max-width: min(430px, 63vh);
-    gap: 2px;
-    margin-bottom: 2px;
-  }
-
-  .sidebar-column {
-    width: 290px;
-    flex: 0 0 290px;
-    gap: 8px;
-  }
-
-  .game-options {
-    gap: 4px;
-  }
-
-  .num {
-    height: 40px;
-    font-size: 1.15rem;
-  }
-
-  .tool-btn {
-    height: 32px;
-    font-size: 0.74rem;
-  }
-
-  .cell .val {
-    font-size: clamp(1.2rem, 3.8vh, 1.55rem);
-  }
-
-  .app-footer {
-    padding-top: 4px;
-    font-size: 0.72rem;
-  }
-}
-
-/* 4. Mittlere Bildschirmbreiten / Tablet-Landscape (769px bis 1024px) */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .app {
-    max-width: 96vw;
-    gap: 8px;
-  }
-
-  .main-content {
-    gap: 16px;
-  }
-
-  .sidebar-column {
-    width: 290px;
-    flex: 0 0 290px;
-  }
-
-  .grid-container {
-    width: min(450px, 66vh, 48vw);
-    height: min(450px, 66vh, 48vw);
-  }
-
-  .hud {
-    max-width: min(450px, 66vh, 48vw);
-  }
-}
-
-/* 5. Extrem geringe Viewport-Höhe (z.B. hohe Browser-Zoomstufe) -> vertikales Scrollen erlauben */
-@media (max-height: 590px) {
-  body {
-    height: auto;
-    min-height: 100vh;
-    overflow-y: auto;
-    align-items: flex-start;
   }
 }
 
@@ -1845,12 +1701,74 @@ body {
 /* Eingeloggt Box */
 .auth-logged-box {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 10px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px 12px;
+}
+
+.auth-logged-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.auth-logged-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid rgba(220, 38, 38, 0.35);
+  color: var(--err-text, #dc2626);
+}
+
+.btn-danger-outline:hover {
+  border-color: var(--err-text, #dc2626);
+  background: rgba(220, 38, 38, 0.08);
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #ffffff;
+  border-color: #dc2626;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.delete-confirm-box {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.delete-confirm-text {
+  font-size: 0.74rem;
+  color: var(--err-text, #dc2626);
+  line-height: 1.35;
+}
+
+.delete-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.btn-rematch-ready {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
 }
 
 .auth-user-info {

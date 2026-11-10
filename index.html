@@ -241,7 +241,7 @@
                 </div>
               </div>
               <div class="lobby-info">
-                <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode">----</strong></span>
+                <span id="roomCodeDisplay" class="hidden">Raum: <strong id="currentRoomCode" title="Klicken zum Kopieren">----</strong><button type="button" class="btn-copy-code" id="btnCopyRoomCode" title="Raum-Code kopieren" aria-label="Raum-Code kopieren"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></span>
                 <span class="status-indicator">
                   <span class="dot" id="connDot"></span>
                   <span id="connText">Nicht verbunden</span>
@@ -423,11 +423,25 @@
 
         <!-- Eingeloggt-Ansicht -->
         <div class="auth-logged-box hidden" id="authLoggedInSection">
-          <div class="auth-user-info">
-            <span class="logged-label">Angemeldet als</span>
-            <strong class="logged-email" id="authLoggedInEmail">user@beispiel.de</strong>
+          <div class="auth-logged-top">
+            <div class="auth-user-info">
+              <span class="logged-label" id="loggedInAsLabel">Angemeldet als</span>
+              <strong class="logged-email" id="authLoggedInEmail">user@beispiel.de</strong>
+            </div>
+            <div class="auth-logged-actions">
+              <button class="btn btn-secondary" id="btnLogout">Abmelden</button>
+              <button class="btn btn-danger-outline" id="btnDeleteAccount">Konto löschen</button>
+            </div>
           </div>
-          <button class="btn btn-secondary" id="btnLogout">Abmelden</button>
+          <div class="delete-confirm-box hidden" id="deleteAccountConfirmBox">
+            <p class="delete-confirm-text" id="deleteConfirmText">
+              Möchtest du dein Konto und alle deine gespeicherten Bestzeiten unwiderruflich löschen?
+            </p>
+            <div class="delete-confirm-actions">
+              <button class="btn btn-secondary" id="btnCancelDeleteAccount">Abbrechen</button>
+              <button class="btn btn-danger" id="btnConfirmDeleteAccount">Endgültig löschen</button>
+            </div>
+          </div>
         </div>
 
         <!-- Gast / Anmelde- & Registrier-Bereich -->

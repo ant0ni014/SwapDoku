@@ -478,6 +478,11 @@ const state = {
   swapBoardSolved: { A: false, B: false },
   isSolutionRevealed: false,
 
+  // Multiplayer Rematch Status
+  rematchRequestedByMe: false,
+  rematchRequestedByPeer: false,
+  peerLeftRoom: false,
+
   // Ranglisten Filter
   leadDifficulty: 'medium', // 'easy' | 'medium' | 'hard'
   leadMode: 'zen', // 'zen' | 'versus' | 'swap'
@@ -816,8 +821,14 @@ const dom = {
   recSwapMedium: document.getElementById('recSwapMedium'),
   recSwapHard: document.getElementById('recSwapHard'),
   authLoggedInSection: document.getElementById('authLoggedInSection'),
+  loggedInAsLabel: document.getElementById('loggedInAsLabel'),
   authLoggedInEmail: document.getElementById('authLoggedInEmail'),
   btnLogout: document.getElementById('btnLogout'),
+  btnDeleteAccount: document.getElementById('btnDeleteAccount'),
+  deleteAccountConfirmBox: document.getElementById('deleteAccountConfirmBox'),
+  deleteConfirmText: document.getElementById('deleteConfirmText'),
+  btnConfirmDeleteAccount: document.getElementById('btnConfirmDeleteAccount'),
+  btnCancelDeleteAccount: document.getElementById('btnCancelDeleteAccount'),
   authGuestSection: document.getElementById('authGuestSection'),
   tabAuthLogin: document.getElementById('tabAuthLogin'),
   tabAuthRegister: document.getElementById('tabAuthRegister'),
@@ -879,6 +890,7 @@ const dom = {
   roomInput: document.getElementById('roomCodeInput'),
   roomDisplay: document.getElementById('roomCodeDisplay'),
   currentRoom: document.getElementById('currentRoomCode'),
+  btnCopyRoomCode: document.getElementById('btnCopyRoomCode'),
   connDot: document.getElementById('connDot'),
   connText: document.getElementById('connText'),
   onlineStartRow: document.getElementById('onlineStartRow'),
@@ -2539,6 +2551,36 @@ function recordVersusWin() {
 
 let countdownTimer = null;
 
+function triggerCountdownTick(numberVal, labelText = null) {
+  if (dom.countdownNumber) {
+    dom.countdownNumber.classList.remove('pop-tick');
+    void dom.countdownNumber.offsetWidth; // Force layout recalculation for fresh tick animation
+    dom.countdownNumber.textContent = numberVal;
+    dom.countdownNumber.classList.add('pop-tick');
+  }
+  if (dom.countdownLabel && labelText !== null) {
+    dom.countdownLabel.textContent = labelText;
+  }
+}
+
+function showCountdownOverlay() {
+  if (!dom.matchCountdownOverlay) return;
+  dom.matchCountdownOverlay.style.opacity = '1';
+  dom.matchCountdownOverlay.style.transition = '';
+  dom.matchCountdownOverlay.classList.remove('hidden');
+}
+
+function hideCountdownOverlaySmoothly() {
+  if (!dom.matchCountdownOverlay) return;
+  dom.matchCountdownOverlay.style.opacity = '0';
+  dom.matchCountdownOverlay.style.transition = 'opacity 0.22s ease-out';
+  setTimeout(() => {
+    dom.matchCountdownOverlay.classList.add('hidden');
+    dom.matchCountdownOverlay.style.opacity = '';
+    dom.matchCountdownOverlay.style.transition = '';
+  }, 220);
+}
+
 function runMatchCountdown(initialBoard, solution) {
   if (countdownTimer) clearInterval(countdownTimer);
 
@@ -2557,23 +2599,21 @@ function runMatchCountdown(initialBoard, solution) {
   startNewGame(initialBoard, solution);
   state.isPaused = true;
 
-  if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.remove('hidden');
+  showCountdownOverlay();
 
   let count = 3;
-  if (dom.countdownNumber) dom.countdownNumber.textContent = count;
-  if (dom.countdownLabel) dom.countdownLabel.textContent = state.currentLang === 'de' ? 'Duell startet in...' : 'Duel starts in...';
+  triggerCountdownTick(count, state.currentLang === 'de' ? 'Duell startet in...' : 'Duel starts in...');
 
   countdownTimer = setInterval(() => {
     count--;
     if (count > 0) {
-      if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+      triggerCountdownTick(count);
     } else if (count === 0) {
-      if (dom.countdownNumber) dom.countdownNumber.textContent = state.currentLang === 'de' ? 'LOS!' : 'GO!';
-      if (dom.countdownLabel) dom.countdownLabel.textContent = '';
+      triggerCountdownTick(state.currentLang === 'de' ? 'LOS!' : 'GO!', '');
     } else {
       clearInterval(countdownTimer);
       countdownTimer = null;
-      if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.add('hidden');
+      hideCountdownOverlaySmoothly();
 
       state.isPaused = false;
       state.gameStarted = true;
@@ -2681,25 +2721,21 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
   updateSwapVisualTheme();
 
   state.isPaused = true;
-  if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.remove('hidden');
+  showCountdownOverlay();
 
   let count = 3;
-  if (dom.countdownNumber) dom.countdownNumber.textContent = count;
-  if (dom.countdownLabel) {
-    dom.countdownLabel.textContent = state.currentLang === 'de' ? 'Co-Op Swap startet in...' : 'Co-Op Swap starts in...';
-  }
+  triggerCountdownTick(count, state.currentLang === 'de' ? 'Co-Op Swap startet in...' : 'Co-Op Swap starts in...');
 
   countdownTimer = setInterval(() => {
     count--;
     if (count > 0) {
-      if (dom.countdownNumber) dom.countdownNumber.textContent = count;
+      triggerCountdownTick(count);
     } else if (count === 0) {
-      if (dom.countdownNumber) dom.countdownNumber.textContent = state.currentLang === 'de' ? 'LOS!' : 'GO!';
-      if (dom.countdownLabel) dom.countdownLabel.textContent = '';
+      triggerCountdownTick(state.currentLang === 'de' ? 'LOS!' : 'GO!', '');
     } else {
       clearInterval(countdownTimer);
       countdownTimer = null;
-      if (dom.matchCountdownOverlay) dom.matchCountdownOverlay.classList.add('hidden');
+      hideCountdownOverlaySmoothly();
 
       state.isPaused = false;
       state.gameStarted = true;
@@ -2817,6 +2853,37 @@ function handleVersusWinByForfeit(oppName) {
   toast(d.toastOpponentLeft || 'Gegner hat das Duell verlassen.');
   setConnectionStatus('connecting', 'Gegner hat Raum verlassen');
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+}
+
+function copyRoomCode() {
+  const code = state.roomCode || (dom.currentRoom ? dom.currentRoom.textContent.trim() : '');
+  if (!code || code === '----') return;
+  const msg = state.currentLang === 'de' ? `Raum-Code „${code}“ kopiert!` : `Room code "${code}" copied!`;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      toast(msg);
+    }).catch(() => {
+      copyFallback(code, msg);
+    });
+  } else {
+    copyFallback(code, msg);
+  }
+}
+
+function copyFallback(text, msg) {
+  try {
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.left = '-9999px';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    document.body.removeChild(el);
+    toast(msg);
+  } catch (_) {
+    toast(`Code: ${text}`);
+  }
 }
 
 function createRoom() {
@@ -4017,6 +4084,8 @@ function bindEvents() {
     if (e.key === 'Enter') joinRoom(dom.roomInput.value.trim());
   });
   if (dom.btnStartDuel) dom.btnStartDuel.addEventListener('click', hostStartDuel);
+  if (dom.currentRoom) dom.currentRoom.addEventListener('click', copyRoomCode);
+  if (dom.btnCopyRoomCode) dom.btnCopyRoomCode.addEventListener('click', copyRoomCode);
 
   window.addEventListener('beforeunload', () => {
     if (state.channel && state.roomCode) {

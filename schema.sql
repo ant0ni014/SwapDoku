@@ -334,6 +334,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Eigenes Konto samt Profil, Themes, Bestzeiten & Auth-User vollständig löschen
+CREATE OR REPLACE FUNCTION public.delete_own_account()
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_user_id UUID := auth.uid();
+BEGIN
+    IF v_user_id IS NULL THEN
+        RAISE EXCEPTION 'Nicht authentifiziert.';
+    END IF;
+
+    DELETE FROM public.leaderboard_scores WHERE user_id = v_user_id;
+    DELETE FROM public.unlocked_themes WHERE user_id = v_user_id;
+    DELETE FROM public.profiles WHERE id = v_user_id;
+    DELETE FROM auth.users WHERE id = v_user_id;
+
+    RETURN TRUE;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- 7. REALTIME BROADCAST & REPLICATION
 -- Hinweis: Supabase Realtime Channels (Broadcast & Presence) nutzen WebSockets direkt
 -- über clientseitige Channel-Subscriptions. Für optionale DB-Änderungen an 'profiles'
