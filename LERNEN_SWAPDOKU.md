@@ -22,6 +22,14 @@ Diese Datei bündelt die persönlichen, fachlichen und methodischen Lerneffekte 
 - **Erkenntnis:** Bei synchronen Mehrspieler-Spielen im Web dürfen Clients nicht unkontrolliert starten oder ohne Konsequenzen die Verbindung trennen.
 - **Lerneffekt:** Implementierung von **Synchronisations-Barrieren** (3-2-1 Countdown-Broadcasts vor Freischaltung der Eingabe), Behandlung von vorzeitigen Verbindungsabbrüchen (*Presence-Leave Forfeits*) und zustandsbasierte Knockout-Bedingungen (3-Leben-K.O.-Sieg).
 
+### 1.5 Kooperative Dual-State-Modellierung (Co-Op Swap Sieglogik)
+- **Erkenntnis:** Kooperative Spielmodi unterscheiden sich fundamental von kompetitiven Duellen: Das Spielziel ist nicht erreicht, wenn ein einzelner Teilnehmer fertig ist, sondern erfordert das gemeinsame Lösen zweier getrennter Datenstrukturen.
+- **Lerneffekt:** Entwurf einer **Dual-Board-Zustandsmaschine** (`swapBoardSolved: { A, B }`). Wurde ein Teilboard gelöst, muss das System dynamische Transitionen ermöglichen (automatische Fokussierung auf das ungelöste Restboard), ohne den Spielzustand vorzeitig als beendet zu deklarieren.
+
+### 1.6 Datenschutz & DSGVO im Browser-Gaming
+- **Erkenntnis:** Auch bei scheinbar reinen Client-Spielen werden Nutzerdaten (Local Storage, WebSocket-IPs) verarbeitet, die nach europäischem Recht einwilligungspflichtig bzw. informationspflichtig sind.
+- **Lerneffekt:** Konzeption eines zweistufigen **Cookie- & Consent-Banners** mit selektiver Zustimmung („Nur notwendige“ vs. „Alle akzeptieren“) und transparenter Aufklärung im Datenschutz-Modal.
+
 ### 1.4 Web Audio API statt statischer Sounddateien
 - **Erkenntnis:** Das Einbinden externer MP3-/WAV-Dateien frisst Bandbreite, erfordert Pufferzeiten und kann bei mobilen Datenverbindungen abbrechen.
 - **Lerneffekt:** Wie Klang mathematisch direkt im Browser synthetisiert werden kann (`OscillatorNode`, `GainNode`, Hüllkurven). Mit wenigen Zeilen Code entsteht ein ressourcenschonender, latenzfreier Soundgenerator mit 0 Byte Ladezeit.

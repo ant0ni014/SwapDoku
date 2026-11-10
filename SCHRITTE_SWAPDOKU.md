@@ -144,3 +144,26 @@ In dieser Datei wird jeder einzelne Entwicklungsschritt von SwapDoku mit exaktem
   - **3-Leben Knockout:** Verliert ein Spieler im Versus alle 3 Leben, gewinnt der Gegner sofort durch Knockout (`KNOCKOUT_WIN`).
   - **Forfeit-Erkennung:** Verlässt ein Spieler den Raum vorzeitig (`presence:leave`), wird dies als Aufgabe gewertet und der verbleibende Spieler siegt.
   - **Versus-Leaderboard:** Rangliste zählt nun echte Versus-Siege.
+* **2026-10-30 15:12** (`3cd446e`) – **Backend-Erweiterung: Versus-Siege im Nutzerprofil**
+  - Ergänzung der Spalte `versus_wins` in der Tabelle `profiles` (`schema.sql`).
+  - Synchronisation der Duell-Siege zwischen Client und Supabase bei jedem Login.
+* **2026-10-30 15:20** (`c9964ec`) – **Synchronisierter 2-Board-Swap & Rollen-Verteilung**
+  - Feste Rollenzuweisung im Co-Op-Swap: Host startet auf **Board A (Blau)**, Beitretender auf **Board B (Rot)**.
+  - Live-Countdown auf beiden Bildschirmen synchronisiert; akustisches Signal bei Swap; optimiertes mobiles Layout.
+* **2026-10-30 15:32** (`6566457`) – **Fix: Host-Status-Persistenz & Board-Zuweisung**
+  - Absicherung der Eigenschaft `isHost` bei Raumerstellung, sodass der Host nicht versehentlich als Gast eingestuft wird.
+  - Direkte Zuweisung von Board B an den beigetretenen Spieler ohne Rollen-Konflikt.
+* **2026-10-30 15:38** (`b547d31`) – **Fix: Countdown-Timer & Stopwatch-Initialisierung**
+  - Korrekte Definition von `resetStopwatch()` und Ausblenden des Start-Buttons nach Match-Beginn.
+  - Garantierter Start aller internen Stoppuhren exakt nach Ablauf des visuellen 3-2-1 Countdowns.
+* **2026-10-30 21:52** (`91afa47`) – **Co-Op GameOver-Sync, UI-Polish, DSGVO-Cookie-Banner & Account-Stats**
+  - **Dual-Game-Over:** Verliert ein Spieler im Co-Op Swap alle 3 Leben, wird das Spiel für beide synchron beendet (Team-Verlust).
+  - **Benutzerfarb-Stil:** Selbst eingetragene Zahlen werden in kontraststarkem Blau (`--user-val`) dargestellt, Vorgabezahlen bleiben neutral schwarz/grau.
+  - **Top-Toasts:** Toast-Benachrichtigungen an den oberen Bildschirmrand verschoben (`top: 24px`), um Verdeckung durch mobile Numpads oder Footer zu verhindern.
+  - **DSGVO Cookie- & Datenschutz-Banner:** Konformes Banner zur Speicherung lokaler Einstellungen und WebSockets mit Optionen „Nur notwendige“ und „Alle akzeptieren“.
+  - **Strukturierte Account-Rekordkarten:** Detaillierte Darstellung persönlicher Bestzeiten aufgeteilt nach Modi.
+* **2026-10-30 22:31** (`5247821`) – **Co-Op Dual-Board-Sieg, Dual-Lösungsinspektion & Multi-Difficulty Leaderboards**
+  - **Echte Dual-Board-Siegbedingung:** Im Co-Op Swap ist das Spiel erst gewonnen, wenn *beide* Boards (Board A und Board B) vollständig gelöst wurden (`swapBoardSolved.A && swapBoardSolved.B`).
+  - **Dual-Board-Inspektion:** Nach Spielende können beide Boards über Tabs („Board A“ / „Board B“) im fertigen oder aufgedeckten Zustand separat begutachtet werden.
+  - **Vollständige Bestzeiten-Matrix:** Aufteilung und Speicherung persönlicher Bestzeiten nach Schwierigkeitsgraden (Einfach, Mittel, Schwer) über alle drei Modi hinweg (Einzelspieler, Versus, Co-Op Swap).
+  - **PostgreSQL RLS- & Username-Fix:** Robuste `INSERT/UPDATE`-Policy für Profile und Verhinderung des Überschreibens von Benutzernamen durch Dummy-Werte beim Score-Upload.

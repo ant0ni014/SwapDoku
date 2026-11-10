@@ -102,3 +102,31 @@ Dieses Dokument dient als zentrale Wissensbasis für die wissenschaftliche Semin
 - **Problem:** Ein Spieler verlor nur dann ein Leben, wenn er eine falsche Zahl in eine *leere* Zelle eintrug. Überschrieb er eine bereits falsch gesetzte Zelle mit einer weiteren falschen Zelle, wurde kein Leben abgezogen.
 - **Ursache:** Die Validierungsprüfung enthielt eine Bedingung `if (prevVal === 0)`, die bereits belegte Zellen von der Fehlerstrafe ausschloss.
 - **Lösung:** Vereinheitlichung der Validierungslogik: Jede eingegebene Zahl wird gegen `state.solution[idx]` geprüft. Stimmt der Wert nicht mit der mathematischen Lösung überein, wird ausnahmslos ein Leben abgezogen (`deductLife()`), unabhängig vom vorherigen Inhalt der Zelle.
+
+---
+
+### Herausforderung 13: Verfrühte Siegesmeldung im Co-Op Swap bei nur einem gelösten Board
+- **Problem:** Löst im Co-Op Swap einer der beiden Spieler sein aktuelles Spielfeld (z. B. Board A), wurde fälschlicherweise sofort ein Team-Sieg ausgerufen, obwohl das andere Board (Board B) noch unvollständig war.
+- **Ursache:** Die Sieg-Routine prüfte lediglich das aktive Board des jeweiligen Spielers (`SudokuEngine.isComplete(state.currentBoard, state.solution)`) anstelle des Gesamt-Zustands beider kooperativer Spielfelder.
+- **Lösung:** Einführung eines Dual-Board-Statusobjekts (`swapBoardSolved: { A: false, B: false }`). Ist Board A gelöst, wird dieses fixiert und als gelöst markiert. Der Spieler wechselt automatisch auf Board B, um dem Partner zu helfen. Erst wenn `swapBoardSolved.A === true && swapBoardSolved.B === true` erfüllt ist, wird das Sieges-Overlay `swapTeamWonTitle` getriggert.
+
+---
+
+### Herausforderung 14: Verdeckung mobiler Benachrichtigungen durch Tastatur/Numpad
+- **Problem:** Toast-Nachrichten (z. B. „Board getauscht!“, „Datenschutz gespeichert“) erschienen am unteren Bildschirmrand (`bottom: 24px`) und wurden auf Mobilgeräten oder kleineren Bildschirmen vom virtuellen Ziffernblock oder dem Footer überlagert.
+- **Ursache:** Feste CSS-Positionierung am unteren Viewport-Rand (`position: fixed; bottom: 24px;`).
+- **Lösung:** Verlagerung der Toasts an den oberen Bildschirmrand (`top: 24px; bottom: auto; z-index: 1000;`) mit sanfter Einblendung (`transform: translateX(-50%) translateY(0)`), wodurch Benachrichtigungen immer sofort im Blickfeld liegen.
+
+---
+
+### Herausforderung 15: Überschreiben manueller Benutzernamen beim Score-Upload
+- **Problem:** Wenn ein Spieler im Profil einen Wunschnamen eintrug und danach einen Score einreichte, wurde der Name in der Rangliste gelegentlich wieder durch einen generischen Namen wie `Player_a1b2c3` ersetzt.
+- **Ursache:** Die Stored Procedure `submit_score` in PostgreSQL generierte standardmäßig einen neuen Zufallsnamen, falls kein bestehender Profil-Name abgefragt werden konnte oder die RLS-Policy ein Update blockierte.
+- **Lösung:** Überarbeitung von `schema.sql`: Die Funktion `submit_score` akzeptiert nun optional `p_username`. Mit einem `INSERT ... ON CONFLICT (id) DO UPDATE` wird der vorhandene Benutzername geschützt und nur dann überschrieben, wenn zuvor nur ein Platzhalter hinterlegt war. Zudem wurde eine explizite `INSERT`-Policy für `profiles` ergänzt.
+
+---
+
+### Herausforderung 16: Eingeschränkte Lösungsinspektion nach Co-Op Swap
+- **Problem:** Klickte ein Spieler nach einem Co-Op-Match auf „Lösung anzeigen“, sah er nur das zuletzt von ihm bearbeitete Gitter, konnte aber das zweite Spielfeld seines Partners nicht einsehen.
+- **Ursache:** Die Inspektionsfunktion referenzierte ausschließlich `state.solution` des aktuell aktiven Boards.
+- **Lösung:** Einführung von Inspektions-Tabs („Board A“ / „Board B“) sowohl im Ergebnis-Modal als auch in der oberen Nachspiel-Leiste (`hudResultBar`). Spieler können nun nahtlos zwischen den Original-Lösungen beider kooperativer Rätsel hin- und herschalten.
