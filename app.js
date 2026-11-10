@@ -1089,7 +1089,16 @@ function applyLanguageToDOM() {
   if (dom.accountBestTimeLabel) dom.accountBestTimeLabel.textContent = d.bestTimeLabel;
   if (dom.accountThemeLabel) dom.accountThemeLabel.textContent = d.activeThemeLabel;
   if (dom.accountStatusLabel) dom.accountStatusLabel.textContent = d.statusLabel;
+  if (dom.loggedInAsLabel) dom.loggedInAsLabel.textContent = d.loggedInAs || (state.currentLang === 'de' ? 'Angemeldet als' : 'Signed in as');
   if (dom.btnLogout) dom.btnLogout.textContent = d.logoutBtn;
+  if (dom.btnDeleteAccount) dom.btnDeleteAccount.textContent = state.currentLang === 'de' ? 'Konto löschen' : 'Delete Account';
+  if (dom.btnCancelDeleteAccount) dom.btnCancelDeleteAccount.textContent = state.currentLang === 'de' ? 'Abbrechen' : 'Cancel';
+  if (dom.btnConfirmDeleteAccount) dom.btnConfirmDeleteAccount.textContent = state.currentLang === 'de' ? 'Endgültig löschen' : 'Delete Permanently';
+  if (dom.deleteConfirmText) {
+    dom.deleteConfirmText.textContent = state.currentLang === 'de'
+      ? 'Möchtest du dein Konto und alle deine gespeicherten Bestzeiten unwiderruflich löschen?'
+      : 'Do you really want to permanently delete your account and all saved scores?';
+  }
   if (dom.tabAuthLogin) dom.tabAuthLogin.textContent = d.tabLogin;
   if (dom.tabAuthRegister) dom.tabAuthRegister.textContent = d.tabRegister;
   if (dom.authPassword) dom.authPassword.setAttribute('placeholder', d.passwordPlaceholder);
@@ -1705,7 +1714,7 @@ function handleGameOver() {
   stopSwapCountdown();
   stopStopwatch();
 
-  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
+  if (state.mode === 'versus' && state.channel) {
     broadcast('OPPONENT_ELIMINATED', { username: state.profile.username || 'Spieler' });
   } else if (state.mode === 'swap' && state.channel) {
     broadcast('SWAP_PARTNER_ELIMINATED', { username: state.profile.username || 'Partner' });
@@ -2067,9 +2076,51 @@ function showResultOverlay(isWin, customTitle = null, customDesc = null) {
     if (dom.swapInspectTabs) dom.swapInspectTabs.classList.add('hidden');
   }
 
+  updateRematchButtonUI();
+
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
   dom.boardResultOverlay.classList.remove('hidden');
   dom.boardResultOverlay.style.display = 'flex';
+}
+
+function updateRematchButtonUI() {
+  if (!dom.btnResultNewGame) return;
+  const d = I18N[state.currentLang] || I18N.de;
+  const inLiveRoom = Boolean(state.channel && state.roomCode && !state.peerLeftRoom);
+
+  dom.btnResultNewGame.classList.remove('btn-rematch-ready');
+
+  if (!inLiveRoom) {
+    dom.btnResultNewGame.disabled = false;
+    dom.btnResultNewGame.textContent = d.resBtnNewGame || (state.currentLang === 'de' ? 'Neues Spiel' : 'New Game');
+    if (dom.hudReopenText) dom.hudReopenText.textContent = d.resBtnReopen || (state.currentLang === 'de' ? 'Ergebnis & Stats' : 'Result & Stats');
+    return;
+  }
+
+  if (state.rematchRequestedByMe && !state.rematchRequestedByPeer) {
+    dom.btnResultNewGame.disabled = true;
+    dom.btnResultNewGame.textContent = state.currentLang === 'de'
+      ? (state.mode === 'swap' ? 'Warte auf Partner...' : 'Warte auf Gegner...')
+      : (state.mode === 'swap' ? 'Waiting for partner...' : 'Waiting for opponent...');
+  } else if (!state.rematchRequestedByMe && state.rematchRequestedByPeer) {
+    dom.btnResultNewGame.disabled = false;
+    dom.btnResultNewGame.classList.add('btn-rematch-ready');
+    dom.btnResultNewGame.textContent = state.currentLang === 'de'
+      ? '✓ Rematch annehmen (1/2)'
+      : '✓ Accept Rematch (1/2)';
+    if (dom.hudReopenText) {
+      dom.hudReopenText.textContent = state.currentLang === 'de' ? 'Rematch (1/2)!' : 'Rematch (1/2)!';
+    }
+  } else if (state.rematchRequestedByMe && state.rematchRequestedByPeer) {
+    dom.btnResultNewGame.disabled = true;
+    dom.btnResultNewGame.textContent = state.currentLang === 'de' ? 'Startet...' : 'Starting...';
+  } else {
+    dom.btnResultNewGame.disabled = false;
+    dom.btnResultNewGame.textContent = state.mode === 'swap'
+      ? (state.currentLang === 'de' ? 'Rematch (Team)' : 'Rematch (Team)')
+      : 'Rematch';
+    if (dom.hudReopenText) dom.hudReopenText.textContent = d.resBtnReopen || (state.currentLang === 'de' ? 'Ergebnis & Stats' : 'Result & Stats');
+  }
 }
 
 function showFullSolution() {
@@ -2284,8 +2335,11 @@ async function gameWon(isRemoteTeamWin = false) {
 
   // 3. Versus Broadcast & Account UI
   try {
-    if (state.mode === 'versus' && state.channel && state.opponentType === 'online' && !isRemoteTeamWin) {
-      broadcast('GAME_OVER', { winner: state.user?.id || 'player' });
+    if (state.mode === 'versus' && state.channel && !isRemoteTeamWin) {
+      broadcast('GAME_OVER', {
+        winner: state.user?.id || 'player',
+        username: state.profile.username || 'Gegner'
+      });
     }
     updateAccountUI();
   } catch (_) {}
@@ -2420,7 +2474,8 @@ function setBotDifficulty(diff) {
   }
 }
 
-function setVersusDifficulty(diff) {
+function applySyncedRoomDifficulty(diff) {
+  if (!diff || !['easy', 'medium', 'hard'].includes(diff)) return;
   state.versusDifficulty = diff;
   [dom.versusDiffEasy, dom.versusDiffMedium, dom.versusDiffHard].forEach(b => {
     if (b) b.classList.toggle('active', b.dataset.diff === diff);
@@ -2428,7 +2483,37 @@ function setVersusDifficulty(diff) {
   [dom.onlineDiffEasy, dom.onlineDiffMedium, dom.onlineDiffHard].forEach(b => {
     if (b) b.classList.toggle('active', b.dataset.diff === diff);
   });
-  if (state.mode === 'versus' && state.opponentType === 'bot') {
+}
+
+function setVersusDifficulty(diff) {
+  if (state.channel && state.roomCode) {
+    if (!state.isHost) {
+      toast(state.currentLang === 'de'
+        ? 'Nur der Raum-Ersteller kann die Schwierigkeit ändern.'
+        : 'Only the room host can change the difficulty.');
+      return;
+    }
+    if (state.gameStarted && !state.isGameOver) {
+      toast(state.currentLang === 'de'
+        ? 'Während des laufenden Spiels nicht änderbar.'
+        : 'Cannot change difficulty mid-game.');
+      return;
+    }
+  }
+
+  applySyncedRoomDifficulty(diff);
+
+  if (state.channel && state.roomCode && state.isHost) {
+    broadcast('ROOM_SETTINGS', { difficulty: diff, mode: state.mode });
+    const diffName = diff === 'easy'
+      ? (state.currentLang === 'de' ? 'Einfach' : 'Easy')
+      : (diff === 'hard' ? (state.currentLang === 'de' ? 'Schwer' : 'Hard') : (state.currentLang === 'de' ? 'Mittel' : 'Medium'));
+    toast(state.currentLang === 'de'
+      ? `Schwierigkeit für den Raum auf ${diffName} gestellt.`
+      : `Room difficulty set to ${diffName}.`);
+  }
+
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.opponentType === 'bot') {
     startNewGame();
   }
 }
@@ -2581,8 +2666,15 @@ function hideCountdownOverlaySmoothly() {
   }, 220);
 }
 
-function runMatchCountdown(initialBoard, solution) {
+function runMatchCountdown(initialBoard, solution, difficulty = null) {
   if (countdownTimer) clearInterval(countdownTimer);
+
+  if (difficulty) {
+    applySyncedRoomDifficulty(difficulty);
+  }
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+  state.peerLeftRoom = false;
 
   stopStopwatch();
   stopBot();
@@ -2651,6 +2743,9 @@ function hostStartDuel() {
   if (!state.isHost || !state.channel) return;
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+
   const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
   if (state.mode === 'swap') {
     // Generiere ZWEI voneinander unabhängige Rätsel: Board A und Board B
@@ -2658,27 +2753,35 @@ function hostStartDuel() {
     const puzzleB = SudokuEngine.generate(clues);
 
     broadcast('START_SWAP_COUNTDOWN', {
+      difficulty: state.versusDifficulty,
       puzzleA: { initialBoard: puzzleA.initialBoard, solution: puzzleA.solution },
       puzzleB: { initialBoard: puzzleB.initialBoard, solution: puzzleB.solution }
     });
-    runSwapMatchCountdown(puzzleA, puzzleB, true);
+    runSwapMatchCountdown(puzzleA, puzzleB, true, state.versusDifficulty);
   } else {
-    const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
     const puzzle = SudokuEngine.generate(clues);
 
     broadcast('START_COUNTDOWN', {
+      difficulty: state.versusDifficulty,
       initialBoard: puzzle.initialBoard,
       solution: puzzle.solution
     });
-    runMatchCountdown(puzzle.initialBoard, puzzle.solution);
+    runMatchCountdown(puzzle.initialBoard, puzzle.solution, state.versusDifficulty);
   }
 }
 
-function runSwapMatchCountdown(puzzleA, puzzleB, isHost) {
+function runSwapMatchCountdown(puzzleA, puzzleB, isHost, difficulty = null) {
   if (countdownTimer) {
     clearInterval(countdownTimer);
     countdownTimer = null;
   }
+
+  if (difficulty) {
+    applySyncedRoomDifficulty(difficulty);
+  }
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+  state.peerLeftRoom = false;
 
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
 
@@ -2757,6 +2860,8 @@ function handlePartnerLeft(partnerName) {
   stopSwapCountdown();
   stopStopwatch();
   state.isGameOver = true;
+  state.peerLeftRoom = true;
+  updateRematchButtonUI();
   const d = I18N[state.currentLang] || I18N.de;
   toast(d.toastPartnerLeft || `${partnerName || 'Partner'} hat das Spiel verlassen.`);
   setConnectionStatus('connecting', state.currentLang === 'de' ? 'Partner hat Raum verlassen' : 'Partner left room');
@@ -2806,53 +2911,106 @@ function handleVersusWinByElimination(oppName) {
   state.isGameOver = true;
   stopStopwatch();
   stopBot();
-  recordVersusWin();
 
   const d = I18N[state.currentLang] || I18N.de;
-  if (dom.resultBadge) {
-    dom.resultBadge.style.display = 'none';
-    dom.resultBadge.textContent = '';
-  }
-  if (dom.resultTitle) dom.resultTitle.textContent = d.duelWonTitle || 'Duell gewonnen!';
-  if (dom.resultDesc) dom.resultDesc.textContent = `${oppName || 'Gegner'} ${d.opponentEliminated || 'hat alle 3 Leben verloren!'}`;
-  if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
+  const title = d.duelWonTitle || (state.currentLang === 'de' ? 'Duell gewonnen!' : 'Duel Won!');
+  const desc = `${oppName || 'Gegner'} ${d.opponentEliminated || (state.currentLang === 'de' ? 'hat alle 3 Leben verloren!' : 'lost all 3 lives!')}`;
 
-  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
-  if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
-  if (dom.resStatDiffVal) dom.resStatDiffVal.textContent = 'Versus';
-
-  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
-  dom.boardResultOverlay.classList.remove('hidden');
-  dom.boardResultOverlay.style.display = 'flex';
+  showResultOverlay(true, title, desc);
   toast(d.duelWonTitle || 'Duell gewonnen! ✦');
+
+  try {
+    recordVersusWin();
+    updateAccountUI();
+  } catch (_) {}
 }
 
 function handleVersusWinByForfeit(oppName) {
   if (!state.gameStarted && !state.roomCode) return;
   state.isGameOver = true;
+  state.peerLeftRoom = true;
   stopStopwatch();
   stopBot();
-  recordVersusWin();
 
   const d = I18N[state.currentLang] || I18N.de;
-  if (dom.resultBadge) {
-    dom.resultBadge.style.display = 'none';
-    dom.resultBadge.textContent = '';
-  }
-  if (dom.resultTitle) dom.resultTitle.textContent = d.opponentLeftTitle || 'Sieg durch Aufgabe!';
-  if (dom.resultDesc) dom.resultDesc.textContent = `${oppName || 'Gegner'} ${d.opponentLeftDesc || 'hat das Duell verlassen.'}`;
-  if (dom.btnResultSolution) dom.btnResultSolution.style.display = 'none';
+  const title = d.opponentLeftTitle || (state.currentLang === 'de' ? 'Sieg durch Aufgabe!' : 'Win by Forfeit!');
+  const desc = `${oppName || 'Gegner'} ${d.opponentLeftDesc || (state.currentLang === 'de' ? 'hat das Duell verlassen.' : 'left the duel.')}`;
 
-  const formattedTime = dom.gameTimerDisplay ? dom.gameTimerDisplay.textContent : '00:00';
-  if (dom.resStatTimeVal) dom.resStatTimeVal.textContent = formattedTime;
-  if (dom.resStatDiffVal) dom.resStatDiffVal.textContent = 'Versus';
-
-  if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
-  dom.boardResultOverlay.classList.remove('hidden');
-  dom.boardResultOverlay.style.display = 'flex';
+  showResultOverlay(true, title, desc);
   toast(d.toastOpponentLeft || 'Gegner hat das Duell verlassen.');
-  setConnectionStatus('connecting', 'Gegner hat Raum verlassen');
+  setConnectionStatus('connecting', state.currentLang === 'de' ? 'Gegner hat Raum verlassen' : 'Opponent left room');
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+
+  try {
+    recordVersusWin();
+    updateAccountUI();
+  } catch (_) {}
+}
+
+function handleVersusLostByOpponentSolve(oppName) {
+  state.isGameOver = true;
+  stopStopwatch();
+  stopBot();
+
+  const d = I18N[state.currentLang] || I18N.de;
+  const title = d.duelLostTitle || (state.currentLang === 'de' ? 'Duell verloren' : 'Duel Lost');
+  const desc = state.currentLang === 'de'
+    ? `${oppName || 'Dein Gegner'} hat das Rätsel zuerst gelöst.`
+    : `${oppName || 'Your opponent'} solved the puzzle first.`;
+
+  showResultOverlay(false, title, desc);
+  toast(t('toastOpponentWon'));
+}
+
+function handleRematchButtonClick() {
+  const inLiveRoom = Boolean(state.channel && state.roomCode && !state.peerLeftRoom);
+  if (!inLiveRoom) {
+    startNewGame();
+    return;
+  }
+
+  if (state.rematchRequestedByMe) return;
+  state.rematchRequestedByMe = true;
+
+  if (state.rematchRequestedByPeer) {
+    updateRematchButtonUI();
+    if (state.isHost) {
+      hostStartDuel();
+    } else {
+      broadcast('REMATCH_ACCEPT', { username: state.profile.username || 'Spieler' });
+      toast(state.currentLang === 'de' ? 'Rematch angenommen — Spiel startet!' : 'Rematch accepted — starting match!');
+    }
+  } else {
+    broadcast('REMATCH_REQUEST', { username: state.profile.username || 'Spieler' });
+    updateRematchButtonUI();
+    toast(state.currentLang === 'de' ? 'Rematch-Anfrage gesendet...' : 'Rematch request sent...');
+  }
+}
+
+function handleIncomingRematchRequest(payload) {
+  const peerName = payload?.username || (state.mode === 'swap' ? 'Partner' : 'Gegner');
+  state.rematchRequestedByPeer = true;
+
+  if (state.rematchRequestedByMe) {
+    updateRematchButtonUI();
+    if (state.isHost) {
+      hostStartDuel();
+    }
+    return;
+  }
+
+  updateRematchButtonUI();
+  toast(state.currentLang === 'de'
+    ? `🔄 ${peerName} möchte ein Rematch! Klicke auf „Rematch annehmen“.`
+    : `🔄 ${peerName} wants a rematch! Click "Accept Rematch".`);
+}
+
+function handleIncomingRematchAccept() {
+  state.rematchRequestedByPeer = true;
+  updateRematchButtonUI();
+  if (state.isHost) {
+    hostStartDuel();
+  }
 }
 
 function copyRoomCode() {
@@ -2898,7 +3056,17 @@ async function joinRoom(code, asHost = false) {
   }
 
   leaveRoom();
+  state.opponentType = 'online';
+  if (dom.btnPlayOnline) dom.btnPlayOnline.classList.add('active');
+  if (dom.btnPlayBot) dom.btnPlayBot.classList.remove('active');
+  if (dom.onlineSection) dom.onlineSection.classList.remove('hidden');
+  if (dom.botSection) dom.botSection.classList.add('hidden');
+  updateOpponentLabels();
+
   state.isHost = asHost;
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+  state.peerLeftRoom = false;
   state.roomCode = code.toUpperCase();
   dom.currentRoom.textContent = state.roomCode;
   dom.roomDisplay.classList.remove('hidden');
@@ -2932,9 +3100,11 @@ async function joinRoom(code, asHost = false) {
     const pres = state.channel.presenceState();
     state.peersCount = Object.keys(pres).length;
     
-    if (state.peersCount === 2) {
+    if (state.peersCount >= 2) {
+      state.peerLeftRoom = false;
       if (state.isHost) {
         setConnectionStatus('connected', `2 ${t('playersReady')}`);
+        broadcast('ROOM_SETTINGS', { difficulty: state.versusDifficulty, mode: state.mode });
         if (dom.onlineStartRow) {
           dom.onlineStartRow.classList.remove('hidden');
           if (dom.btnStartDuel) {
@@ -2946,6 +3116,7 @@ async function joinRoom(code, asHost = false) {
       } else {
         setConnectionStatus('connected', `2 ${t('playersReady')} — ${t('waitingForHost')}`);
         if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
+        broadcast('REQUEST_ROOM_SETTINGS', {});
         toast(t('waitingForHost'));
       }
     } else {
@@ -2958,11 +3129,21 @@ async function joinRoom(code, asHost = false) {
   });
 
   state.channel
+    .on('broadcast', { event: 'ROOM_SETTINGS' }, ({ payload }) => {
+      if (!state.isHost && payload?.difficulty) {
+        applySyncedRoomDifficulty(payload.difficulty);
+      }
+    })
+    .on('broadcast', { event: 'REQUEST_ROOM_SETTINGS' }, () => {
+      if (state.isHost) {
+        broadcast('ROOM_SETTINGS', { difficulty: state.versusDifficulty, mode: state.mode });
+      }
+    })
     .on('broadcast', { event: 'START_COUNTDOWN' }, ({ payload }) => {
-      runMatchCountdown(payload.initialBoard, payload.solution);
+      runMatchCountdown(payload.initialBoard, payload.solution, payload.difficulty);
     })
     .on('broadcast', { event: 'START_SWAP_COUNTDOWN' }, ({ payload }) => {
-      runSwapMatchCountdown(payload.puzzleA, payload.puzzleB, false);
+      runSwapMatchCountdown(payload.puzzleA, payload.puzzleB, false, payload.difficulty);
     })
     .on('broadcast', { event: 'SWAP_TICK' }, ({ payload }) => {
       if (payload && payload.secondsLeft !== undefined) {
@@ -2988,6 +3169,12 @@ async function joinRoom(code, asHost = false) {
     .on('broadcast', { event: 'SWAP_TEAM_WON' }, ({ payload }) => {
       handleSwapTeamWon(payload);
     })
+    .on('broadcast', { event: 'REMATCH_REQUEST' }, ({ payload }) => {
+      handleIncomingRematchRequest(payload);
+    })
+    .on('broadcast', { event: 'REMATCH_ACCEPT' }, () => {
+      handleIncomingRematchAccept();
+    })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
       if (state.mode === 'swap') {
         handlePartnerLeft(payload?.username || 'Partner');
@@ -3006,14 +3193,17 @@ async function joinRoom(code, asHost = false) {
       dom.opponentBar.style.width = `${pct}%`;
       dom.opponentLabel.textContent = `${pct}%`;
     })
-    .on('broadcast', { event: 'GAME_OVER' }, () => {
-      toast(t('toastOpponentWon'));
+    .on('broadcast', { event: 'GAME_OVER' }, ({ payload }) => {
+      handleVersusLostByOpponentSolve(payload?.username || 'Gegner');
     });
 
   state.channel.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
       setConnectionStatus('connected', t('statusConnected'));
-      await state.channel.track({ user: state.user?.id });
+      await state.channel.track({ user: state.user?.id || Math.random().toString(36).slice(2) });
+      if (!state.isHost) {
+        broadcast('REQUEST_ROOM_SETTINGS', {});
+      }
     }
   });
 }
@@ -3039,6 +3229,9 @@ function leaveRoom() {
   state.roomCode = null;
   state.isHost = false;
   state.peersCount = 0;
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+  state.peerLeftRoom = false;
   if (state.mode === 'swap') {
     state.activeBoard = 'A';
     updateSwapVisualTheme();
@@ -3594,6 +3787,7 @@ async function renderLeaderboard() {
 // ACCOUNT & PROFIL MODAL
 // =============================================================================
 function openAccount() {
+  toggleDeleteAccountConfirm(false);
   updateAccountUI();
   clearAuthMsg();
   dom.accountModal.classList.remove('hidden');
@@ -3775,6 +3969,7 @@ async function registerUser(email, password) {
 }
 
 async function logoutUser() {
+  if (dom.deleteAccountConfirmBox) dom.deleteAccountConfirmBox.classList.add('hidden');
   if (!state.isOffline && state.supabase && !SUPABASE_CONFIG.url.includes('xyzcompany')) {
     try { await state.supabase.auth.signOut(); } catch (_) {}
   }
@@ -3783,6 +3978,71 @@ async function logoutUser() {
   localStorage.removeItem('swapdoku_auth_email');
   toast(state.currentLang === 'de' ? 'Erfolgreich abgemeldet' : 'Logged out successfully');
   updateAccountUI();
+}
+
+function toggleDeleteAccountConfirm(show) {
+  if (!dom.deleteAccountConfirmBox) return;
+  dom.deleteAccountConfirmBox.classList.toggle('hidden', !show);
+}
+
+async function deleteOwnAccount() {
+  const userId = state.user?.id;
+  const currentEmail = state.authEmail || state.user?.email;
+
+  if (dom.btnConfirmDeleteAccount) {
+    dom.btnConfirmDeleteAccount.disabled = true;
+    dom.btnConfirmDeleteAccount.textContent = state.currentLang === 'de' ? 'Wird gelöscht...' : 'Deleting...';
+  }
+
+  try {
+    if (!state.isOffline && state.supabase && userId) {
+      // 1. Primär: Server-RPC delete_own_account (löscht Profil, Scores, Themes & Auth-User)
+      const { error: rpcErr } = await state.supabase.rpc('delete_own_account');
+      if (rpcErr) {
+        // Fallback: Profildaten direkt entfernen, falls RPC noch nicht deployed ist
+        await state.supabase.from('leaderboard_scores').delete().eq('user_id', userId);
+        await state.supabase.from('unlocked_themes').delete().eq('user_id', userId);
+        await state.supabase.from('profiles').delete().eq('id', userId);
+      }
+      try { await state.supabase.auth.signOut(); } catch (_) {}
+    }
+
+    // Lokale Konto- & Bestzeitdaten vollständig bereinigen
+    if (currentEmail) {
+      const saved = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
+      delete saved[currentEmail];
+      localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(saved));
+    }
+    localStorage.removeItem('swapdoku_auth_email');
+    localStorage.removeItem('swapdoku_state');
+    localStorage.removeItem('swapdoku_versus_wins');
+    localStorage.removeItem('swapdoku_leaderboards_v4');
+
+    state.user = null;
+    state.authEmail = null;
+    state.profile = {
+      username: 'Spieler',
+      sync_points: 0,
+      versus_wins: 0,
+      active_theme: 'nordic-light',
+      unlocked_themes: ['nordic-light', 'dark-slate', 'matcha-paper', 'nordic-frost', 'warm-sunset', 'lavender-dream']
+    };
+
+    toggleDeleteAccountConfirm(false);
+    setTheme('nordic-light');
+    updateAccountUI();
+    renderLeaderboard();
+    closeAccount();
+    toast(state.currentLang === 'de' ? 'Konto und Daten wurden gelöscht.' : 'Account and data deleted.');
+  } catch (err) {
+    console.warn('deleteOwnAccount error:', err);
+    toast(state.currentLang === 'de' ? 'Fehler beim Löschen des Kontos.' : 'Error deleting account.');
+  } finally {
+    if (dom.btnConfirmDeleteAccount) {
+      dom.btnConfirmDeleteAccount.disabled = false;
+      dom.btnConfirmDeleteAccount.textContent = state.currentLang === 'de' ? 'Endgültig löschen' : 'Delete Permanently';
+    }
+  }
 }
 
 async function saveUsername() {
@@ -3978,7 +4238,7 @@ function bindEvents() {
   if (dom.pauseOverlay) dom.pauseOverlay.addEventListener('click', resumeGame);
 
   // Board Result Overlay
-  if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', () => startNewGame());
+  if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', handleRematchButtonClick);
   if (dom.btnResultSolution) dom.btnResultSolution.addEventListener('click', showFullSolution);
   if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
   if (dom.btnInspectBoardA) dom.btnInspectBoardA.addEventListener('click', () => showSwapInspectionBoard('A'));
@@ -4016,6 +4276,9 @@ function bindEvents() {
     handleAuthSubmit();
   });
   if (dom.btnLogout) dom.btnLogout.addEventListener('click', logoutUser);
+  if (dom.btnDeleteAccount) dom.btnDeleteAccount.addEventListener('click', () => toggleDeleteAccountConfirm(true));
+  if (dom.btnCancelDeleteAccount) dom.btnCancelDeleteAccount.addEventListener('click', () => toggleDeleteAccountConfirm(false));
+  if (dom.btnConfirmDeleteAccount) dom.btnConfirmDeleteAccount.addEventListener('click', deleteOwnAccount);
 
   // Spielregeln Info Button
   dom.helpModeBtn.addEventListener('click', showModeRules);
