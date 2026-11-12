@@ -270,8 +270,8 @@ body {
   max-width: 344px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 14px;
   padding-top: 0;
 }
 
