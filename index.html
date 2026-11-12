@@ -167,6 +167,7 @@
                     </div>
                   </div>
                   <button class="btn btn-primary" id="btnResultNewGame">Neues Spiel</button>
+                  <button class="btn btn-secondary hidden" id="btnResultDeclineRematch">Rematch ablehnen</button>
                   <div class="result-sub-actions">
                     <button class="btn btn-secondary" id="btnResultSolution">Lösung anzeigen</button>
                     <button class="btn btn-secondary" id="btnResultInspect">Feld ansehen</button>
@@ -281,14 +282,8 @@
           </section>
         </section>
 
-        <!-- Steuerung & Zahlen rechts unter den Modi -->
+        <!-- Steuerung & Zahlen rechts direkt unter den Schwierigkeitsgraden / Optionen -->
         <section class="controls">
-          <div class="toolbar">
-            <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
-            <button class="tool-btn" id="btnHint" title="Einen Tipp erhalten">Tipp (<span id="hintCount">3</span>)</button>
-            <button class="tool-btn" id="btnErase">Löschen</button>
-          </div>
-
           <div class="numpad" id="numpad">
             <button class="num" data-num="1">1</button>
             <button class="num" data-num="2">2</button>
@@ -299,6 +294,12 @@
             <button class="num" data-num="7">7</button>
             <button class="num" data-num="8">8</button>
             <button class="num" data-num="9">9</button>
+          </div>
+
+          <div class="toolbar">
+            <button class="tool-btn" id="btnNotes">Notizen: Aus</button>
+            <button class="tool-btn" id="btnHint" title="Einen Tipp erhalten">Tipp (<span id="hintCount">3</span>)</button>
+            <button class="tool-btn" id="btnErase">Löschen</button>
           </div>
         </section>
       </aside>

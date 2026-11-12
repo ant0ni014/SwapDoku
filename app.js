@@ -148,6 +148,7 @@ const I18N = {
     resTitleGameOver: 'Game Over',
     resDescGameOver: 'Alle 3 Leben aufgebraucht.',
     resBtnNewGame: 'Neues Spiel',
+    resBtnDeclineRematch: 'Rematch ablehnen',
     resBtnSolution: 'Lösung anzeigen',
     resBtnInspect: 'Feld ansehen',
     resBtnReopen: 'Ergebnis & Stats',
@@ -338,6 +339,7 @@ const I18N = {
     resTitleGameOver: 'Game Over',
     resDescGameOver: 'All 3 attempts used up.',
     resBtnNewGame: 'New Game',
+    resBtnDeclineRematch: 'Decline Rematch',
     resBtnSolution: 'Show Solution',
     resBtnInspect: 'View Board',
     resBtnReopen: 'Results & Stats',
@@ -942,6 +944,7 @@ const dom = {
   resStatDiffLbl: document.getElementById('resStatDiffLbl'),
   resStatDiffVal: document.getElementById('resStatDiffVal'),
   btnResultNewGame: document.getElementById('btnResultNewGame'),
+  btnResultDeclineRematch: document.getElementById('btnResultDeclineRematch'),
   btnResultSolution: document.getElementById('btnResultSolution'),
   btnResultInspect: document.getElementById('btnResultInspect'),
   swapInspectTabs: document.getElementById('swapInspectTabs'),
@@ -2130,8 +2133,15 @@ function updateRematchButtonUI() {
   if (!inLiveRoom) {
     dom.btnResultNewGame.disabled = false;
     dom.btnResultNewGame.textContent = d.resBtnNewGame || (state.currentLang === 'de' ? 'Neues Spiel' : 'New Game');
+    if (dom.btnResultDeclineRematch) dom.btnResultDeclineRematch.classList.add('hidden');
     if (dom.hudReopenText) dom.hudReopenText.textContent = d.resBtnReopen || (state.currentLang === 'de' ? 'Ergebnis & Stats' : 'Result & Stats');
     return;
+  }
+
+  // Ablehnen-Button anzeigen, solange man sich im Live-Raum nach Spielende befindet
+  if (dom.btnResultDeclineRematch) {
+    dom.btnResultDeclineRematch.classList.remove('hidden');
+    dom.btnResultDeclineRematch.textContent = d.resBtnDeclineRematch || (state.currentLang === 'de' ? 'Rematch ablehnen' : 'Decline Rematch');
   }
 
   if (state.rematchRequestedByMe && !state.rematchRequestedByPeer) {
@@ -2151,6 +2161,7 @@ function updateRematchButtonUI() {
   } else if (state.rematchRequestedByMe && state.rematchRequestedByPeer) {
     dom.btnResultNewGame.disabled = true;
     dom.btnResultNewGame.textContent = state.currentLang === 'de' ? 'Startet...' : 'Starting...';
+    if (dom.btnResultDeclineRematch) dom.btnResultDeclineRematch.classList.add('hidden');
   } else {
     dom.btnResultNewGame.disabled = false;
     dom.btnResultNewGame.textContent = state.mode === 'swap'
@@ -3050,6 +3061,31 @@ function handleIncomingRematchAccept() {
   }
 }
 
+function handleDeclineRematchClick() {
+  const inLiveRoom = Boolean(state.channel && state.roomCode && !state.peerLeftRoom);
+  if (inLiveRoom) {
+    try {
+      broadcast('REMATCH_DECLINE', { username: state.profile.username || 'Spieler' });
+    } catch (_) {}
+    leaveRoom();
+  }
+  state.rematchRequestedByMe = false;
+  state.rematchRequestedByPeer = false;
+  updateRematchButtonUI();
+  toast(state.currentLang === 'de' ? 'Rematch abgelehnt. Raum verlassen.' : 'Rematch declined. Left room.');
+}
+
+function handleIncomingRematchDecline(payload) {
+  const peerName = payload?.username || (state.mode === 'swap' ? 'Partner' : 'Gegner');
+  state.rematchRequestedByPeer = false;
+  state.rematchRequestedByMe = false;
+  state.peerLeftRoom = true;
+  updateRematchButtonUI();
+  toast(state.currentLang === 'de'
+    ? `✕ ${peerName} hat das Rematch abgelehnt.`
+    : `✕ ${peerName} declined the rematch.`);
+}
+
 function copyRoomCode() {
   const code = state.roomCode || (dom.currentRoom ? dom.currentRoom.textContent.trim() : '');
   if (!code || code === '----') return;
@@ -3211,6 +3247,9 @@ async function joinRoom(code, asHost = false) {
     })
     .on('broadcast', { event: 'REMATCH_ACCEPT' }, () => {
       handleIncomingRematchAccept();
+    })
+    .on('broadcast', { event: 'REMATCH_DECLINE' }, ({ payload }) => {
+      handleIncomingRematchDecline(payload);
     })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
       if (state.mode === 'swap') {
@@ -4293,6 +4332,7 @@ function bindEvents() {
 
   // Board Result Overlay
   if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', handleRematchButtonClick);
+  if (dom.btnResultDeclineRematch) dom.btnResultDeclineRematch.addEventListener('click', handleDeclineRematchClick);
   if (dom.btnResultSolution) dom.btnResultSolution.addEventListener('click', showFullSolution);
   if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
   if (dom.btnInspectBoardA) dom.btnInspectBoardA.addEventListener('click', () => showSwapInspectionBoard('A'));
