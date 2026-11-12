@@ -248,7 +248,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 32px;
   padding-top: 6px;
@@ -259,6 +259,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   min-width: 0;
 }
@@ -269,6 +270,7 @@ body {
   max-width: 344px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   gap: 16px;
   padding-top: 0;
 }
@@ -632,9 +634,11 @@ body {
 .hud {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: 4px;
   width: 100%;
   max-width: min(520px, 70vh);
+  min-height: 52px;
 }
 
 .hud-main-row {
@@ -1322,6 +1326,10 @@ body {
 
   .sidebar-column {
     display: contents;
+  }
+
+  .hud {
+    min-height: auto;
   }
 
   .game-options {
