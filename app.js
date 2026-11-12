@@ -1331,35 +1331,64 @@ async function syncProfileFromDB() {
   }
 }
 
+function isUserLoggedIn() {
+  return Boolean(state.user || state.authEmail || localStorage.getItem('swapdoku_auth_email'));
+}
+
+function getGuestUsername() {
+  let guestName = localStorage.getItem('swapdoku_guest_name');
+  if (!guestName || guestName === 'Spieler' || guestName === 'Player') {
+    const num = Math.floor(1000 + Math.random() * 9000);
+    guestName = `Spieler #${num}`;
+    localStorage.setItem('swapdoku_guest_name', guestName);
+  }
+  return guestName;
+}
+
+function getLeaderboardStorageKey() {
+  return isUserLoggedIn() ? 'swapdoku_leaderboards_v4' : 'swapdoku_guest_leaderboards';
+}
+
+function getVersusWinsStorageKey() {
+  return isUserLoggedIn() ? 'swapdoku_versus_wins' : 'swapdoku_guest_wins';
+}
+
 function loadLocalState() {
-  state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_versus_wins') || '0', 10);
   const savedEmail = localStorage.getItem('swapdoku_auth_email');
   if (savedEmail) {
     state.authEmail = savedEmail;
+    state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_versus_wins') || '0', 10);
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
     if (accounts[savedEmail]) {
       state.profile = { ...state.profile, ...accounts[savedEmail] };
     }
-  }
-  const saved = localStorage.getItem('swapdoku_state');
-  if (saved) {
-    try { 
-      const parsed = JSON.parse(saved);
-      if (parsed.username && parsed.username !== 'Spieler') {
-        state.profile.username = parsed.username;
-      }
-      if (parsed.active_theme) {
-        state.profile.active_theme = parsed.active_theme;
-      }
-    } catch (_) {}
+    const saved = localStorage.getItem('swapdoku_state');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.username && parsed.username !== 'Spieler') {
+          state.profile.username = parsed.username;
+        }
+        if (parsed.active_theme) {
+          state.profile.active_theme = parsed.active_theme;
+        }
+      } catch (_) {}
+    }
+  } else {
+    state.profile.username = getGuestUsername();
+    state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_guest_wins') || '0', 10);
+    const savedGuestTheme = localStorage.getItem('swapdoku_guest_theme');
+    if (savedGuestTheme) {
+      state.profile.active_theme = savedGuestTheme;
+    }
   }
   setTheme(state.profile.active_theme);
 }
 
 function saveLocalState() {
-  localStorage.setItem('swapdoku_state', JSON.stringify(state.profile));
   const currentEmail = state.authEmail || state.user?.email;
   if (currentEmail) {
+    localStorage.setItem('swapdoku_state', JSON.stringify(state.profile));
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
     accounts[currentEmail] = {
       ...(accounts[currentEmail] || {}),
@@ -1367,6 +1396,14 @@ function saveLocalState() {
       active_theme: state.profile.active_theme
     };
     localStorage.setItem('swapdoku_saved_profiles', JSON.stringify(accounts));
+  } else {
+    if (state.profile.username) {
+      localStorage.setItem('swapdoku_guest_name', state.profile.username);
+    }
+    if (state.profile.active_theme) {
+      localStorage.setItem('swapdoku_guest_theme', state.profile.active_theme);
+    }
+    localStorage.setItem('swapdoku_guest_wins', String(state.profile.versus_wins || 0));
   }
 }
 
@@ -2607,7 +2644,7 @@ function updateOpponentLabels() {
 
 function recordVersusWin() {
   state.profile.versus_wins = (state.profile.versus_wins || 0) + 1;
-  localStorage.setItem('swapdoku_versus_wins', state.profile.versus_wins.toString());
+  localStorage.setItem(getVersusWinsStorageKey(), state.profile.versus_wins.toString());
 
   const boards = loadSavedLeaderboards();
   const vList = boards['versus_wins'] || [];
@@ -3442,7 +3479,8 @@ function loadSavedLeaderboards() {
     return arr.filter(e => e && e.id && !e.id.startsWith('bot-') && typeof e.time === 'number' && e.time > 0);
   };
 
-  const saved = localStorage.getItem('swapdoku_leaderboards_v4');
+  const storageKey = getLeaderboardStorageKey();
+  const saved = localStorage.getItem(storageKey);
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
@@ -3454,25 +3492,27 @@ function loadSavedLeaderboards() {
   }
 
   // Einmalige Bereinigung: Entfernt alle alten Dummy-Bots aus v3
-  const oldV3 = localStorage.getItem('swapdoku_leaderboards_v3');
-  if (oldV3) {
-    try {
-      const parsed = JSON.parse(oldV3);
-      const cleaned = {};
-      for (const k in parsed) {
-        cleaned[k] = cleanList(parsed[k]);
-      }
-      localStorage.setItem('swapdoku_leaderboards_v4', JSON.stringify(cleaned));
-      localStorage.removeItem('swapdoku_leaderboards_v3');
-      return cleaned;
-    } catch (_) {}
+  if (isUserLoggedIn()) {
+    const oldV3 = localStorage.getItem('swapdoku_leaderboards_v3');
+    if (oldV3) {
+      try {
+        const parsed = JSON.parse(oldV3);
+        const cleaned = {};
+        for (const k in parsed) {
+          cleaned[k] = cleanList(parsed[k]);
+        }
+        localStorage.setItem(storageKey, JSON.stringify(cleaned));
+        localStorage.removeItem('swapdoku_leaderboards_v3');
+        return cleaned;
+      } catch (_) {}
+    }
   }
 
   return {};
 }
 
 function saveLeaderboards(data) {
-  localStorage.setItem('swapdoku_leaderboards_v4', JSON.stringify(data));
+  localStorage.setItem(getLeaderboardStorageKey(), JSON.stringify(data));
 }
 
 async function syncScoreToSupabase(mode, diff, seconds, remainingLives, playerName) {
@@ -3725,7 +3765,9 @@ async function renderLeaderboard() {
     }
 
     items.forEach((entry, idx) => {
-      const isMe = entry.id === 'player-me' || (state.user && entry.user_id === state.user.id) || entry.username === myName;
+      const isMe = entry.id === 'player-me'
+        || (state.user && entry.user_id === state.user.id)
+        || (!entry.user_id && entry.username === myName);
       const rank = idx + 1;
       const tr = document.createElement('tr');
       if (isMe) tr.className = 'my-row';
@@ -3752,22 +3794,24 @@ async function renderLeaderboard() {
         .limit(100);
 
       if (!error && data && data.length > 0) {
-        // Pro Spieler (user_id oder username) nur die schnellste Bestzeit anzeigen
+        // Pro Spieler nur die schnellste Bestzeit anzeigen; anonyme Gäste ohne eindeutigen Namen nicht zusammenwerfen
         const bestByPlayer = new Map();
         for (const row of data) {
-          const playerKey = row.user_id || `name:${(row.username || 'Spieler').toLowerCase()}`;
+          const uname = (row.username || 'Spieler').trim();
+          const isGenericGuest = !row.user_id && (uname.toLowerCase() === 'spieler' || uname.toLowerCase() === 'player');
+          const playerKey = row.user_id || (isGenericGuest ? `guest-row:${row.id}` : `name:${uname.toLowerCase()}`);
           if (!bestByPlayer.has(playerKey)) {
             bestByPlayer.set(playerKey, {
               id: row.id,
               user_id: row.user_id,
-              username: row.username || 'Spieler',
+              username: uname,
               time: row.time_seconds
             });
           }
         }
         const onlineList = Array.from(bestByPlayer.values()).slice(0, 20);
 
-        const myOnlineEntry = onlineList.find(e => (state.user && e.user_id === state.user.id) || e.username === myName);
+        const myOnlineEntry = onlineList.find(e => (state.user && e.user_id === state.user.id) || (!e.user_id && e.username === myName));
         if (myOnlineEntry && dom.myRankTime) {
           const bestLocal = myEntry ? Math.min(myEntry.time, myOnlineEntry.time) : myOnlineEntry.time;
           dom.myRankTime.textContent = formatTime(bestLocal);
@@ -3976,8 +4020,18 @@ async function logoutUser() {
   state.user = null;
   state.authEmail = null;
   localStorage.removeItem('swapdoku_auth_email');
+  localStorage.removeItem('swapdoku_state');
+  localStorage.removeItem('swapdoku_versus_wins');
+  localStorage.removeItem('swapdoku_leaderboards_v4');
+  state.profile = {
+    username: getGuestUsername(),
+    active_theme: localStorage.getItem('swapdoku_guest_theme') || state.profile.active_theme || 'nordic-light',
+    versus_wins: parseInt(localStorage.getItem('swapdoku_guest_wins') || '0', 10)
+  };
+  setTheme(state.profile.active_theme);
   toast(state.currentLang === 'de' ? 'Erfolgreich abgemeldet' : 'Logged out successfully');
   updateAccountUI();
+  renderLeaderboard();
 }
 
 function toggleDeleteAccountConfirm(show) {
