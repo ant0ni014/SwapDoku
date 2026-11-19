@@ -7,56 +7,72 @@ const SUPABASE_CONFIG = {
   anonKey: window.__SUPABASE_ANON_KEY__ || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZtaXF2anFhanF6bXhhYm1va2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMzNjAzMDQsImV4cCI6MjEwODkzNjMwNH0.PG1lVKeI0i9EyrRT_W_7sftK3tvvpy7M3T5UQairlzM'
 };
 
-const THEMES = [
-  { 
-    id: 'nordic-light', 
-    name: 'Nordic Light', 
-    cost: 0, 
-    colors: ['#f8fafc', '#ffffff', '#2563eb'],
-    descDe: 'Klassisches Weiß & Schiefergrau',
-    descEn: 'Classic crisp white & slate'
-  },
-  { 
-    id: 'dark-slate', 
-    name: 'Dark Slate', 
-    cost: 0, 
-    colors: ['#090d16', '#111827', '#38bdf8'],
-    descDe: 'Elegantes Mitternachtsschwarz',
-    descEn: 'Sleek midnight dark mode'
-  },
-  { 
-    id: 'matcha-paper', 
-    name: 'Matcha Green', 
-    cost: 0, 
-    colors: ['#e3ede5', '#f2f7f3', '#1e7046'],
-    descDe: 'Beruhigendes Salbei & Waldgrün',
-    descEn: 'Soothing sage & forest green'
-  },
-  { 
-    id: 'nordic-frost', 
-    name: 'Ocean Frost', 
-    cost: 0, 
-    colors: ['#dbeafe', '#eff6ff', '#0284c7'],
+const THEME_ACCENTS = [
+  {
+    key: 'ocean',
+    nameDe: 'Ocean Frost',
+    nameEn: 'Ocean Frost',
     descDe: 'Kühles Arktik- & Ozeanblau',
-    descEn: 'Crisp glacier & ocean blue'
+    descEn: 'Crisp glacier & ocean blue',
+    lightId: 'light-ocean',
+    darkId: 'dark-ocean',
+    lightColors: ['#f8fafc', '#ffffff', '#0284c7'],
+    darkColors: ['#090d16', '#111827', '#38bdf8']
   },
-  { 
-    id: 'warm-sunset', 
-    name: 'Sunset Amber', 
-    cost: 0, 
-    colors: ['#fbe6db', '#fff5ef', '#c2410c'],
+  {
+    key: 'matcha',
+    nameDe: 'Matcha Green',
+    nameEn: 'Matcha Green',
+    descDe: 'Beruhigendes Salbei & Waldgrün',
+    descEn: 'Soothing sage & forest green',
+    lightId: 'light-matcha',
+    darkId: 'dark-matcha',
+    lightColors: ['#f2f7f3', '#ffffff', '#1e7046'],
+    darkColors: ['#07150c', '#0e2417', '#34d399']
+  },
+  {
+    key: 'sunset',
+    nameDe: 'Sunset Amber',
+    nameEn: 'Sunset Amber',
     descDe: 'Warme Pfirsich- & Terracotta-Töne',
-    descEn: 'Warm apricot & terracotta glow'
+    descEn: 'Warm apricot & terracotta glow',
+    lightId: 'light-sunset',
+    darkId: 'dark-sunset',
+    lightColors: ['#fdf5f0', '#ffffff', '#ea580c'],
+    darkColors: ['#140b06', '#22120a', '#fb923c']
   },
-  { 
-    id: 'lavender-dream', 
-    name: 'Lavender Dream', 
-    cost: 0, 
-    colors: ['#ede7f6', '#f8f5fc', '#7c3aed'],
+  {
+    key: 'lavender',
+    nameDe: 'Lavender Dream',
+    nameEn: 'Lavender Dream',
     descDe: 'Elegantes Pastell-Lavendel & Violett',
-    descEn: 'Dreamy pastel lavender & violet'
+    descEn: 'Dreamy pastel lavender & violet',
+    lightId: 'light-lavender',
+    darkId: 'dark-lavender',
+    lightColors: ['#f7f4fb', '#ffffff', '#7c3aed'],
+    darkColors: ['#0f0a17', '#1a1226', '#a855f7']
   }
 ];
+
+// Hilfsfunktion zur Normalisierung von Theme-IDs
+function parseThemeId(id) {
+  if (!id) return { mode: 'light', accent: 'ocean' };
+  if (id === 'dark-slate') return { mode: 'dark', accent: 'ocean' };
+  if (id === 'matcha-paper') return { mode: 'light', accent: 'matcha' };
+  if (id === 'nordic-frost' || id === 'nordic-light') return { mode: 'light', accent: 'ocean' };
+  if (id === 'warm-sunset') return { mode: 'light', accent: 'sunset' };
+  if (id === 'lavender-dream') return { mode: 'light', accent: 'lavender' };
+
+  const parts = id.split('-');
+  if (parts.length === 2 && (parts[0] === 'light' || parts[0] === 'dark')) {
+    return { mode: parts[0], accent: parts[1] };
+  }
+  return { mode: 'light', accent: 'ocean' };
+}
+
+function buildThemeId(mode, accent) {
+  return `${mode}-${accent}`;
+}
 
 // =============================================================================
 // I18N SPRACHPAKETE (DEUTSCH & ENGLISCH)
@@ -790,6 +806,10 @@ const dom = {
   closeShop: document.getElementById('closeShopBtn'),
   shopModal: document.getElementById('themeModal'),
   themesList: document.getElementById('themesContainer'),
+  btnThemeModeLight: document.getElementById('btnThemeModeLight'),
+  btnThemeModeDark: document.getElementById('btnThemeModeDark'),
+  themeModeLightLabel: document.getElementById('themeModeLightLabel'),
+  themeModeDarkLabel: document.getElementById('themeModeDarkLabel'),
   
   // Leaderboard Modal
   leaderboardModal: document.getElementById('leaderboardModal'),
@@ -4487,11 +4507,14 @@ async function saveUsername() {
 }
 
 // =============================================================================
-// THEMES & KOSTENLOSER THEME SHOP
+// THEMES & KOSTENLOSER THEME SHOP: HELL / DUNKEL × 4 FARBEN
 // =============================================================================
 function setTheme(id) {
-  dom.root.setAttribute('data-theme', id);
-  updateThemeToggleIcon(id);
+  const { mode, accent } = parseThemeId(id);
+  const normalizedId = buildThemeId(mode, accent);
+
+  dom.root.setAttribute('data-theme', normalizedId);
+  updateThemeToggleIcon(normalizedId);
   
   // Browser theme-color Meta-Tag synchronisieren
   let metaTheme = document.querySelector('meta[name="theme-color"]');
@@ -4500,54 +4523,70 @@ function setTheme(id) {
     metaTheme.name = 'theme-color';
     document.head.appendChild(metaTheme);
   }
-  const themeObj = THEMES.find(t => t.id === id);
-  if (themeObj && themeObj.colors) {
-    metaTheme.content = themeObj.colors[0];
+  const accentObj = THEME_ACCENTS.find(a => a.key === accent) || THEME_ACCENTS[0];
+  const colors = mode === 'dark' ? accentObj.darkColors : accentObj.lightColors;
+  if (colors && colors[0]) {
+    metaTheme.content = colors[0];
   }
 }
 
 function toggleDarkLight() {
-  const current = dom.root.getAttribute('data-theme') || 'nordic-light';
-  const newTheme = current === 'dark-slate' ? 'nordic-light' : 'dark-slate';
-  activateTheme(newTheme);
+  const { mode, accent } = parseThemeId(state.profile.active_theme);
+  const newMode = mode === 'dark' ? 'light' : 'dark';
+  activateTheme(buildThemeId(newMode, accent));
 }
 
 function updateThemeToggleIcon(themeId) {
+  const { mode } = parseThemeId(themeId);
   if (dom.themeToggleIcon) {
-    dom.themeToggleIcon.textContent = themeId === 'dark-slate' ? '☼' : '☾';
+    dom.themeToggleIcon.textContent = mode === 'dark' ? '☼' : '☾';
   }
 }
 
 function renderThemeShop() {
   const d = I18N[state.currentLang] || I18N.de;
+  if (!dom.themesList) return;
   dom.themesList.innerHTML = '';
 
-  THEMES.forEach(t => {
-    const isActive = state.profile.active_theme === t.id;
-    const desc = state.currentLang === 'de' ? t.descDe : t.descEn;
+  const { mode: currentMode, accent: currentAccent } = parseThemeId(state.profile.active_theme);
+
+  // Modus-Segment-Buttons (Hell / Dunkel) aktualisieren
+  if (dom.btnThemeModeLight && dom.btnThemeModeDark) {
+    dom.btnThemeModeLight.classList.toggle('active', currentMode === 'light');
+    dom.btnThemeModeDark.classList.toggle('active', currentMode === 'dark');
+    if (dom.themeModeLightLabel) dom.themeModeLightLabel.textContent = state.currentLang === 'de' ? 'Hell' : 'Light';
+    if (dom.themeModeDarkLabel) dom.themeModeDarkLabel.textContent = state.currentLang === 'de' ? 'Dunkel' : 'Dark';
+  }
+
+  THEME_ACCENTS.forEach(item => {
+    const isSelected = item.key === currentAccent;
+    const name = state.currentLang === 'de' ? item.nameDe : item.nameEn;
+    const colors = currentMode === 'dark' ? item.darkColors : item.lightColors;
 
     const row = document.createElement('div');
-    row.className = 'theme-row' + (isActive ? ' active-theme' : '');
+    row.className = 'theme-row' + (isSelected ? ' active-theme' : '');
     row.innerHTML = `
       <div class="theme-meta">
-        <div class="theme-swatches" title="${t.name}">
-          ${t.colors.map(c => `<span class="theme-swatch-circle" style="background:${c}"></span>`).join('')}
+        <div class="theme-swatches" title="${name}">
+          ${colors.map(c => `<span class="theme-swatch-circle" style="background:${c}"></span>`).join('')}
         </div>
         <div class="theme-text-wrap">
-          <div class="theme-name">${t.name}</div>
+          <div class="theme-name">${name}</div>
         </div>
       </div>
     `;
 
     const btn = document.createElement('button');
-    btn.className = 'btn' + (isActive ? ' btn-primary' : '');
+    btn.className = 'btn' + (isSelected ? ' btn-primary' : '');
 
-    if (isActive) {
-      btn.textContent = d.themeActive;
+    if (isSelected) {
+      btn.textContent = d.themeActive || (state.currentLang === 'de' ? 'Aktiv' : 'Active');
       btn.disabled = true;
     } else {
-      btn.textContent = d.themeSelect;
-      btn.onclick = () => activateTheme(t.id);
+      btn.textContent = d.themeSelect || (state.currentLang === 'de' ? 'Wählen' : 'Select');
+      btn.onclick = () => {
+        activateTheme(buildThemeId(currentMode, item.key));
+      };
     }
 
     row.appendChild(btn);
@@ -4556,17 +4595,25 @@ function renderThemeShop() {
 }
 
 function activateTheme(id) {
-  state.profile.active_theme = id;
-  setTheme(id);
+  const { mode, accent } = parseThemeId(id);
+  const normalizedId = buildThemeId(mode, accent);
+
+  state.profile.active_theme = normalizedId;
+  setTheme(normalizedId);
   saveLocalState();
   renderThemeShop();
   updateAccountUI();
-  const themeObj = THEMES.find(t => t.id === id);
-  const themeName = themeObj ? themeObj.name : id;
-  toast(`${t('toastThemeApplied')}: ${themeName}`);
+
+  const accentObj = THEME_ACCENTS.find(a => a.key === accent) || THEME_ACCENTS[0];
+  const accentName = state.currentLang === 'de' ? accentObj.nameDe : accentObj.nameEn;
+  const modeName = mode === 'dark' 
+    ? (state.currentLang === 'de' ? 'Dunkel' : 'Dark') 
+    : (state.currentLang === 'de' ? 'Hell' : 'Light');
+
+  toast(`${t('toastThemeApplied')}: ${accentName} (${modeName})`);
 
   if (!state.isOffline && state.supabase && state.user) {
-    state.supabase.from('profiles').update({ active_theme: id }).eq('id', state.user.id);
+    state.supabase.from('profiles').update({ active_theme: normalizedId }).eq('id', state.user.id);
   }
 }
 
@@ -4801,7 +4848,7 @@ function bindEvents() {
     }
   });
 
-  // Theme Modal
+  // Theme Modal & Hell/Dunkel Umschalter
   dom.openShop.addEventListener('click', () => {
     renderThemeShop();
     dom.shopModal.classList.remove('hidden');
@@ -4810,6 +4857,18 @@ function bindEvents() {
   dom.shopModal.addEventListener('click', e => {
     if (e.target === dom.shopModal) dom.shopModal.classList.add('hidden');
   });
+  if (dom.btnThemeModeLight) {
+    dom.btnThemeModeLight.addEventListener('click', () => {
+      const { accent } = parseThemeId(state.profile.active_theme);
+      activateTheme(buildThemeId('light', accent));
+    });
+  }
+  if (dom.btnThemeModeDark) {
+    dom.btnThemeModeDark.addEventListener('click', () => {
+      const { accent } = parseThemeId(state.profile.active_theme);
+      activateTheme(buildThemeId('dark', accent));
+    });
+  }
 
   // Verhindere Browser-Zoom (Strg + Mausrad, Strg + Plus / Minus)
   window.addEventListener('wheel', e => {
