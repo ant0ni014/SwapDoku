@@ -4522,7 +4522,6 @@ function renderThemeShop() {
         </div>
         <div class="theme-text-wrap">
           <div class="theme-name">${t.name}</div>
-          <div class="theme-desc">${desc}</div>
         </div>
       </div>
     `;
