@@ -763,6 +763,76 @@ body {
   font-size: 0.8rem;
 }
 
+/* Co-Op Swap Dual-Fortschrittsbalken & Team-Fortschritt */
+.swap-bars-wrap {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bar-row.swap-bar-row.swap-team-row {
+  margin-bottom: 2px;
+}
+
+.bar-row.swap-bar-row.swap-team-row .swap-bar-lbl {
+  font-weight: 700;
+  color: var(--text);
+  gap: 4px;
+}
+
+.swap-team-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.bar-fill.swap-team-fill {
+  background: linear-gradient(90deg, #0284c7 0%, #a855f7 50%, #22c55e 100%);
+}
+
+.bar-fill.swap-team-fill.solved {
+  background: #22c55e;
+}
+
+.swap-sub-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0.9;
+}
+
+.bar-row.swap-bar-row .swap-bar-lbl {
+  width: 68px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bar-row.swap-bar-row.active-board .swap-bar-lbl {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.bar-row.swap-bar-row .bar-pct {
+  width: 44px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bar-fill.board-a {
+  background: #0284c7;
+}
+
+.bar-fill.board-b {
+  background: #ef4444;
+}
+
+.bar-fill.solved {
+  background: #22c55e;
+}
+
 /* Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach 'Feld ansehen' (oberhalb des Boards, verdeckt keine Zahlen) */
 .hud-result-bar {
   display: flex;
@@ -912,6 +982,60 @@ body {
   font-size: 0.85rem;
 }
 
+/* Co-Op Swap: Status-Overlay wenn eines der beiden Bretter bereits gelöst ist */
+.swap-solved-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9;
+  background: rgba(15, 23, 42, 0.36);
+  backdrop-filter: blur(2.5px);
+  border-radius: 8px;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
+}
+
+.swap-solved-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 18px 22px;
+  max-width: 290px;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.swap-solved-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  background: rgba(34, 197, 94, 0.16);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.45);
+}
+
+.swap-solved-desc {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.swap-solved-wait {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 /* Match Countdown Overlay */
 .match-countdown-overlay {
   position: absolute;
@@ -955,6 +1079,11 @@ body {
   0% { transform: scale(0.6); opacity: 0; }
   50% { transform: scale(1.15); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* Board Result Overlay (Glückwunsch & Niederlage zentriert im Spielfeld) */
@@ -1149,6 +1278,18 @@ body {
   color: var(--err-text);
 }
 
+/* Fehler-Feedback: kurzes horizontales Schütteln bei falscher Zifferneingabe */
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.cell.cell-error-shake {
+  animation: errorShake 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  z-index: 2;
+}
+
 /* Notizen */
 .cell .notes {
   display: grid;
@@ -1252,17 +1393,29 @@ body {
   transform: translateY(0);
 }
 
-/* Ausgegraute Zahl wenn komplett belegt */
+/* Ausgegraute Zahl wenn komplett belegt (bleibt zum Hervorheben anklickbar) */
 .num.completed,
-.num.completed.locked,
-.num:disabled {
-  pointer-events: none;
-  cursor: default;
-  opacity: 0.22;
+.num.completed.locked {
+  cursor: pointer;
+  opacity: 0.28;
   background: var(--num-completed);
   border-color: transparent;
   box-shadow: none;
   transform: none;
+}
+
+.num:disabled {
+  pointer-events: none;
+  cursor: default;
+  opacity: 0.22;
+}
+
+.num.active-digit {
+  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--highlight);
+  font-weight: 700;
 }
 
 /* Footer: Impressum & Datenschutz ganz unten */
@@ -2066,6 +2219,7 @@ body {
   border-radius: 50%;
   background: #2563eb;
   display: inline-block;
+  flex-shrink: 0;
 }
 
 .swap-badge-dot.red {
@@ -2202,4 +2356,14 @@ body {
 
 .hidden {
   display: none !important;
+}
+
+/* Barrierefreiheit: Animationen und Übergänge bei reduzierter Bewegung deaktivieren */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

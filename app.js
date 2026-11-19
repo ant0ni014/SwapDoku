@@ -225,7 +225,7 @@ const I18N = {
       <p><strong>Die kooperative Herausforderung:</strong></p>
       <ul>
         <li>Zwei Boards im Spiel: <strong>Board A (Blau)</strong> und <strong>Board B (Rot)</strong>.</li>
-        <li>Ein <strong>10-Sekunden-Timer</strong> läuft ab.</li>
+        <li>Ein <strong>15-Sekunden-Timer</strong> läuft ab.</li>
         <li>Sobald der Timer 0 erreicht, tauscht ihr die Boards!</li>
         <li>Du übernimmst direkt das andere Board an der Stelle, wo dein Partner aufgehört hat.</li>
         <li>Löst gemeinsam beide Rätsel unter Zeitdruck.</li>
@@ -416,7 +416,7 @@ const I18N = {
       <p><strong>Cooperative Challenge:</strong></p>
       <ul>
         <li>Two boards in play: <strong>Board A (Blue)</strong> and <strong>Board B (Red)</strong>.</li>
-        <li>A <strong>10-second countdown</strong> ticks down.</li>
+        <li>A <strong>15-second countdown</strong> ticks down.</li>
         <li>When it hits 0, the boards swap instantly!</li>
         <li>You take over your partner's board exactly where they left off.</li>
         <li>Work together to complete both puzzles under pressure.</li>
@@ -478,6 +478,11 @@ const state = {
   activeBoard: 'A', // 'A' (Blau) | 'B' (Rot)
   swapBoards: null,
   swapBoardSolved: { A: false, B: false },
+  swapBoardProgress: { A: 0, B: 0 },
+  swapMyViewState: {
+    A: { selectedIndex: null, highlightedNumber: null },
+    B: { selectedIndex: null, highlightedNumber: null }
+  },
   isSolutionRevealed: false,
 
   // Multiplayer Rematch Status
@@ -513,9 +518,10 @@ const state = {
   wrongNotes: Array.from({ length: 81 }, () => new Set()),
   
   selectedIndex: null,
+  highlightedNumber: null,
   notesActive: false,
   hintsRemaining: 3,
-  autoLockCompleted: true, // Sperrt Ziffern im Numpad & Tastatur, sobald alle 9 platziert sind
+  autoLockCompleted: true, // Sperrt Überschreiben vollendeter Ziffern (Hervorhebung bleibt möglich)
 
   // Realtime
   channel: null,
@@ -525,7 +531,7 @@ const state = {
   
   // Swap Timer
   swapTimerId: null,
-  swapSecondsLeft: 10,
+  swapSecondsLeft: 15,
 
   // Bot State
   botIntervalId: null,
@@ -923,10 +929,24 @@ const dom = {
   swapBoardBadge: document.getElementById('swapBoardBadge'),
   swapTimer: document.getElementById('swapTimer'),
   swapPartnerLabel: document.getElementById('swapPartnerLabel'),
+  swapBars: document.getElementById('swapBars'),
+  swapTeamBar: document.getElementById('swapTeamBar'),
+  swapTeamPct: document.getElementById('swapTeamPct'),
+  swapTeamLbl: document.getElementById('swapTeamLbl'),
+  swapBarRowA: document.getElementById('swapBarRowA'),
+  swapBarRowB: document.getElementById('swapBarRowB'),
+  swapBoardABar: document.getElementById('swapBoardABar'),
+  swapBoardBBar: document.getElementById('swapBoardBBar'),
+  swapBoardAPct: document.getElementById('swapBoardAPct'),
+  swapBoardBPct: document.getElementById('swapBoardBPct'),
   grid: document.getElementById('sudokuGrid'),
   pauseOverlay: document.getElementById('pauseOverlay'),
   pauseResumeText: document.getElementById('pauseResumeText'),
   btnResumeGame: document.getElementById('btnResumeGame'),
+  swapSolvedOverlay: document.getElementById('swapSolvedOverlay'),
+  swapSolvedTitle: document.getElementById('swapSolvedTitle'),
+  swapSolvedDesc: document.getElementById('swapSolvedDesc'),
+  swapSolvedWait: document.getElementById('swapSolvedWait'),
 
   // Cookie Banner
   cookieBanner: document.getElementById('cookieBanner'),
@@ -1114,6 +1134,8 @@ function applyLanguageToDOM() {
   renderHearts();
   renderThemeShop();
   updateAccountUI();
+  updateSwapProgressBars();
+  updateSwapSolvedOverlay();
 }
 
 function updatePauseBtnTitle() {
@@ -1424,9 +1446,9 @@ function ensureGameStarted() {
   dom.pauseBtnIcon.textContent = '⏸';
   updatePauseBtnTitle();
 
-  if (state.mode === 'versus' && state.opponentType === 'bot' && !state.botRunning) {
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.opponentType === 'bot' && !state.botRunning) {
     startBotMatch();
-  } else if (state.mode === 'swap' && (!state.channel || state.isOffline)) {
+  } else if (state.mode === 'swap' && (!state.channel || state.isOffline) && !state.swapTimerId) {
     startSwapCountdown();
   }
 }
@@ -1485,23 +1507,18 @@ function updateStopwatchDisplay() {
 
 function togglePause() {
   if (state.isGameOver) return;
-  // Im Live-Multiplayer ist Pause deaktiviert, um Desynchronisation zu verhindern
-  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel) {
-    toast(state.currentLang === 'de' ? 'Pause im Online-Multiplayer deaktiviert' : 'Pause disabled in multiplayer');
-    return;
-  }
   if (!state.gameStarted) {
     ensureGameStarted();
     return;
   }
   if (state.isPaused) {
-    resumeGame();
+    resumeGame(true);
   } else {
-    pauseGame();
+    pauseGame(true);
   }
 }
 
-function pauseGame() {
+function pauseGame(broadcastToPeer = false) {
   if (state.isPaused || state.isGameOver || !state.gameStarted) return;
   state.isPaused = true;
   pauseStopwatch();
@@ -1509,12 +1526,17 @@ function pauseGame() {
   if (dom.pauseOverlay) dom.pauseOverlay.classList.remove('hidden');
   if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '▶';
   updatePauseBtnTitle();
+  updateSwapSolvedOverlay();
   state.selectedIndex = null;
   render();
   toast(t('toastGamePaused'));
+
+  if (broadcastToPeer && (state.mode === 'versus' || state.mode === 'swap') && state.channel) {
+    broadcast('GAME_PAUSE', { username: state.profile.username || 'Spieler' });
+  }
 }
 
-function resumeGame() {
+function resumeGame(broadcastToPeer = false) {
   if (!state.isPaused) return;
   state.isPaused = false;
   resumeStopwatch();
@@ -1522,7 +1544,12 @@ function resumeGame() {
   if (dom.pauseOverlay) dom.pauseOverlay.classList.add('hidden');
   if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
   updatePauseBtnTitle();
+  updateSwapSolvedOverlay();
   toast(t('toastGameResumed'));
+
+  if (broadcastToPeer && (state.mode === 'versus' || state.mode === 'swap') && state.channel) {
+    broadcast('GAME_RESUME', { username: state.profile.username || 'Spieler' });
+  }
 }
 
 // =============================================================================
@@ -1760,6 +1787,7 @@ function handleGameOver() {
     broadcast('SWAP_PARTNER_ELIMINATED', { username: state.profile.username || 'Partner' });
   }
 
+  updateSwapSolvedOverlay();
   showResultOverlay(false);
 }
 
@@ -1794,6 +1822,13 @@ function startNewGame(customBoard = null, customSol = null) {
   state.isGameOver = false;
   state.isSolutionRevealed = false;
   state.swapBoardSolved = { A: false, B: false };
+  state.swapBoardProgress = { A: 0, B: 0 };
+  state.swapMyViewState = {
+    A: { selectedIndex: null, highlightedNumber: null },
+    B: { selectedIndex: null, highlightedNumber: null }
+  };
+  state.swapSecondsLeft = 15;
+  if (dom.swapTimer) dom.swapTimer.textContent = '15s';
   if (dom.swapInspectTabs) dom.swapInspectTabs.classList.add('hidden');
   if (dom.swapHudInspectTabs) dom.swapHudInspectTabs.classList.add('hidden');
   state.gameSeconds = 0;
@@ -1836,14 +1871,21 @@ function startNewGame(customBoard = null, customSol = null) {
   if (dom.boardResultOverlay) dom.boardResultOverlay.classList.add('hidden');
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
   state.selectedIndex = null;
+  state.highlightedNumber = null;
 
   updateProgressBars(0, 0);
+  updateSwapProgressBars();
+  updateSwapSolvedOverlay();
   render();
   updateNumpadCompletedState();
 }
 
 function render() {
   const cells = dom.grid.children;
+  const activeHighlightDigit = state.highlightedNumber !== null
+    ? state.highlightedNumber
+    : (state.selectedIndex !== null ? state.currentBoard[state.selectedIndex] : 0);
+
   for (let i = 0; i < 81; i++) {
     const cell = cells[i];
     const val = state.currentBoard[i];
@@ -1900,13 +1942,20 @@ function render() {
       if (selR === r || selC === c || selB === b) {
         cell.classList.add('highlight');
       }
-
-      // Gleiche Ziffer auf dem gesamten Spielfeld hervorheben
-      const selVal = state.currentBoard[state.selectedIndex];
-      if (selVal !== 0 && val === selVal) {
-        cell.classList.add('same-num');
-      }
     }
+
+    // Gleiche Ziffer auf dem gesamten Spielfeld hervorheben (über gewählte Zelle ODER Numpad-Filter)
+    if (activeHighlightDigit !== 0 && val === activeHighlightDigit && state.selectedIndex !== i) {
+      cell.classList.add('same-num');
+    }
+  }
+
+  // Aktive Ziffer auch am Numpad dezent markieren
+  if (dom.numpad) {
+    dom.numpad.querySelectorAll('.num').forEach(btn => {
+      const digit = parseInt(btn.dataset.num, 10);
+      btn.classList.toggle('active-digit', activeHighlightDigit !== 0 && digit === activeHighlightDigit);
+    });
   }
 }
 
@@ -1918,8 +1967,16 @@ function updateNumpadCompletedState() {
     const isCompleted = completedDigits.has(digit);
     btn.classList.toggle('completed', isCompleted);
     btn.classList.toggle('locked', isCompleted);
-    btn.disabled = isCompleted;
+    // Bewusst nicht disabled, damit auch vollendete Ziffern per Klick hervorgehoben werden können
+    btn.disabled = false;
   });
+}
+
+function isCellLocked(idx) {
+  if (idx === null || idx < 0 || idx > 80) return true;
+  if (state.initialBoard[idx] !== 0) return true;
+  const val = state.currentBoard[idx];
+  return val !== 0 && val === state.solution[idx];
 }
 
 function selectCell(idx) {
@@ -1929,6 +1986,7 @@ function selectCell(idx) {
   }
   ensureGameStarted();
   state.selectedIndex = idx;
+  state.highlightedNumber = null;
   render();
 }
 
@@ -1955,16 +2013,22 @@ function handleNumberInput(num) {
   if ((state.mode === 'versus' || state.mode === 'swap') && state.channel && !state.gameStarted) {
     return;
   }
-  
-  // Wenn die Zahl bereits vollständig belegt ist, kann sie nicht mehr ausgewählt/eingesetzt werden
-  if (state.autoLockCompleted) {
-    const completedDigits = SudokuEngine.getCompletedDigits(state.currentBoard, state.solution);
-    if (completedDigits.has(num)) return;
-  }
 
   ensureGameStarted();
   const idx = state.selectedIndex;
-  if (idx === null || state.initialBoard[idx] !== 0) return;
+  const completedDigits = state.autoLockCompleted
+    ? SudokuEngine.getCompletedDigits(state.currentBoard, state.solution)
+    : new Set();
+
+  // Wenn keine Zelle gewählt ist, die gewählte Zelle fest/bereits richtig ist oder die Ziffer 9/9 fertig ist:
+  // Nicht überschreiben und kein Leben abziehen – stattdessen alle Vorkommen dieser Ziffer hervorheben!
+  if (idx === null || isCellLocked(idx) || completedDigits.has(num)) {
+    state.highlightedNumber = num;
+    render();
+    return;
+  }
+
+  state.highlightedNumber = null;
 
   if (state.notesActive) {
     if (state.notes[idx].has(num)) {
@@ -1980,6 +2044,8 @@ function handleNumberInput(num) {
 
     // Wenn genau die gleiche Zahl nochmals eingetippt wird, keine Aktion
     if (previousNum === num) return;
+
+    let triggerErrorShake = false;
 
     // Bisherige Notizen sichern, falls die Zahl fehlerhaft ist
     if (state.notes[idx].size > 0) {
@@ -1997,11 +2063,29 @@ function handleNumberInput(num) {
     } else {
       // Falsche Zahl: Fehler im Notiz-Gedächtnis merken & Leben abziehen (bei jeder falschen Zahleneingabe)
       state.wrongNotes[idx].add(num);
+      triggerErrorShake = true;
       deductHeart();
     }
 
     checkProgress();
     updateNumpadCompletedState();
+
+    render();
+
+    if (triggerErrorShake) {
+      const cell = dom.grid.children[idx];
+      if (cell) {
+        cell.classList.remove('cell-error-shake');
+        void cell.offsetWidth;
+        cell.classList.add('cell-error-shake');
+        if (cell._shakeTimer) clearTimeout(cell._shakeTimer);
+        cell._shakeTimer = setTimeout(() => {
+          cell.classList.remove('cell-error-shake');
+          cell._shakeTimer = null;
+        }, 380);
+      }
+    }
+    return;
   }
 
   render();
@@ -2011,7 +2095,8 @@ function clearCell() {
   if (state.isPaused || state.isGameOver) return;
   ensureGameStarted();
   const idx = state.selectedIndex;
-  if (idx === null || state.initialBoard[idx] !== 0) return;
+  if (idx === null || isCellLocked(idx)) return;
+  state.highlightedNumber = null;
 
   if (state.currentBoard[idx] !== 0) {
     // Wenn eine Zahl gelöscht wird, die Notizen wiederherstellen!
@@ -2066,6 +2151,7 @@ function useHint() {
   state.hintsRemaining--;
   if (dom.hintCount) dom.hintCount.textContent = state.hintsRemaining;
   state.selectedIndex = targetIdx;
+  state.highlightedNumber = null;
 
   render();
   updateNumpadCompletedState();
@@ -2271,16 +2357,20 @@ function checkProgress() {
   if (dom.playerBar) dom.playerBar.style.width = `${pct}%`;
   if (dom.playerLabel) dom.playerLabel.textContent = `${pct}%`;
 
-  if (state.mode === 'versus' && state.channel && state.opponentType === 'online') {
-    broadcast('PROGRESS', { progressPct: pct });
+  const currentBoardKey = state.activeBoard || 'A';
+
+  if ((state.mode === 'versus' || state.mode === 'swap') && state.channel && state.opponentType === 'online') {
+    broadcast('PROGRESS', { progressPct: pct, board: currentBoardKey });
   }
 
   if (state.mode === 'swap') {
-    if (SudokuEngine.isComplete(state.currentBoard, state.solution)) {
+    const isBoardComplete = SudokuEngine.isComplete(state.currentBoard, state.solution);
+    state.swapBoardProgress[currentBoardKey] = isBoardComplete ? 100 : pct;
+
+    if (isBoardComplete) {
       if (SudokuEngine.isValidSudoku(state.currentBoard)) {
         state.solution = [...state.currentBoard];
       }
-      const currentBoardKey = state.activeBoard || 'A';
       if (state.swapBoards && state.swapBoards[currentBoardKey]) {
         state.swapBoards[currentBoardKey].current = [...state.currentBoard];
         state.swapBoards[currentBoardKey].solution = [...state.solution];
@@ -2303,12 +2393,14 @@ function checkProgress() {
         const otherSolved = state.swapBoardSolved[otherBoardKey];
         if (!otherSolved) {
           toast(state.currentLang === 'de'
-            ? `🎉 Feld ${currentBoardKey} komplett gelöst! Jetzt noch Feld ${otherBoardKey}!`
+            ? `🎉 Board ${currentBoardKey} komplett gelöst! Jetzt noch Board ${otherBoardKey}!`
             : `🎉 Board ${currentBoardKey} completely solved! Now complete Board ${otherBoardKey}!`);
         }
       }
 
       if (state.swapBoardSolved.A && state.swapBoardSolved.B) {
+        updateSwapProgressBars();
+        updateSwapSolvedOverlay();
         if (state.channel && state.opponentType === 'online') {
           broadcast('SWAP_TEAM_WON', {
             seconds: state.gameSeconds,
@@ -2316,8 +2408,12 @@ function checkProgress() {
           });
         }
         gameWon();
+        return;
       }
     }
+
+    updateSwapProgressBars();
+    updateSwapSolvedOverlay();
     return;
   }
 
@@ -2336,12 +2432,84 @@ function updateProgressBars(playerPct, oppPct) {
   if (dom.opponentLabel) dom.opponentLabel.textContent = `${oppPct}%`;
 }
 
+function updateSwapProgressBars() {
+  if (!dom.swapBars) return;
+  const pctA = state.swapBoardSolved.A ? 100 : (state.swapBoardProgress?.A ?? 0);
+  const pctB = state.swapBoardSolved.B ? 100 : (state.swapBoardProgress?.B ?? 0);
+  const teamPct = Math.round((pctA + pctB) / 2);
+  const isTeamSolved = state.swapBoardSolved.A && state.swapBoardSolved.B;
+
+  if (dom.swapTeamBar) {
+    dom.swapTeamBar.style.width = `${teamPct}%`;
+    dom.swapTeamBar.classList.toggle('solved', isTeamSolved);
+  }
+  if (dom.swapTeamPct) {
+    dom.swapTeamPct.textContent = isTeamSolved ? '✓ 100%' : `${teamPct}%`;
+  }
+
+  if (dom.swapBoardABar) {
+    dom.swapBoardABar.style.width = `${pctA}%`;
+    dom.swapBoardABar.classList.toggle('solved', Boolean(state.swapBoardSolved.A));
+  }
+  if (dom.swapBoardBBar) {
+    dom.swapBoardBBar.style.width = `${pctB}%`;
+    dom.swapBoardBBar.classList.toggle('solved', Boolean(state.swapBoardSolved.B));
+  }
+  if (dom.swapBoardAPct) {
+    dom.swapBoardAPct.textContent = state.swapBoardSolved.A ? '✓ 100%' : `${pctA}%`;
+  }
+  if (dom.swapBoardBPct) {
+    dom.swapBoardBPct.textContent = state.swapBoardSolved.B ? '✓ 100%' : `${pctB}%`;
+  }
+  if (dom.swapBarRowA) {
+    dom.swapBarRowA.classList.toggle('active-board', state.mode === 'swap' && state.activeBoard === 'A');
+  }
+  if (dom.swapBarRowB) {
+    dom.swapBarRowB.classList.toggle('active-board', state.mode === 'swap' && state.activeBoard === 'B');
+  }
+}
+
+function updateSwapSolvedWaitText() {
+  if (!dom.swapSolvedWait) return;
+  const secs = Math.max(0, state.swapSecondsLeft ?? 15);
+  dom.swapSolvedWait.textContent = state.currentLang === 'de'
+    ? `Nächster Board-Tausch in ${secs}s`
+    : `Next board swap in ${secs}s`;
+}
+
+function updateSwapSolvedOverlay() {
+  if (!dom.swapSolvedOverlay) return;
+  const activeKey = state.activeBoard || 'A';
+  const otherKey = activeKey === 'A' ? 'B' : 'A';
+  const shouldShow = state.mode === 'swap'
+    && !state.isGameOver
+    && !state.isPaused
+    && Boolean(state.swapBoardSolved[activeKey])
+    && !state.swapBoardSolved[otherKey];
+
+  dom.swapSolvedOverlay.classList.toggle('hidden', !shouldShow);
+  if (!shouldShow) return;
+
+  if (dom.swapSolvedTitle) {
+    dom.swapSolvedTitle.textContent = state.currentLang === 'de'
+      ? `✓ Board ${activeKey} gelöst!`
+      : `✓ Board ${activeKey} solved!`;
+  }
+  if (dom.swapSolvedDesc) {
+    dom.swapSolvedDesc.textContent = state.currentLang === 'de'
+      ? `Board ${otherKey} muss noch gelöst werden. Warte kurz auf den automatischen Tausch.`
+      : `Board ${otherKey} still needs to be solved. Waiting for the automatic swap.`;
+  }
+  updateSwapSolvedWaitText();
+}
+
 async function gameWon(isRemoteTeamWin = false) {
   state.isGameOver = true;
   stopBot();
   stopSwapCountdown();
   stopStopwatch();
   state.selectedIndex = null;
+  updateSwapSolvedOverlay();
 
   // 1. ZUERST den Sieg-Dialog anzeigen
   try {
@@ -2417,6 +2585,8 @@ function startBotMatch() {
     state.botBoard = [...state.initialBoard];
     state.botSolution = [...state.solution];
   } else if (state.mode === 'swap') {
+    state.activeBoard = 'A';
+    updateSwapVisualTheme();
     const clues = state.versusDifficulty === 'easy' ? 42 : (state.versusDifficulty === 'hard' ? 28 : 34);
     const botPuzzle = SudokuEngine.generate(clues);
     state.botInitial = [...botPuzzle.initialBoard];
@@ -2428,9 +2598,9 @@ function startBotMatch() {
         initial: [...state.initialBoard],
         solution: [...state.solution],
         current: [...state.currentBoard],
-        notes: Array.from({ length: 81 }, () => new Set()),
-        savedNotes: Array.from({ length: 81 }, () => new Set()),
-        wrongNotes: Array.from({ length: 81 }, () => new Set()),
+        notes: state.notes.map(s => new Set(s)),
+        savedNotes: state.savedNotes.map(s => new Set(s)),
+        wrongNotes: state.wrongNotes.map(s => new Set(s)),
         isSolved: false
       },
       B: {
@@ -2444,6 +2614,16 @@ function startBotMatch() {
       }
     };
     state.swapBoardSolved = { A: false, B: false };
+    state.swapBoardProgress = {
+      A: SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution),
+      B: 0
+    };
+    state.swapMyViewState = {
+      A: { selectedIndex: state.selectedIndex, highlightedNumber: state.highlightedNumber },
+      B: { selectedIndex: null, highlightedNumber: null }
+    };
+    updateSwapProgressBars();
+    updateSwapSolvedOverlay();
     startSwapCountdown();
   }
 
@@ -2483,14 +2663,18 @@ function botStep() {
       toast(t('toastBotWon'));
     } else if (state.mode === 'swap') {
       const botBoardKey = state.activeBoard === 'A' ? 'B' : 'A';
-      state.swapBoardSolved[botBoardKey] = true;
-      if (state.swapBoards && state.swapBoards[botBoardKey]) {
-        state.swapBoards[botBoardKey].isSolved = true;
-        state.swapBoards[botBoardKey].current = [...state.botBoard];
+      if (!state.swapBoardSolved[botBoardKey]) {
+        state.swapBoardSolved[botBoardKey] = true;
+        if (state.swapBoards && state.swapBoards[botBoardKey]) {
+          state.swapBoards[botBoardKey].isSolved = true;
+          state.swapBoards[botBoardKey].current = [...state.botBoard];
+        }
+        state.swapBoardProgress[botBoardKey] = 100;
+        updateSwapProgressBars();
+        toast(state.currentLang === 'de'
+          ? `🤖 Der Bot hat Board ${botBoardKey} gelöst!`
+          : `🤖 The bot solved Board ${botBoardKey}!`);
       }
-      toast(state.currentLang === 'de'
-        ? `🤖 Der Bot hat Feld ${botBoardKey} gelöst!`
-        : `🤖 The bot solved Board ${botBoardKey}!`);
       if (state.swapBoardSolved.A && state.swapBoardSolved.B) {
         stopBot();
         gameWon();
@@ -2507,6 +2691,10 @@ function botStep() {
   if (state.mode === 'versus') {
     dom.opponentBar.style.width = `${botPct}%`;
     dom.opponentLabel.textContent = `${botPct}%`;
+  } else if (state.mode === 'swap') {
+    const botBoardKey = state.activeBoard === 'A' ? 'B' : 'A';
+    state.swapBoardProgress[botBoardKey] = state.swapBoardSolved[botBoardKey] ? 100 : botPct;
+    updateSwapProgressBars();
   }
 }
 
@@ -2605,6 +2793,7 @@ function setMode(mode) {
   dom.lobby.classList.toggle('hidden', mode === 'zen');
   dom.versusBars.classList.toggle('hidden', mode !== 'versus');
   dom.swapBox.classList.toggle('hidden', mode !== 'swap');
+  if (dom.swapBars) dom.swapBars.classList.toggle('hidden', mode !== 'swap');
 
   if (mode === 'zen') {
     dom.tabZen.classList.add('active');
@@ -2785,6 +2974,7 @@ function updateSwapVisualTheme() {
     dom.swapBoardBadge.textContent = `Board ${state.activeBoard}`;
     dom.swapBoardBadge.className = `board-badge ${isA ? 'badge-blue' : 'badge-red'}`;
   }
+  updateSwapProgressBars();
 }
 
 function hostStartDuel() {
@@ -2860,6 +3050,7 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost, difficulty = null) {
     }
   };
   state.swapBoardSolved = { A: false, B: false };
+  state.swapBoardProgress = { A: 0, B: 0 };
 
   // Host beginnt auf Board A (Blau), Partner auf Board B (Rot)
   if (isHost) {
@@ -2870,6 +3061,8 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost, difficulty = null) {
     startNewGame(puzzleB.initialBoard, puzzleB.solution);
   }
   updateSwapVisualTheme();
+  updateSwapProgressBars();
+  updateSwapSolvedOverlay();
 
   state.isPaused = true;
   showCountdownOverlay();
@@ -2892,8 +3085,8 @@ function runSwapMatchCountdown(puzzleA, puzzleB, isHost, difficulty = null) {
       state.gameStarted = true;
       startStopwatch();
       if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
-      state.swapSecondsLeft = 10;
-      if (dom.swapTimer) dom.swapTimer.textContent = '10s';
+      state.swapSecondsLeft = 15;
+      if (dom.swapTimer) dom.swapTimer.textContent = '15s';
       updateNumpadCompletedState();
       render();
 
@@ -2919,13 +3112,16 @@ function handlePartnerLeft(partnerName) {
 function handleSwapBoardSolved(payload) {
   const solvedBoard = payload?.board || 'A';
   state.swapBoardSolved[solvedBoard] = true;
+  state.swapBoardProgress[solvedBoard] = 100;
   if (state.swapBoards && state.swapBoards[solvedBoard]) {
     state.swapBoards[solvedBoard].isSolved = true;
   }
+  updateSwapProgressBars();
+  updateSwapSolvedOverlay();
   const otherBoard = solvedBoard === 'A' ? 'B' : 'A';
   if (!state.swapBoardSolved[otherBoard]) {
     toast(state.currentLang === 'de'
-      ? `🎉 ${payload?.username || 'Partner'} hat Feld ${solvedBoard} gelöst! Noch Feld ${otherBoard}!`
+      ? `🎉 ${payload?.username || 'Partner'} hat Board ${solvedBoard} gelöst! Noch Board ${otherBoard}!`
       : `🎉 ${payload?.username || 'Partner'} solved Board ${solvedBoard}! Still need Board ${otherBoard}!`);
   }
 }
@@ -3222,6 +3418,7 @@ async function joinRoom(code, asHost = false) {
       if (payload && payload.secondsLeft !== undefined) {
         state.swapSecondsLeft = payload.secondsLeft;
         if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+        updateSwapSolvedWaitText();
       }
     })
     .on('broadcast', { event: 'DO_SWAP_EXCHANGE' }, ({ payload }) => {
@@ -3251,6 +3448,20 @@ async function joinRoom(code, asHost = false) {
     .on('broadcast', { event: 'REMATCH_DECLINE' }, ({ payload }) => {
       handleIncomingRematchDecline(payload);
     })
+    .on('broadcast', { event: 'GAME_PAUSE' }, ({ payload }) => {
+      if (!state.isPaused && state.gameStarted && !state.isGameOver) {
+        pauseGame(false);
+        const name = payload?.username || (state.mode === 'swap' ? 'Partner' : 'Gegner');
+        toast(state.currentLang === 'de' ? `${name} hat pausiert` : `${name} paused the game`);
+      }
+    })
+    .on('broadcast', { event: 'GAME_RESUME' }, ({ payload }) => {
+      if (state.isPaused && !state.isGameOver) {
+        resumeGame(false);
+        const name = payload?.username || (state.mode === 'swap' ? 'Partner' : 'Gegner');
+        toast(state.currentLang === 'de' ? `${name} hat fortgesetzt` : `${name} resumed the game`);
+      }
+    })
     .on('broadcast', { event: 'OPPONENT_LEFT' }, ({ payload }) => {
       if (state.mode === 'swap') {
         handlePartnerLeft(payload?.username || 'Partner');
@@ -3266,8 +3477,14 @@ async function joinRoom(code, asHost = false) {
       const pct = payload.progressPct !== undefined 
         ? payload.progressPct 
         : Math.round((payload.solved / payload.total) * 100);
-      dom.opponentBar.style.width = `${pct}%`;
-      dom.opponentLabel.textContent = `${pct}%`;
+      if (state.mode === 'swap') {
+        const boardKey = payload?.board || (state.activeBoard === 'A' ? 'B' : 'A');
+        state.swapBoardProgress[boardKey] = state.swapBoardSolved[boardKey] ? 100 : pct;
+        updateSwapProgressBars();
+      } else {
+        dom.opponentBar.style.width = `${pct}%`;
+        dom.opponentLabel.textContent = `${pct}%`;
+      }
     })
     .on('broadcast', { event: 'GAME_OVER' }, ({ payload }) => {
       handleVersusLostByOpponentSolve(payload?.username || 'Gegner');
@@ -3302,6 +3519,9 @@ function leaveRoom() {
     } catch (_) {}
     state.channel = null;
   }
+  stopSwapCountdown();
+  state.swapSecondsLeft = 15;
+  if (dom.swapTimer) dom.swapTimer.textContent = '15s';
   state.roomCode = null;
   state.isHost = false;
   state.peersCount = 0;
@@ -3311,6 +3531,7 @@ function leaveRoom() {
   if (state.mode === 'swap') {
     state.activeBoard = 'A';
     updateSwapVisualTheme();
+    updateSwapSolvedWaitText();
   }
   if (dom.onlineStartRow) dom.onlineStartRow.classList.add('hidden');
   dom.roomDisplay.classList.add('hidden');
@@ -3327,13 +3548,15 @@ function setConnectionStatus(status, text) {
 // =============================================================================
 function startSwapCountdown() {
   stopSwapCountdown();
-  state.swapSecondsLeft = 10;
+  state.swapSecondsLeft = 15;
   if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+  updateSwapSolvedWaitText();
 
   state.swapTimerId = setInterval(() => {
     if (state.isPaused || !state.gameStarted || state.isGameOver) return;
     state.swapSecondsLeft--;
     if (dom.swapTimer) dom.swapTimer.textContent = `${state.swapSecondsLeft}s`;
+    updateSwapSolvedWaitText();
 
     // Host sendet SWAP_TICK an Partner zur präzisen Synchronisation
     if (state.mode === 'swap' && state.channel && state.isHost) {
@@ -3341,7 +3564,7 @@ function startSwapCountdown() {
     }
 
     if (state.swapSecondsLeft <= 0) {
-      state.swapSecondsLeft = 10;
+      state.swapSecondsLeft = 15;
       doBoardSwap();
     }
   }, 1000);
@@ -3361,17 +3584,27 @@ function doBoardSwap() {
   }
 
   if (state.opponentType === 'bot') {
+    const prevBoardKey = state.activeBoard;
+    const nextBoardKey = prevBoardKey === 'A' ? 'B' : 'A';
+    if (state.swapMyViewState && state.swapMyViewState[prevBoardKey]) {
+      state.swapMyViewState[prevBoardKey] = {
+        selectedIndex: state.selectedIndex,
+        highlightedNumber: state.highlightedNumber
+      };
+    }
     if (state.swapBoards) {
-      if (state.activeBoard === 'A') {
-        state.swapBoards.A.current = [...state.currentBoard];
-        state.swapBoards.B.current = [...state.botBoard];
-      } else {
-        state.swapBoards.B.current = [...state.currentBoard];
-        state.swapBoards.A.current = [...state.botBoard];
+      if (state.swapBoards[prevBoardKey]) {
+        state.swapBoards[prevBoardKey].current = [...state.currentBoard];
+        state.swapBoards[prevBoardKey].notes = state.notes.map(s => new Set(s));
+        state.swapBoards[prevBoardKey].savedNotes = state.savedNotes.map(s => new Set(s));
+        state.swapBoards[prevBoardKey].wrongNotes = state.wrongNotes.map(s => new Set(s));
+      }
+      if (state.swapBoards[nextBoardKey]) {
+        state.swapBoards[nextBoardKey].current = [...state.botBoard];
       }
     }
 
-    state.activeBoard = state.activeBoard === 'A' ? 'B' : 'A';
+    state.activeBoard = nextBoardKey;
     updateSwapVisualTheme();
 
     const tempBoard = [...state.currentBoard];
@@ -3382,14 +3615,34 @@ function doBoardSwap() {
     state.initialBoard = [...state.botInitial];
     state.solution = [...state.botSolution];
 
+    if (state.swapBoards && state.swapBoards[nextBoardKey]) {
+      state.notes = state.swapBoards[nextBoardKey].notes.map(s => new Set(s));
+      state.savedNotes = state.swapBoards[nextBoardKey].savedNotes.map(s => new Set(s));
+      state.wrongNotes = state.swapBoards[nextBoardKey].wrongNotes.map(s => new Set(s));
+    }
+
     state.botBoard = tempBoard;
     state.botInitial = tempInitial;
     state.botSolution = tempSol;
 
-    state.selectedIndex = null;
+    state.swapBoardProgress[nextBoardKey] = state.swapBoardSolved[nextBoardKey]
+      ? 100
+      : SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution);
+    state.swapBoardProgress[prevBoardKey] = state.swapBoardSolved[prevBoardKey]
+      ? 100
+      : SudokuEngine.getProgress(state.botBoard, state.botInitial, state.botSolution);
+
+    const restoredView = (state.swapMyViewState && state.swapMyViewState[nextBoardKey])
+      ? state.swapMyViewState[nextBoardKey]
+      : { selectedIndex: null, highlightedNumber: null };
+    state.selectedIndex = restoredView.selectedIndex;
+    state.highlightedNumber = restoredView.highlightedNumber;
+
     render();
     checkProgress();
     updateNumpadCompletedState();
+    updateSwapProgressBars();
+    updateSwapSolvedOverlay();
     toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
   } else if (state.channel && state.roomCode) {
     if (state.swapBoards && state.swapBoards[state.activeBoard]) {
@@ -3418,6 +3671,10 @@ function doBoardSwap() {
     state.solution = next.solution;
     state.initialBoard = next.initialBoard;
     state.currentBoard = [...next.initialBoard];
+    state.swapBoardSolved[state.activeBoard] = false;
+    state.swapBoardProgress[state.activeBoard] = 0;
+    updateSwapProgressBars();
+    updateSwapSolvedOverlay();
     render();
     toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
   }
@@ -3457,7 +3714,16 @@ function applyIncomingSwapData(payload) {
     setTimeout(() => dom.grid.classList.remove('swapping'), 320);
   }
 
-  state.activeBoard = payload.fromBoard;
+  const prevBoardKey = state.activeBoard || 'A';
+  const nextBoardKey = payload.fromBoard || (prevBoardKey === 'A' ? 'B' : 'A');
+  if (state.swapMyViewState && state.swapMyViewState[prevBoardKey]) {
+    state.swapMyViewState[prevBoardKey] = {
+      selectedIndex: state.selectedIndex,
+      highlightedNumber: state.highlightedNumber
+    };
+  }
+
+  state.activeBoard = nextBoardKey;
   updateSwapVisualTheme();
 
   state.currentBoard = [...payload.currentBoard];
@@ -3466,21 +3732,31 @@ function applyIncomingSwapData(payload) {
   state.notes = deserializeNotes(payload.notes);
   state.savedNotes = deserializeNotes(payload.savedNotes);
   state.wrongNotes = deserializeNotes(payload.wrongNotes);
-  state.selectedIndex = null;
+
+  const restoredView = (state.swapMyViewState && state.swapMyViewState[nextBoardKey])
+    ? state.swapMyViewState[nextBoardKey]
+    : { selectedIndex: null, highlightedNumber: null };
+  state.selectedIndex = restoredView.selectedIndex;
+  state.highlightedNumber = restoredView.highlightedNumber;
 
   if (state.swapBoards && state.swapBoards[payload.fromBoard]) {
     state.swapBoards[payload.fromBoard].current = [...payload.currentBoard];
     state.swapBoards[payload.fromBoard].initial = [...payload.initialBoard];
     state.swapBoards[payload.fromBoard].solution = [...payload.solution];
-    if (payload.isSolved) {
+    if (payload.isSolved || SudokuEngine.isComplete(state.currentBoard, state.solution)) {
       state.swapBoards[payload.fromBoard].isSolved = true;
       state.swapBoardSolved[payload.fromBoard] = true;
+      state.swapBoardProgress[payload.fromBoard] = 100;
+    } else {
+      state.swapBoardProgress[payload.fromBoard] = SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution);
     }
   }
 
   render();
   checkProgress();
   updateNumpadCompletedState();
+  updateSwapProgressBars();
+  updateSwapSolvedOverlay();
   toast(`${t('toastBoardSwapped')}${state.activeBoard}`);
 }
 
@@ -4430,8 +4706,9 @@ function bindEvents() {
   dom.diffMedium.addEventListener('click', () => setBotDifficulty('medium'));
   dom.diffHard.addEventListener('click', () => setBotDifficulty('hard'));
   dom.btnStartBotGame.addEventListener('click', () => {
-    ensureGameStarted();
+    if (state.isGameOver) startNewGame();
     startBotMatch();
+    ensureGameStarted();
   });
 
   // Raum-Lobby
@@ -4465,12 +4742,10 @@ function bindEvents() {
     dom.btnNotes.textContent = state.notesActive ? d.notesOn : d.notesOff;
   });
 
-  // Numpad Klicks
+  // Numpad Klicks (auch bei vollendeten Ziffern zum Hervorheben anklickbar)
   dom.numpad.addEventListener('click', e => {
     const btn = e.target.closest('.num');
     if (!btn) return;
-    // Wenn autoLockCompleted aktiv ist, wird das Anklicken vollendeter Zahlen gesperrt; sonst bleibt es frei!
-    if (state.autoLockCompleted && btn.classList.contains('locked')) return;
     handleNumberInput(parseInt(btn.dataset.num, 10));
   });
 
