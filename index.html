@@ -107,24 +107,17 @@
             <strong id="swapTimer">15s</strong>
           </div>
 
-          <!-- Co-Op Swap Progress: Gemeinsamer Team-Fortschritt & Details für Board A & B -->
+          <!-- Co-Op Swap Progress: Nur Board A & Board B (Clean & Minimal) -->
           <div class="versus-wrap swap-bars-wrap hidden" id="swapBars">
-            <div class="bar-row swap-bar-row swap-team-row" id="swapBarRowTeam">
-              <span class="swap-bar-lbl" id="swapTeamLbl"><span class="swap-team-icon">🤝</span> Team</span>
-              <div class="bar-track"><div class="bar-fill swap-team-fill" id="swapTeamBar"></div></div>
-              <span class="bar-pct" id="swapTeamPct">0%</span>
+            <div class="bar-row swap-bar-row" id="swapBarRowA">
+              <span class="swap-bar-lbl"><span class="swap-badge-dot"></span> Board A</span>
+              <div class="bar-track"><div class="bar-fill board-a" id="swapBoardABar"></div></div>
+              <span class="bar-pct" id="swapBoardAPct">0%</span>
             </div>
-            <div class="swap-sub-bars">
-              <div class="bar-row swap-bar-row" id="swapBarRowA">
-                <span class="swap-bar-lbl"><span class="swap-badge-dot"></span> Board A</span>
-                <div class="bar-track"><div class="bar-fill board-a" id="swapBoardABar"></div></div>
-                <span class="bar-pct" id="swapBoardAPct">0%</span>
-              </div>
-              <div class="bar-row swap-bar-row" id="swapBarRowB">
-                <span class="swap-bar-lbl"><span class="swap-badge-dot red"></span> Board B</span>
-                <div class="bar-track"><div class="bar-fill board-b" id="swapBoardBBar"></div></div>
-                <span class="bar-pct" id="swapBoardBPct">0%</span>
-              </div>
+            <div class="bar-row swap-bar-row" id="swapBarRowB">
+              <span class="swap-bar-lbl"><span class="swap-badge-dot red"></span> Board B</span>
+              <div class="bar-track"><div class="bar-fill board-b" id="swapBoardBBar"></div></div>
+              <span class="bar-pct" id="swapBoardBPct">0%</span>
             </div>
           </div>
 

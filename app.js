@@ -2436,16 +2436,6 @@ function updateSwapProgressBars() {
   if (!dom.swapBars) return;
   const pctA = state.swapBoardSolved.A ? 100 : (state.swapBoardProgress?.A ?? 0);
   const pctB = state.swapBoardSolved.B ? 100 : (state.swapBoardProgress?.B ?? 0);
-  const teamPct = Math.round((pctA + pctB) / 2);
-  const isTeamSolved = state.swapBoardSolved.A && state.swapBoardSolved.B;
-
-  if (dom.swapTeamBar) {
-    dom.swapTeamBar.style.width = `${teamPct}%`;
-    dom.swapTeamBar.classList.toggle('solved', isTeamSolved);
-  }
-  if (dom.swapTeamPct) {
-    dom.swapTeamPct.textContent = isTeamSolved ? '✓ 100%' : `${teamPct}%`;
-  }
 
   if (dom.swapBoardABar) {
     dom.swapBoardABar.style.width = `${pctA}%`;

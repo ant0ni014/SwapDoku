@@ -763,7 +763,7 @@ body {
   font-size: 0.8rem;
 }
 
-/* Co-Op Swap Dual-Fortschrittsbalken & Team-Fortschritt */
+/* Co-Op Swap Dual-Fortschrittsbalken: Nur Board A & Board B (Clean) */
 .swap-bars-wrap {
   margin-top: 2px;
   display: flex;
@@ -771,41 +771,12 @@ body {
   gap: 3px;
 }
 
-.bar-row.swap-bar-row.swap-team-row {
-  margin-bottom: 2px;
-}
-
-.bar-row.swap-bar-row.swap-team-row .swap-bar-lbl {
-  font-weight: 700;
-  color: var(--text);
-  gap: 4px;
-}
-
-.swap-team-icon {
-  font-size: 0.85rem;
-  line-height: 1;
-}
-
-.bar-fill.swap-team-fill {
-  background: linear-gradient(90deg, #0284c7 0%, #a855f7 50%, #22c55e 100%);
-}
-
-.bar-fill.swap-team-fill.solved {
-  background: #22c55e;
-}
-
-.swap-sub-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  opacity: 0.9;
-}
-
 .bar-row.swap-bar-row .swap-bar-lbl {
-  width: 68px;
+  width: auto;
+  min-width: 68px;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -816,9 +787,11 @@ body {
 }
 
 .bar-row.swap-bar-row .bar-pct {
-  width: 44px;
+  width: 38px;
+  text-align: right;
   white-space: nowrap;
   flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 .bar-fill.board-a {
