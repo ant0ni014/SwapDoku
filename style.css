@@ -181,19 +181,19 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 16px;
+  padding: 12px 16px;
   line-height: 1.35;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .app {
-  width: 900px;
-  max-width: 900px;
+  width: min(880px, 100%);
+  max-width: 880px;
   margin: auto 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
@@ -203,7 +203,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 0 10px 0;
+  padding: 0 0 8px 0;
   border-bottom: 1px solid var(--border);
   min-height: 36px;
 }
@@ -302,18 +302,17 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 36px;
-  padding-top: 6px;
+  padding-top: 2px;
 }
 
 .board-column {
-  flex: 0 0 520px;
-  width: 520px;
-  max-width: 520px;
+  flex: 1 1 500px;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
@@ -324,7 +323,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  gap: 14px;
+  gap: 10px;
   padding-top: 0;
 }
 
@@ -333,7 +332,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 /* Modi-Tabs mit Regel-Hilfe */
@@ -468,10 +467,10 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .lobby-switch {
@@ -656,13 +655,13 @@ body {
 
 .online-start-row {
   width: 100%;
-  margin-top: 8px;
+  margin-top: 2px;
   display: flex;
 }
 
 .online-start-row .btn {
   width: 100%;
-  padding: 8px 14px;
+  padding: 6px 12px;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
@@ -690,8 +689,8 @@ body {
   justify-content: flex-start;
   gap: 4px;
   width: 100%;
-  max-width: min(520px, 70vh);
-  min-height: 52px;
+  max-width: clamp(360px, calc(100dvh - 196px), 500px);
+  min-height: 68px;
 }
 
 .hud-main-row {
@@ -699,7 +698,8 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  min-height: 26px;
+  height: 28px;
+  min-height: 28px;
   padding: 0 2px;
 }
 
@@ -745,6 +745,7 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 0.72rem;
+  line-height: 1.2;
   color: var(--muted);
 }
 
@@ -819,7 +820,7 @@ body {
 
 /* Co-Op Swap Dual-Fortschrittsbalken: Nur Board A & Board B (Clean) */
 .swap-bars-wrap {
-  margin-top: 2px;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -919,8 +920,8 @@ body {
 
 .grid-container {
   position: relative;
-  width: min(520px, 70vh);
-  height: min(520px, 70vh);
+  width: clamp(360px, calc(100dvh - 196px), 500px);
+  height: clamp(360px, calc(100dvh - 196px), 500px);
   aspect-ratio: 1 / 1;
   display: flex;
   justify-content: center;
@@ -1354,7 +1355,7 @@ body {
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -1369,7 +1370,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 36px;
+  height: 34px;
   padding: 0 4px;
   font-size: 0.78rem;
   font-weight: 500;
@@ -1402,7 +1403,7 @@ body {
 }
 
 .num {
-  height: 52px;
+  height: clamp(38px, 6.2vh, 50px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -1462,7 +1463,7 @@ body {
   gap: 8px;
   font-size: 0.7rem;
   color: var(--muted);
-  padding: 16px 0 6px 0;
+  padding: 10px 0 4px 0;
   border-top: 1px solid var(--border);
 }
 
@@ -1495,6 +1496,7 @@ body {
   }
 
   .app {
+    width: 100%;
     max-width: 480px;
     gap: 6px;
     padding-top: 0;
@@ -1518,6 +1520,12 @@ body {
 
   .hud {
     min-height: auto;
+    height: auto;
+  }
+
+  .hud-main-row {
+    height: auto;
+    min-height: 26px;
   }
 
   .game-options {
@@ -1529,7 +1537,9 @@ body {
 
   .board-column {
     order: 2;
+    flex: none;
     width: 100%;
+    max-width: 100%;
     align-items: center;
     gap: 4px;
   }
@@ -2270,8 +2280,7 @@ body {
 .bot-box {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 120px;
+  gap: 6px;
 }
 
 .swap-role-hint {
