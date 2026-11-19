@@ -557,16 +557,16 @@ body {
 }
 
 #roomCodeDisplay {
-  user-select: text;
-  -webkit-user-select: text;
+  user-select: none;
+  -webkit-user-select: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 
 #currentRoomCode {
-  user-select: all;
-  -webkit-user-select: all;
+  user-select: none;
+  -webkit-user-select: none;
   cursor: pointer;
   letter-spacing: 1px;
   padding: 1px 5px;
@@ -947,9 +947,9 @@ body {
 
 .pause-minimal-btn .pause-icon {
   font-size: 1.8rem;
-  letter-spacing: 2px;
   line-height: 1;
   color: var(--text);
+  margin-left: 3px;
 }
 
 .pause-minimal-btn .pause-resume-text {
@@ -1259,15 +1259,15 @@ body {
   color: var(--err-text);
 }
 
-/* Fehler-Feedback: kurzes horizontales Schütteln bei falscher Zifferneingabe */
-@keyframes errorShake {
-  0%, 100% { transform: translateX(0); }
-  20%, 60% { transform: translateX(-4px); }
-  40%, 80% { transform: translateX(4px); }
+/* Fehler-Feedback: Sanftes Blinken der Fehlerfarbe ohne Geometrie-Verschiebung */
+@keyframes errorFlash {
+  0% { background-color: var(--err-bg); }
+  50% { background-color: rgba(220, 38, 38, 0.35); }
+  100% { background-color: var(--err-bg); }
 }
 
 .cell.cell-error-shake {
-  animation: errorShake 0.36s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  animation: errorFlash 0.3s ease-in-out both;
   z-index: 2;
 }
 

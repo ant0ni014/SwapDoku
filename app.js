@@ -1985,8 +1985,12 @@ function selectCell(idx) {
     return;
   }
   ensureGameStarted();
-  state.selectedIndex = idx;
-  state.highlightedNumber = null;
+  if (state.selectedIndex === idx && state.highlightedNumber === null) {
+    state.selectedIndex = null;
+  } else {
+    state.selectedIndex = idx;
+    state.highlightedNumber = null;
+  }
   render();
 }
 
@@ -3275,9 +3279,15 @@ function handleIncomingRematchDecline(payload) {
 function copyRoomCode() {
   const code = state.roomCode || (dom.currentRoom ? dom.currentRoom.textContent.trim() : '');
   if (!code || code === '----') return;
+  if (window.getSelection) {
+    window.getSelection().removeAllRanges();
+  }
   const msg = state.currentLang === 'de' ? `Raum-Code „${code}“ kopiert!` : `Room code "${code}" copied!`;
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(code).then(() => {
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+      }
       toast(msg);
     }).catch(() => {
       copyFallback(code, msg);
@@ -3297,6 +3307,9 @@ function copyFallback(text, msg) {
     el.select();
     document.execCommand('copy');
     document.body.removeChild(el);
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    }
     toast(msg);
   } catch (_) {
     toast(`Code: ${text}`);
@@ -4574,7 +4587,9 @@ function bindEvents() {
   });
 
   // Theme Toggle (Hell/Dunkel)
-  dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
+  if (dom.themeToggleBtn) {
+    dom.themeToggleBtn.addEventListener('click', toggleDarkLight);
+  }
 
   // Rangliste Modal
   dom.openLeaderboardBtn.addEventListener('click', openLeaderboard);
@@ -4736,6 +4751,23 @@ function bindEvents() {
     const btn = e.target.closest('.num');
     if (!btn) return;
     handleNumberInput(parseInt(btn.dataset.num, 10));
+  });
+
+  // Klick außerhalb des Sudoku-Feldes hebt Markierungen & Hilfslinien auf
+  document.addEventListener('click', e => {
+    // Wenn auf das Board oder den Zahlenblock geklickt wird, Markierung behalten
+    if (e.target.closest('#sudokuGrid') || e.target.closest('#numpad') || e.target.closest('.toolbar')) {
+      return;
+    }
+    // Wenn Modale, Buttons oder Overlays geklickt werden, nicht stören
+    if (e.target.closest('.modal') || e.target.closest('.header') || e.target.closest('.game-options')) {
+      return;
+    }
+    if (state.selectedIndex !== null || state.highlightedNumber !== null) {
+      state.selectedIndex = null;
+      state.highlightedNumber = null;
+      render();
+    }
   });
 
   // Tastatursteuerung
