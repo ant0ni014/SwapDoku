@@ -1032,9 +1032,10 @@ const dom = {
   numpad: document.getElementById('numpad'),
   toast: document.getElementById('toast'),
 
-  // Audio Popover-Menü
-  audioMenuAnchor: document.getElementById('audioMenuAnchor'),
+  // Audio Modal
   audioPopover: document.getElementById('audioPopover'),
+  audioModalTitle: document.getElementById('audioModalTitle'),
+  closeAudioBtn: document.getElementById('closeAudioBtn'),
   audioTrackHeader: document.getElementById('audioTrackHeader'),
   audioVolLabel: document.getElementById('audioVolLabel'),
   sfxVolLabel: document.getElementById('sfxVolLabel'),
@@ -1074,6 +1075,7 @@ function applyLanguageToDOM() {
   // Header
   if (dom.langToggleBtn) dom.langToggleBtn.setAttribute('title', d.langTitle);
   if (dom.audioToggleBtn) dom.audioToggleBtn.setAttribute('title', d.audioTitle);
+  if (dom.audioModalTitle) dom.audioModalTitle.textContent = lang === 'de' ? 'Musik & Sound' : 'Music & Sound';
   if (dom.themeToggleBtn) dom.themeToggleBtn.setAttribute('title', d.themeToggleTitle);
   if (dom.openAccountBtn) dom.openAccountBtn.setAttribute('title', d.accountTitle);
   if (dom.themeBtnText) dom.themeBtnText.textContent = d.themesBtn;
@@ -4788,18 +4790,16 @@ function bindEvents() {
   // Sprachwechsel DE / EN
   dom.langToggleBtn.addEventListener('click', toggleLanguage);
 
-  // Audio Popover-Menü direkt unter der Musiknote
-  dom.audioToggleBtn.addEventListener('click', e => {
-    e.stopPropagation();
-    toggleAudioPopover();
-  });
-  document.addEventListener('click', e => {
-    if (dom.audioMenuAnchor && dom.audioPopover && !dom.audioPopover.classList.contains('hidden')) {
-      if (!dom.audioMenuAnchor.contains(e.target)) {
-        closeAudioPopover();
-      }
-    }
-  });
+  // Audio Modal (einheitlich mit Profil, Rangliste & Themes)
+  dom.audioToggleBtn.addEventListener('click', openAudioPopover);
+  if (dom.closeAudioBtn) {
+    dom.closeAudioBtn.addEventListener('click', closeAudioPopover);
+  }
+  if (dom.audioPopover) {
+    dom.audioPopover.addEventListener('click', e => {
+      if (e.target === dom.audioPopover) closeAudioPopover();
+    });
+  }
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && dom.audioPopover && !dom.audioPopover.classList.contains('hidden')) {
       closeAudioPopover();

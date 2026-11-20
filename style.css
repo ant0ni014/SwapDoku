@@ -2245,30 +2245,14 @@ body {
 }
 
 /* Audio & Musik Popover-Menü direkt unter der Musiknote */
-.audio-menu-anchor {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+.audio-modal-card {
+  max-width: 340px;
 }
 
-.audio-popover {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  width: 248px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
-  z-index: 1200;
+.audio-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.audio-popover.hidden {
-  display: none;
+  gap: 12px;
 }
 
 .audio-popover-section {
