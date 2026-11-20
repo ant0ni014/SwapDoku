@@ -299,7 +299,7 @@ body {
   width: 100%;
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: stretch;
   justify-content: space-between;
   gap: 36px;
   padding-top: 2px;
@@ -1351,26 +1351,27 @@ body {
   text-decoration: line-through;
 }
 
-/* Controls: Toolbar & Ziffernblock rechts unter den Modi */
+/* Controls: Toolbar & Ziffernblock rechts mittig zum Board ausgerichtet */
 .controls {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
+  margin: auto 0;
 }
 
 .toolbar {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   width: 100%;
 }
 
 .tool-btn {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  height: 34px;
+  border-radius: 9px;
+  height: 36px;
   padding: 0 4px;
   font-size: 0.78rem;
   font-weight: 500;
@@ -1380,7 +1381,7 @@ body {
   align-items: center;
   justify-content: center;
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
 }
 
@@ -1398,24 +1399,24 @@ body {
 .numpad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  gap: 8px;
   width: 100%;
 }
 
 .num {
-  height: clamp(38px, 6.2vh, 50px);
+  height: clamp(42px, 6.8vh, 56px);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
 }
 
@@ -1559,6 +1560,7 @@ body {
     width: 100%;
     max-width: min(440px, 94vw);
     gap: 6px;
+    margin: 0;
   }
 
   /* Auf Mobile: 1x9 Zahlenreihe für schnelle Daumenbedienung */
