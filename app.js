@@ -1227,7 +1227,6 @@ function initCookieConsent() {
     dom.btnCookieAccept.addEventListener('click', () => {
       localStorage.setItem('swapdoku_cookie_consent', 'accepted');
       if (dom.cookieBanner) dom.cookieBanner.classList.add('hidden');
-      toast(state.currentLang === 'de' ? 'Datenschutzeinstellungen gespeichert' : 'Privacy settings saved');
     });
   }
 
@@ -1235,7 +1234,6 @@ function initCookieConsent() {
     dom.btnCookieNecessary.addEventListener('click', () => {
       localStorage.setItem('swapdoku_cookie_consent', 'necessary_only');
       if (dom.cookieBanner) dom.cookieBanner.classList.add('hidden');
-      toast(state.currentLang === 'de' ? 'Nur notwendige Cookies aktiviert' : 'Necessary cookies enabled');
     });
   }
 }
@@ -1427,11 +1425,39 @@ function getVersusWinsStorageKey() {
   return isUserLoggedIn() ? 'swapdoku_versus_wins' : 'swapdoku_guest_wins';
 }
 
+function getVersusWinsByDiffStorageKey() {
+  return isUserLoggedIn() ? 'swapdoku_versus_wins_by_diff' : 'swapdoku_guest_wins_by_diff';
+}
+
+function loadVersusWinsByDiff() {
+  try {
+    const raw = localStorage.getItem(getVersusWinsByDiffStorageKey());
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        easy: parseInt(parsed.easy || 0, 10) || 0,
+        medium: parseInt(parsed.medium || 0, 10) || 0,
+        hard: parseInt(parsed.hard || 0, 10) || 0
+      };
+    }
+  } catch (_) {}
+  return { easy: 0, medium: 0, hard: 0 };
+}
+
+function saveVersusWinsByDiff(map) {
+  localStorage.setItem(getVersusWinsByDiffStorageKey(), JSON.stringify({
+    easy: map?.easy || 0,
+    medium: map?.medium || 0,
+    hard: map?.hard || 0
+  }));
+}
+
 function loadLocalState() {
   const savedEmail = localStorage.getItem('swapdoku_auth_email');
   if (savedEmail) {
     state.authEmail = savedEmail;
     state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_versus_wins') || '0', 10);
+    state.profile.versus_wins_by_diff = loadVersusWinsByDiff();
     const accounts = JSON.parse(localStorage.getItem('swapdoku_saved_profiles') || '{}');
     if (accounts[savedEmail]) {
       state.profile = { ...state.profile, ...accounts[savedEmail] };
@@ -1451,6 +1477,7 @@ function loadLocalState() {
   } else {
     state.profile.username = getGuestUsername();
     state.profile.versus_wins = parseInt(localStorage.getItem('swapdoku_guest_wins') || '0', 10);
+    state.profile.versus_wins_by_diff = loadVersusWinsByDiff();
     const savedGuestTheme = localStorage.getItem('swapdoku_guest_theme');
     if (savedGuestTheme) {
       state.profile.active_theme = savedGuestTheme;
@@ -1578,7 +1605,6 @@ function pauseGame(broadcastToPeer = false) {
   updateSwapSolvedOverlay();
   state.selectedIndex = null;
   render();
-  toast(t('toastGamePaused'));
 
   if (broadcastToPeer && (state.mode === 'versus' || state.mode === 'swap') && state.channel) {
     broadcast('GAME_PAUSE', { username: state.profile.username || 'Spieler' });
@@ -1594,7 +1620,6 @@ function resumeGame(broadcastToPeer = false) {
   if (dom.pauseBtnIcon) dom.pauseBtnIcon.textContent = '⏸';
   updatePauseBtnTitle();
   updateSwapSolvedOverlay();
-  toast(t('toastGameResumed'));
 
   if (broadcastToPeer && (state.mode === 'versus' || state.mode === 'swap') && state.channel) {
     broadcast('GAME_RESUME', { username: state.profile.username || 'Spieler' });
@@ -1800,9 +1825,6 @@ async function startAmbientSound(silentToast = false) {
     state.audioPlaying = true;
     if (dom.audioToggleBtn) dom.audioToggleBtn.classList.add('active');
     updateAudioModalUI();
-    if (!silentToast) {
-      toast(state.currentLang === 'de' ? `Soundtrack: ${track.label}` : `Soundtrack: ${track.label}`);
-    }
   } catch (err) {
     console.warn('Audio playback error:', err);
     state.audioPlaying = false;
@@ -1820,9 +1842,6 @@ function stopAmbientSound(silentToast = false) {
   state.audioPlaying = false;
   if (dom.audioToggleBtn) dom.audioToggleBtn.classList.remove('active');
   updateAudioModalUI();
-  if (!silentToast) {
-    toast(t('toastMusicOff'));
-  }
 }
 
 function ensureSfxContext() {
@@ -2317,6 +2336,30 @@ function useHint() {
   state.selectedIndex = targetIdx;
   state.highlightedNumber = null;
 
+  // Zeitstrafe nach Schwierigkeitsgrad: Einfach +10s, Mittel +20s, Schwer +30s
+  const activeDiff = state.mode === 'zen'
+    ? (state.zenDifficulty || 'easy')
+    : (state.versusDifficulty || 'medium');
+  const penaltyMap = { easy: 10, medium: 20, hard: 30 };
+  const penaltySec = penaltyMap[activeDiff] || 20;
+  state.gameSeconds = (state.gameSeconds || 0) + penaltySec;
+  updateStopwatchDisplay();
+
+  const popEl = document.getElementById('timerPenaltyPop');
+  if (popEl) {
+    popEl.textContent = `+${penaltySec}s`;
+    popEl.classList.remove('hidden');
+    popEl.style.animation = 'none';
+    void popEl.offsetWidth;
+    popEl.style.animation = '';
+    if (popEl._hideTimer) clearTimeout(popEl._hideTimer);
+    popEl._hideTimer = setTimeout(() => {
+      popEl.classList.add('hidden');
+      popEl._hideTimer = null;
+    }, 920);
+  }
+
+  playSfx('input');
   render();
   updateNumpadCompletedState();
 
@@ -2327,7 +2370,6 @@ function useHint() {
     setTimeout(() => cell.classList.remove('cell-hint'), 750);
   }
 
-  toast(t('toastHintUsed'));
   checkProgress();
 }
 
@@ -2449,7 +2491,6 @@ function showFullSolution() {
     }
     if (dom.btnHudSolution) dom.btnHudSolution.classList.add('hidden');
   }
-  toast(state.currentLang === 'de' ? 'Lösung aufgedeckt' : 'Solution revealed');
 }
 
 function hideResultOverlayForInspection() {
@@ -2475,8 +2516,6 @@ function hideResultOverlayForInspection() {
       }
     }
   }
-  const d = I18N[state.currentLang] || I18N.de;
-  toast(d.toastInspectHint || 'Tippe oben auf „Ergebnis & Stats“, um zurückzukehren');
 }
 
 function showSwapInspectionBoard(boardKey) {
@@ -3005,12 +3044,38 @@ function updateOpponentLabels() {
 }
 
 function recordVersusWin() {
+  const diff = ['easy', 'medium', 'hard'].includes(state.versusDifficulty) ? state.versusDifficulty : 'medium';
+  if (!state.profile.versus_wins_by_diff) {
+    state.profile.versus_wins_by_diff = loadVersusWinsByDiff();
+  }
+  state.profile.versus_wins_by_diff[diff] = (state.profile.versus_wins_by_diff[diff] || 0) + 1;
+  saveVersusWinsByDiff(state.profile.versus_wins_by_diff);
+
   state.profile.versus_wins = (state.profile.versus_wins || 0) + 1;
   localStorage.setItem(getVersusWinsStorageKey(), state.profile.versus_wins.toString());
 
   const boards = loadSavedLeaderboards();
-  const vList = boards['versus_wins'] || [];
   const myName = state.profile.username || 'Spieler';
+
+  // Siege pro Schwierigkeitsgrad (Einfach, Mittel, Schwer) speichern
+  const diffKey = `versus_wins_${diff}`;
+  const diffList = boards[diffKey] || [];
+  let diffEntry = diffList.find(e => e.id === 'player-me' || e.username === myName);
+  if (diffEntry) {
+    diffEntry.wins = state.profile.versus_wins_by_diff[diff];
+    diffEntry.username = myName;
+  } else {
+    diffList.push({
+      id: 'player-me',
+      username: myName,
+      wins: state.profile.versus_wins_by_diff[diff]
+    });
+  }
+  diffList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+  boards[diffKey] = diffList;
+
+  // Gesamt-Siege ebenfalls pflegen
+  const vList = boards['versus_wins'] || [];
   let entry = vList.find(e => e.id === 'player-me' || e.username === myName);
   if (entry) {
     entry.wins = state.profile.versus_wins;
@@ -3025,11 +3090,22 @@ function recordVersusWin() {
   vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
   boards['versus_wins'] = vList;
   saveLeaderboards(boards);
+  updateAccountUI();
 
   if (state.supabase && state.user) {
-    state.supabase.from('profiles').update({
-      versus_wins: state.profile.versus_wins
-    }).eq('id', state.user.id).then(() => {}, () => {});
+    const colName = `versus_wins_${diff}`;
+    const payload = {
+      versus_wins: state.profile.versus_wins,
+      [colName]: state.profile.versus_wins_by_diff[diff]
+    };
+    state.supabase.from('profiles').update(payload).eq('id', state.user.id).then(res => {
+      if (res && res.error) {
+        // Fallback falls diff-spezifische Spalten in DB noch nicht existieren
+        state.supabase.from('profiles').update({
+          versus_wins: state.profile.versus_wins
+        }).eq('id', state.user.id).then(() => {}, () => {});
+      }
+    }, () => {});
   }
 }
 
@@ -4118,23 +4194,19 @@ function syncLeaderboardModeTabs() {
     b.classList.toggle('active', b.dataset.mode === state.leadMode);
   });
   if (dom.leadTabWins) {
-    if (state.leadMode === 'versus') {
-      dom.leadTabWins.classList.remove('hidden');
-    } else {
-      dom.leadTabWins.classList.add('hidden');
-      if (state.leadDifficulty === 'wins') {
-        state.leadDifficulty = 'medium';
-      }
+    dom.leadTabWins.classList.add('hidden');
+    if (state.leadDifficulty === 'wins') {
+      state.leadDifficulty = 'medium';
     }
   }
-  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard, dom.leadTabWins].forEach(b => {
+  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard].forEach(b => {
     if (b) b.classList.toggle('active', b.dataset.diff === (state.leadDifficulty || 'medium'));
   });
 }
 
 function switchLeaderboardTab(diff) {
   state.leadDifficulty = diff;
-  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard, dom.leadTabWins].forEach(b => {
+  [dom.leadTabEasy, dom.leadTabMedium, dom.leadTabHard].forEach(b => {
     if (b) b.classList.toggle('active', b.dataset.diff === diff);
   });
   renderLeaderboard();
@@ -4143,7 +4215,7 @@ function switchLeaderboardTab(diff) {
 async function renderLeaderboard() {
   const mode = state.leadMode || state.mode || 'zen';
   let diff = state.leadDifficulty || 'medium';
-  if (mode !== 'versus' && diff === 'wins') {
+  if (!['easy', 'medium', 'hard'].includes(diff)) {
     diff = 'medium';
     state.leadDifficulty = 'medium';
   }
@@ -4154,16 +4226,21 @@ async function renderLeaderboard() {
   if (dom.leadDiffTabs) dom.leadDiffTabs.style.display = 'flex';
   syncLeaderboardModeTabs();
 
-  if (mode === 'versus' && diff === 'wins') {
-    // Versus Modus: All-Time Duellsiege Rangliste
-    if (dom.thBestTime) dom.thBestTime.textContent = d.thWins || 'Siege';
-    if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankWins || 'Deine Duellsiege:';
-    if (dom.myRankTime) dom.myRankTime.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
+  if (mode === 'versus') {
+    // Versus Modus: Siege pro Schwierigkeitsgrad (Einfach / Mittel / Schwer)
+    const winsByDiff = state.profile.versus_wins_by_diff || loadVersusWinsByDiff();
+    const myWins = winsByDiff[diff] || 0;
+    const winsUnit = d.winsUnit || (state.currentLang === 'de' ? 'Siege' : 'Wins');
 
-    let vList = (boards['versus_wins'] || []).filter(e => e && !e.id?.startsWith('bot-'));
+    if (dom.thBestTime) dom.thBestTime.textContent = d.thWins || winsUnit;
+    if (dom.myRankLabel) dom.myRankLabel.textContent = d.myRankWins || (state.currentLang === 'de' ? 'Deine Siege:' : 'Your Wins:');
+    if (dom.myRankTime) dom.myRankTime.textContent = `${myWins} ${winsUnit}`;
+
+    const diffKey = `versus_wins_${diff}`;
+    let vList = (boards[diffKey] || []).filter(e => e && !e.id?.startsWith('bot-'));
     let myEntry = vList.find(e => e.id === 'player-me' || e.username === myName);
-    if (!myEntry && (state.profile.versus_wins || 0) > 0) {
-      myEntry = { id: 'player-me', username: myName, wins: state.profile.versus_wins };
+    if (!myEntry && myWins > 0) {
+      myEntry = { id: 'player-me', username: myName, wins: myWins };
       vList.push(myEntry);
     }
     vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
@@ -4174,7 +4251,7 @@ async function renderLeaderboard() {
         const emptyRow = document.createElement('tr');
         emptyRow.innerHTML = `
           <td colspan="3" style="text-align: center; color: var(--muted); padding: 32px 14px; font-size: 0.82rem;">
-            ${state.currentLang === 'de' ? 'Noch keine Duellsiege erfasst. Gewinne ein Versus-Spiel!' : 'No duel wins recorded yet. Win a versus match!'}
+            ${state.currentLang === 'de' ? 'Noch keine Duellsiege in dieser Stufe. Gewinne ein Versus-Spiel!' : 'No duel wins in this difficulty yet. Win a versus match!'}
           </td>
         `;
         dom.leaderboardBody.appendChild(emptyRow);
@@ -4189,7 +4266,7 @@ async function renderLeaderboard() {
         tr.innerHTML = `
           <td>#${rank}</td>
           <td>${entry.username} ${isMe ? `(${t('playerLabel')})` : ''}</td>
-          <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${entry.wins || 0} ${d.winsUnit || 'Siege'}</td>
+          <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">${entry.wins || 0} ${winsUnit}</td>
         `;
         dom.leaderboardBody.appendChild(tr);
       });
@@ -4199,18 +4276,19 @@ async function renderLeaderboard() {
 
     if (state.supabase && !state.isOffline) {
       try {
+        const colName = `versus_wins_${diff}`;
         const { data, error } = await state.supabase
           .from('profiles')
-          .select('id, username, versus_wins')
-          .gt('versus_wins', 0)
-          .order('versus_wins', { ascending: false })
+          .select(`id, username, ${colName}`)
+          .gt(colName, 0)
+          .order(colName, { ascending: false })
           .limit(20);
 
         if (!error && data && data.length > 0) {
           const onlineWins = data.map(row => ({
             id: row.id,
             username: row.username || 'Spieler',
-            wins: row.versus_wins || 0
+            wins: row[colName] || 0
           }));
           if (myEntry && !onlineWins.some(e => (state.user && e.id === state.user.id) || e.username === myName)) {
             onlineWins.push(myEntry);
@@ -4362,10 +4440,11 @@ function updateAccountUI() {
     if (el) el.classList.toggle('active', el.dataset.diff === state.zenDifficulty);
   });
 
-  if (dom.recVersusWins) dom.recVersusWins.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
-  if (dom.recVersusEasy) dom.recVersusEasy.textContent = getTime('versus', 'easy');
-  if (dom.recVersusMedium) dom.recVersusMedium.textContent = getTime('versus', 'medium');
-  if (dom.recVersusHard) dom.recVersusHard.textContent = getTime('versus', 'hard');
+  const winsByDiff = state.profile.versus_wins_by_diff || loadVersusWinsByDiff();
+  const winsUnit = d.winsUnit || (isDe ? 'Siege' : 'Wins');
+  if (dom.recVersusEasy) dom.recVersusEasy.textContent = `${winsByDiff.easy || 0} ${winsUnit}`;
+  if (dom.recVersusMedium) dom.recVersusMedium.textContent = `${winsByDiff.medium || 0} ${winsUnit}`;
+  if (dom.recVersusHard) dom.recVersusHard.textContent = `${winsByDiff.hard || 0} ${winsUnit}`;
 
   if (dom.recSwapEasy) dom.recSwapEasy.textContent = getTime('swap', 'easy');
   if (dom.recSwapMedium) dom.recSwapMedium.textContent = getTime('swap', 'medium');
@@ -4526,11 +4605,13 @@ async function logoutUser() {
   localStorage.removeItem('swapdoku_auth_email');
   localStorage.removeItem('swapdoku_state');
   localStorage.removeItem('swapdoku_versus_wins');
+  localStorage.removeItem('swapdoku_versus_wins_by_diff');
   localStorage.removeItem('swapdoku_leaderboards_v4');
   state.profile = {
     username: getGuestUsername(),
     active_theme: localStorage.getItem('swapdoku_guest_theme') || state.profile.active_theme || 'nordic-light',
-    versus_wins: parseInt(localStorage.getItem('swapdoku_guest_wins') || '0', 10)
+    versus_wins: parseInt(localStorage.getItem('swapdoku_guest_wins') || '0', 10),
+    versus_wins_by_diff: loadVersusWinsByDiff()
   };
   setTheme(state.profile.active_theme);
   toast(state.currentLang === 'de' ? 'Erfolgreich abgemeldet' : 'Logged out successfully');
@@ -4769,14 +4850,6 @@ function activateTheme(id) {
   saveLocalState();
   renderThemeShop();
   updateAccountUI();
-
-  const accentObj = THEME_ACCENTS.find(a => a.key === accent) || THEME_ACCENTS[0];
-  const accentName = state.currentLang === 'de' ? accentObj.nameDe : accentObj.nameEn;
-  const modeName = mode === 'dark' 
-    ? (state.currentLang === 'de' ? 'Dunkel' : 'Dark') 
-    : (state.currentLang === 'de' ? 'Hell' : 'Light');
-
-  toast(`${t('toastThemeApplied')}: ${accentName} (${modeName})`);
 
   if (!state.isOffline && state.supabase && state.user) {
     state.supabase.from('profiles').update({ active_theme: normalizedId }).eq('id', state.user.id);

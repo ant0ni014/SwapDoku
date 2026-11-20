@@ -82,6 +82,7 @@
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
                 <span id="gameTimerDisplay">00:00</span>
+                <span class="timer-penalty-pop hidden" id="timerPenaltyPop">+10s</span>
               </div>
               <button class="icon-toggle pause-btn" id="btnPauseGame" title="Starten / Pausieren (P)" aria-label="Spiel starten / pausieren">
                 <span id="pauseBtnIcon">▶</span>
@@ -503,10 +504,9 @@
               </div>
               <div class="record-card">
                 <span class="record-mode-title" id="recVersusTitle">Versus Duell</span>
-                <div class="record-line"><span>Siege:</span><strong id="recVersusWins">0 Siege</strong></div>
-                <div class="record-line"><span>Einfach:</span><strong id="recVersusEasy">--:--</strong></div>
-                <div class="record-line"><span>Mittel:</span><strong id="recVersusMedium">--:--</strong></div>
-                <div class="record-line"><span>Schwer:</span><strong id="recVersusHard">--:--</strong></div>
+                <div class="record-line"><span>Einfach:</span><strong id="recVersusEasy">0 Siege</strong></div>
+                <div class="record-line"><span>Mittel:</span><strong id="recVersusMedium">0 Siege</strong></div>
+                <div class="record-line"><span>Schwer:</span><strong id="recVersusHard">0 Siege</strong></div>
               </div>
               <div class="record-card">
                 <span class="record-mode-title" id="recSwapTitle">Co-Op Swap</span>

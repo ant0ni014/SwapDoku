@@ -747,6 +747,7 @@ body {
 
 /* HUD (Sterne, Timer, Pause & Progress) */
 .hud {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -938,15 +939,41 @@ body {
   background: #22c55e;
 }
 
-/* Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach 'Feld ansehen' (oberhalb des Boards, verdeckt keine Zahlen) */
+/* Leiste zum Wiederaufrufen der Ergebnisse & Lösung nach 'Feld ansehen' (Overlay über HUD -> 0px Layout-Shift!) */
 .hud-result-bar {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  padding-top: 3px;
-  animation: fadeIn 0.2s ease;
+  padding: 2px 0;
+  animation: fadeIn 0.16s ease;
+}
+
+.game-timer-wrap {
+  position: relative;
+}
+
+.timer-penalty-pop {
+  position: absolute;
+  top: -16px;
+  right: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ef4444;
+  pointer-events: none;
+  white-space: nowrap;
+  animation: penaltyFloatUp 0.9s ease-out forwards;
+}
+
+@keyframes penaltyFloatUp {
+  0% { opacity: 0; transform: translateY(6px); }
+  20% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
 }
 
 .hud-result-btn {
