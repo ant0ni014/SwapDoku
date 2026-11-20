@@ -587,11 +587,11 @@
     </div>
   </div>
 
-  <!-- Modal: Soundtracks & Ambient-Musik (Google AI Studio / Web Audio API) -->
+  <!-- Modal: Soundtracks & Soundeffekte -->
   <div class="modal hidden" id="audioModal">
     <div class="modal-card audio-card">
       <div class="modal-top">
-        <h2 id="audioModalTitle">Soundtrack & Atmosphäre</h2>
+        <h2 id="audioModalTitle">Musik &amp; Soundeffekte</h2>
         <button class="close-btn" id="closeAudioBtn">&times;</button>
       </div>
       <div class="audio-modal-body">
@@ -600,31 +600,32 @@
           <button class="btn btn-primary" id="btnAudioTogglePlay">Musik starten</button>
         </div>
         <div class="audio-track-section">
-          <label class="profile-label" id="audioTrackHeader">Track-Auswahl:</label>
+          <label class="profile-label" id="audioTrackHeader">Soundtrack wählen:</label>
           <div class="track-list" id="audioTrackList">
-            <button class="track-item active" data-track="zen">
+            <button class="track-item active" data-track="lofi">
               <div class="track-info">
-                <span class="track-title">Track 1: AI Zen Garden</span>
-                <span class="track-badge">Google AI Studio</span>
+                <span class="track-title">Lofi</span>
               </div>
             </button>
-            <button class="track-item" data-track="lofi">
+            <button class="track-item" data-track="jazz">
               <div class="track-info">
-                <span class="track-title">Track 2: Midnight Lofi</span>
-                <span class="track-badge">Google AI Studio</span>
+                <span class="track-title">Jazz</span>
               </div>
             </button>
-            <button class="track-item" data-track="synth">
+            <button class="track-item" data-track="ambient">
               <div class="track-info">
-                <span class="track-title">Track 3: Generativer Synth</span>
-                <span class="track-badge">Web Audio API</span>
+                <span class="track-title">Ambient</span>
               </div>
             </button>
           </div>
         </div>
         <div class="audio-volume-row">
-          <label for="audioVolumeSlider" id="audioVolLabel">Lautstärke: <span id="volValue">60%</span></label>
+          <label for="audioVolumeSlider" id="audioVolLabel">Musik-Lautstärke: <span id="volValue">60%</span></label>
           <input type="range" id="audioVolumeSlider" min="0" max="100" value="60">
+        </div>
+        <div class="audio-volume-row">
+          <label for="sfxVolumeSlider" id="sfxVolLabel">Soundeffekte: <span id="sfxVolValue">70%</span></label>
+          <input type="range" id="sfxVolumeSlider" min="0" max="100" value="70">
         </div>
       </div>
     </div>

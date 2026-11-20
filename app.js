@@ -514,15 +514,22 @@ const state = {
   authMode: 'login', // 'login' | 'register'
   authEmail: null,
 
-  // Audio & Soundtrack (KI Tracks & Web Audio Synth)
+  // Audio, Soundtracks (MP3) & Soundeffekte (Web Audio API)
   audioPlaying: false,
   audioContext: null,
   audioMasterGain: null,
   ambientChordTimer: null,
   ambientChordIndex: 0,
   activeVoices: [],
-  currentAudioTrack: 'synth', // 'zen' | 'lofi' | 'synth'
-  audioVolume: 0.6,
+  currentAudioTrack: ['lofi', 'jazz', 'ambient'].includes(localStorage.getItem('swapdoku_audio_track'))
+    ? localStorage.getItem('swapdoku_audio_track')
+    : 'lofi',
+  audioVolume: localStorage.getItem('swapdoku_music_volume') !== null
+    ? Math.max(0, Math.min(1, parseFloat(localStorage.getItem('swapdoku_music_volume')) || 0))
+    : 0.6,
+  sfxVolume: localStorage.getItem('swapdoku_sfx_volume') !== null
+    ? Math.max(0, Math.min(1, parseFloat(localStorage.getItem('swapdoku_sfx_volume')) || 0))
+    : 0.7,
   audioElement: null,
 
   // Sudoku Board Arrays (Länge 81)
@@ -1027,12 +1034,18 @@ const dom = {
 
   // Audio Modal
   audioModal: document.getElementById('audioModal'),
+  audioModalTitle: document.getElementById('audioModalTitle'),
+  audioTrackHeader: document.getElementById('audioTrackHeader'),
+  audioVolLabel: document.getElementById('audioVolLabel'),
+  sfxVolLabel: document.getElementById('sfxVolLabel'),
   closeAudioBtn: document.getElementById('closeAudioBtn'),
   btnAudioTogglePlay: document.getElementById('btnAudioTogglePlay'),
   audioStatusText: document.getElementById('audioStatusText'),
   audioTrackList: document.getElementById('audioTrackList'),
   audioVolumeSlider: document.getElementById('audioVolumeSlider'),
-  volValue: document.getElementById('volValue')
+  volValue: document.getElementById('volValue'),
+  sfxVolumeSlider: document.getElementById('sfxVolumeSlider'),
+  sfxVolValue: document.getElementById('sfxVolValue')
 };
 
 // =============================================================================
@@ -1587,8 +1600,14 @@ function resumeGame(broadcastToPeer = false) {
 }
 
 // =============================================================================
-// AUDIO ENGINE: KI-TRACKS (GOOGLE AI STUDIO) & PROZEDURALER SYNTHESIZER
+// AUDIO ENGINE: MP3-SOUNDTRACKS (LOFI, JAZZ, AMBIENT) & SOUNDEFFEKTE (SFX)
 // =============================================================================
+const AUDIO_TRACKS = {
+  lofi: { src: 'audio/lofi.mp3', label: 'Lofi' },
+  jazz: { src: 'audio/jazz.mp3', label: 'Jazz' },
+  ambient: { src: 'audio/ambient.mp3', label: 'Ambient' }
+};
+
 function openAudioModal() {
   if (dom.audioModal) dom.audioModal.classList.remove('hidden');
   updateAudioModalUI();
@@ -1599,12 +1618,24 @@ function closeAudioModal() {
 }
 
 function updateAudioModalUI() {
-  const d = I18N[state.currentLang] || I18N.de;
+  const isDe = state.currentLang === 'de';
+  const trackInfo = AUDIO_TRACKS[state.currentAudioTrack] || AUDIO_TRACKS.lofi;
+
+  if (dom.audioModalTitle) {
+    dom.audioModalTitle.textContent = isDe ? 'Musik & Soundeffekte' : 'Music & Sound Effects';
+  }
+  if (dom.audioTrackHeader) {
+    dom.audioTrackHeader.textContent = isDe ? 'Soundtrack wählen:' : 'Choose soundtrack:';
+  }
   if (dom.btnAudioTogglePlay) {
-    dom.btnAudioTogglePlay.textContent = state.audioPlaying ? (d.audioPause || 'Musik pausieren') : (d.audioPlay || 'Musik starten');
+    dom.btnAudioTogglePlay.textContent = state.audioPlaying
+      ? (isDe ? 'Musik pausieren' : 'Pause Music')
+      : (isDe ? 'Musik starten' : 'Play Music');
   }
   if (dom.audioStatusText) {
-    dom.audioStatusText.textContent = state.audioPlaying ? (d.audioStatusPlaying || 'Wiedergabe: Aktiv') : (d.audioStatusPaused || 'Wiedergabe: Inaktiv');
+    dom.audioStatusText.textContent = state.audioPlaying
+      ? (isDe ? `Aktiv: ${trackInfo.label}` : `Playing: ${trackInfo.label}`)
+      : (isDe ? 'Wiedergabe: Inaktiv' : 'Playback: Inactive');
   }
   if (dom.audioTrackList) {
     const trackBtns = dom.audioTrackList.querySelectorAll('.track-item');
@@ -1612,172 +1643,189 @@ function updateAudioModalUI() {
       btn.classList.toggle('active', btn.dataset.track === state.currentAudioTrack);
     });
   }
+  const musicPct = Math.round(state.audioVolume * 100);
   if (dom.audioVolumeSlider) {
-    dom.audioVolumeSlider.value = Math.round(state.audioVolume * 100);
+    dom.audioVolumeSlider.value = musicPct;
   }
-  if (dom.volValue) {
-    dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
+  if (dom.audioVolLabel) {
+    const labelText = isDe ? 'Musik-Lautstärke: ' : 'Music Volume: ';
+    dom.audioVolLabel.innerHTML = `${labelText}<span id="volValue">${musicPct}%</span>`;
+    dom.volValue = document.getElementById('volValue');
+  }
+  const sfxPct = Math.round(state.sfxVolume * 100);
+  if (dom.sfxVolumeSlider) {
+    dom.sfxVolumeSlider.value = sfxPct;
+  }
+  if (dom.sfxVolLabel) {
+    const sfxLabelText = isDe ? 'Soundeffekte: ' : 'Sound Effects: ';
+    const sfxDisplay = sfxPct === 0 ? (isDe ? 'Aus' : 'Off') : `${sfxPct}%`;
+    dom.sfxVolLabel.innerHTML = `${sfxLabelText}<span id="sfxVolValue">${sfxDisplay}</span>`;
+    dom.sfxVolValue = document.getElementById('sfxVolValue');
   }
 }
 
 function setAudioTrack(trackId) {
+  if (!AUDIO_TRACKS[trackId]) return;
+  const changed = state.currentAudioTrack !== trackId;
   state.currentAudioTrack = trackId;
+  localStorage.setItem('swapdoku_audio_track', trackId);
   updateAudioModalUI();
-  if (state.audioPlaying) {
-    stopAmbientSound();
-    startAmbientSound();
+
+  if (state.audioPlaying && changed) {
+    stopAmbientSound(true);
+    startAmbientSound(false);
+  } else if (!state.audioPlaying) {
+    startAmbientSound(false);
   }
 }
 
 function setAudioVolume(vol) {
   state.audioVolume = Math.max(0, Math.min(1, vol));
+  localStorage.setItem('swapdoku_music_volume', String(state.audioVolume));
   if (dom.volValue) dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
-  if (state.audioMasterGain && state.audioContext) {
-    try {
-      state.audioMasterGain.gain.setValueAtTime(0.70 * state.audioVolume, state.audioContext.currentTime);
-    } catch (_) {}
+  if (state.audioElement) {
+    state.audioElement.volume = state.audioVolume;
+  }
+}
+
+function setSfxVolume(vol) {
+  state.sfxVolume = Math.max(0, Math.min(1, vol));
+  localStorage.setItem('swapdoku_sfx_volume', String(state.sfxVolume));
+  const pct = Math.round(state.sfxVolume * 100);
+  if (dom.sfxVolValue) {
+    dom.sfxVolValue.textContent = pct === 0
+      ? (state.currentLang === 'de' ? 'Aus' : 'Off')
+      : `${pct}%`;
   }
 }
 
 function toggleAmbientSound() {
   if (state.audioPlaying) {
-    stopAmbientSound();
+    stopAmbientSound(false);
   } else {
-    startAmbientSound();
+    startAmbientSound(false);
   }
 }
 
-async function startAmbientSound() {
+async function startAmbientSound(silentToast = false) {
   try {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContextClass) return;
-    
-    if (!state.audioContext) {
-      state.audioContext = new AudioContextClass();
-    }
-    
-    if (state.audioContext.state === 'suspended') {
-      await state.audioContext.resume();
+    const track = AUDIO_TRACKS[state.currentAudioTrack] || AUDIO_TRACKS.lofi;
+    if (!state.audioElement) {
+      state.audioElement = new Audio();
+      state.audioElement.loop = true;
+      state.audioElement.preload = 'auto';
     }
 
-    if (state.ambientChordTimer) {
-      clearInterval(state.ambientChordTimer);
-      state.ambientChordTimer = null;
+    const currentSrc = state.audioElement.getAttribute('data-track-id');
+    if (currentSrc !== state.currentAudioTrack) {
+      state.audioElement.pause();
+      state.audioElement.src = track.src;
+      state.audioElement.setAttribute('data-track-id', state.currentAudioTrack);
+      state.audioElement.currentTime = 0;
     }
 
-    state.audioMasterGain = state.audioContext.createGain();
-    state.audioMasterGain.gain.setValueAtTime(0.70 * state.audioVolume, state.audioContext.currentTime);
-    state.audioMasterGain.connect(state.audioContext.destination);
+    state.audioElement.volume = state.audioVolume;
+    await state.audioElement.play();
 
-    state.ambientChordIndex = 0;
     state.audioPlaying = true;
-    playGenerativeTrack();
-
-    state.ambientChordTimer = setInterval(() => {
-      if (!state.audioPlaying) return;
-      playGenerativeTrack();
-    }, 4500);
-
     if (dom.audioToggleBtn) dom.audioToggleBtn.classList.add('active');
     updateAudioModalUI();
-    toast(t('toastMusicOn'));
+    if (!silentToast) {
+      toast(state.currentLang === 'de' ? `Soundtrack: ${track.label}` : `Soundtrack: ${track.label}`);
+    }
   } catch (err) {
-    console.warn('Ambient Audio Init:', err);
+    console.warn('Audio playback error:', err);
+    state.audioPlaying = false;
+    if (dom.audioToggleBtn) dom.audioToggleBtn.classList.remove('active');
+    updateAudioModalUI();
   }
 }
 
-function playGenerativeTrack() {
-  if (!state.audioContext || !state.audioPlaying) return;
-  if (state.audioContext.state === 'suspended') {
-    state.audioContext.resume().catch(() => {});
-  }
-
-  const now = state.audioContext.currentTime;
-  const duration = 4.4;
-
-  let chords;
-  let filterFreq = 1600;
-  let oscTypes = ['triangle', 'sine'];
-
-  if (state.currentAudioTrack === 'zen') {
-    chords = [
-      [220.00, 329.63, 440.00, 523.25], // A3, E4, A4, C5
-      [196.00, 293.66, 392.00, 440.00], // G3, D4, G4, A4
-      [174.61, 261.63, 349.23, 440.00], // F3, C4, F4, A4
-      [164.81, 246.94, 329.63, 392.00]  // E3, B3, E4, G4
-    ];
-    filterFreq = 1800;
-    oscTypes = ['sine', 'triangle'];
-  } else if (state.currentAudioTrack === 'lofi') {
-    chords = [
-      [174.61, 220.00, 261.63, 329.63], // Fmaj7
-      [164.81, 196.00, 246.94, 293.66], // Em7
-      [146.83, 174.61, 220.00, 261.63], // Dm7
-      [130.81, 164.81, 196.00, 246.94]  // Cmaj7
-    ];
-    filterFreq = 1400;
-    oscTypes = ['triangle', 'sine'];
-  } else {
-    // synth / nordic ambient
-    chords = [
-      [130.81, 196.00, 261.63, 392.00], // C3, G3, C4, G4
-      [146.83, 220.00, 293.66, 440.00], // D3, A3, D4, A4
-      [110.00, 164.81, 220.00, 329.63], // A2, E3, A3, E4
-      [174.61, 261.63, 349.23, 523.25]  // F3, C4, F4, C5
-    ];
-    filterFreq = 1500;
-    oscTypes = ['triangle', 'triangle'];
-  }
-
-  const notes = chords[state.ambientChordIndex % chords.length];
-  state.ambientChordIndex = (state.ambientChordIndex + 1) % chords.length;
-
-  try {
-    const filter = state.audioContext.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(filterFreq, now);
-    filter.Q.setValueAtTime(0.7, now);
-    filter.connect(state.audioMasterGain);
-
-    notes.forEach((freq, idx) => {
-      const osc = state.audioContext.createOscillator();
-      const gain = state.audioContext.createGain();
-
-      osc.type = oscTypes[idx % oscTypes.length];
-      const detune = (Math.random() - 0.5) * 6;
-      osc.frequency.setValueAtTime(freq + detune * 0.04, now);
-
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.38, now + 0.6);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-      osc.connect(gain);
-      gain.connect(filter);
-
-      osc.start(now);
-      osc.stop(now + duration);
-      state.activeVoices.push(osc);
-    });
-  } catch (err) {
-    console.warn('Voice play error:', err);
-  }
-}
-
-function stopAmbientSound() {
-  if (state.ambientChordTimer) {
-    clearInterval(state.ambientChordTimer);
-    state.ambientChordTimer = null;
-  }
-  if (state.activeVoices) {
-    state.activeVoices.forEach(osc => {
-      try { osc.stop(); osc.disconnect(); } catch (_) {}
-    });
-    state.activeVoices = [];
+function stopAmbientSound(silentToast = false) {
+  if (state.audioElement) {
+    try {
+      state.audioElement.pause();
+    } catch (_) {}
   }
   state.audioPlaying = false;
   if (dom.audioToggleBtn) dom.audioToggleBtn.classList.remove('active');
   updateAudioModalUI();
-  toast(t('toastMusicOff'));
+  if (!silentToast) {
+    toast(t('toastMusicOff'));
+  }
+}
+
+function ensureSfxContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!state.audioContext) {
+    state.audioContext = new AudioContextClass();
+  }
+  if (state.audioContext.state === 'suspended') {
+    state.audioContext.resume().catch(() => {});
+  }
+  return state.audioContext;
+}
+
+function playSfx(type) {
+  if (state.sfxVolume <= 0) return;
+  const ctx = ensureSfxContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  const vol = state.sfxVolume;
+
+  try {
+    if (type === 'input') {
+      // Dezenter, angenehmer Klick-/Pluck-Ton beim Eintippen einer Zahl
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(740, now + 0.045);
+
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.22 * vol, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } else if (type === 'error') {
+      // Deutlicher, tiefer Doppel-Ton bei falscher Zahl
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(520, now);
+      filter.connect(ctx.destination);
+
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sawtooth';
+      osc1.frequency.setValueAtTime(195, now);
+      osc1.frequency.exponentialRampToValueAtTime(145, now + 0.11);
+      gain1.gain.setValueAtTime(0.001, now);
+      gain1.gain.linearRampToValueAtTime(0.24 * vol, now + 0.01);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      osc1.connect(gain1);
+      gain1.connect(filter);
+      osc1.start(now);
+      osc1.stop(now + 0.125);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(155, now + 0.11);
+      osc2.frequency.exponentialRampToValueAtTime(115, now + 0.25);
+      gain2.gain.setValueAtTime(0.001, now + 0.11);
+      gain2.gain.linearRampToValueAtTime(0.28 * vol, now + 0.125);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.26);
+      osc2.connect(gain2);
+      gain2.connect(filter);
+      osc2.start(now + 0.11);
+      osc2.stop(now + 0.27);
+    }
+  } catch (_) {}
 }
 
 // =============================================================================
@@ -2076,6 +2124,7 @@ function handleNumberInput(num) {
     }
     state.savedNotes[idx] = new Set(state.notes[idx]);
     state.currentBoard[idx] = 0;
+    playSfx('input');
   } else {
     const previousNum = state.currentBoard[idx];
     const isCorrect = (num === state.solution[idx]);
@@ -2098,10 +2147,12 @@ function handleNumberInput(num) {
       state.savedNotes[idx].clear();
       state.wrongNotes[idx].clear();
       cleanPeerNotes(idx, num);
+      playSfx('input');
     } else {
       // Falsche Zahl: Fehler im Notiz-Gedächtnis merken & Leben abziehen (bei jeder falschen Zahleneingabe)
       state.wrongNotes[idx].add(num);
       triggerErrorShake = true;
+      playSfx('error');
       deductHeart();
     }
 
@@ -4716,6 +4767,12 @@ function bindEvents() {
   });
   if (dom.btnAudioTogglePlay) dom.btnAudioTogglePlay.addEventListener('click', toggleAmbientSound);
   if (dom.audioVolumeSlider) dom.audioVolumeSlider.addEventListener('input', e => setAudioVolume(e.target.value / 100));
+  if (dom.sfxVolumeSlider) {
+    dom.sfxVolumeSlider.addEventListener('input', e => setSfxVolume(e.target.value / 100));
+    dom.sfxVolumeSlider.addEventListener('change', () => {
+      if (state.sfxVolume > 0) playSfx('input');
+    });
+  }
   if (dom.audioTrackList) {
     dom.audioTrackList.addEventListener('click', e => {
       const btn = e.target.closest('.track-item');
