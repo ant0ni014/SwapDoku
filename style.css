@@ -327,9 +327,10 @@ body {
   padding-top: 74px;
 }
 
-/* Spieloptionen */
+/* Spieloptionen: feste Mindesthöhe auf Desktop, damit das Numpad in allen Modi exakt an derselben Stelle bleibt */
 .game-options {
   width: 100%;
+  min-height: 190px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -470,7 +471,7 @@ body {
   padding: 6px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .lobby-switch {
@@ -1351,13 +1352,13 @@ body {
   text-decoration: line-through;
 }
 
-/* Controls: Toolbar & Ziffernblock rechts mittig zum Board ausgerichtet */
+/* Controls: Toolbar & Ziffernblock rechts fest neben der Mitte des Boards */
 .controls {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
-  margin: auto 0;
+  margin: 0;
 }
 
 .toolbar {
@@ -1532,6 +1533,7 @@ body {
   .game-options {
     order: 1;
     width: 100%;
+    min-height: 0;
     max-width: min(440px, 94vw);
     gap: 4px;
   }
@@ -2282,7 +2284,7 @@ body {
 .bot-box {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .swap-role-hint {
