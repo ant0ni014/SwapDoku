@@ -2409,10 +2409,136 @@ function showResultOverlay(isWin, customTitle = null, customDesc = null) {
   }
 
   updateRematchButtonUI();
+  renderResultLeaderboard();
 
   if (dom.hudResultBar) dom.hudResultBar.classList.add('hidden');
   dom.boardResultOverlay.classList.remove('hidden');
   dom.boardResultOverlay.style.display = 'flex';
+}
+
+async function renderResultLeaderboard() {
+  const listEl = document.getElementById('resultLbList');
+  const titleEl = document.getElementById('resultLbTitle');
+  const moreBtn = document.getElementById('btnResultOpenLeaderboard');
+  if (!listEl) return;
+
+  const isDe = state.currentLang !== 'en';
+  const mode = state.mode || 'zen';
+  const diff = mode === 'zen' ? (state.zenDifficulty || 'easy') : (state.versusDifficulty || 'medium');
+  const diffLabelMap = isDe
+    ? { easy: 'Einfach', medium: 'Mittel', hard: 'Schwer' }
+    : { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+  const modeLabelMap = isDe
+    ? { zen: 'Einzelspieler', versus: 'Versus', swap: 'Co-Op Swap' }
+    : { zen: 'Singleplayer', versus: 'Versus', swap: 'Co-Op Swap' };
+
+  if (titleEl) {
+    titleEl.textContent = `${isDe ? 'Rangliste' : 'Leaderboard'} · ${modeLabelMap[mode] || mode} (${diffLabelMap[diff] || diff})`;
+  }
+  if (moreBtn) {
+    moreBtn.textContent = isDe ? 'Alle anzeigen' : 'View all';
+  }
+
+  const boards = loadSavedLeaderboards();
+  const myName = state.profile.username || 'Spieler';
+  const d = I18N[state.currentLang] || I18N.de;
+  const winsUnit = d.winsUnit || (isDe ? 'Siege' : 'Wins');
+
+  const drawMiniRows = (items, isWins) => {
+    listEl.innerHTML = '';
+    if (!items || items.length === 0) {
+      listEl.innerHTML = `<div class="result-lb-empty">${isDe ? 'Noch keine Einträge' : 'No entries yet'}</div>`;
+      return;
+    }
+    const top = items.slice(0, 4);
+    top.forEach((entry, idx) => {
+      const isMe = entry.id === 'player-me'
+        || (state.user && (entry.user_id === state.user.id || entry.id === state.user.id))
+        || (!entry.user_id && entry.username === myName);
+      const row = document.createElement('div');
+      row.className = 'result-lb-row' + (isMe ? ' my-row' : '');
+      const valText = isWins ? `${entry.wins || 0} ${winsUnit}` : formatTime(entry.time);
+      row.innerHTML = `
+        <span class="result-lb-left">
+          <span class="result-lb-rank">#${idx + 1}</span>
+          <span class="result-lb-name">${entry.username}${isMe ? ` (${t('playerLabel')})` : ''}</span>
+        </span>
+        <span class="result-lb-val">${valText}</span>
+      `;
+      listEl.appendChild(row);
+    });
+  };
+
+  if (mode === 'versus') {
+    const winsByDiff = state.profile.versus_wins_by_diff || loadVersusWinsByDiff();
+    const myWins = winsByDiff[diff] || 0;
+    const diffKey = `versus_wins_${diff}`;
+    let vList = (boards[diffKey] || []).filter(e => e && !e.id?.startsWith('bot-'));
+    let myEntry = vList.find(e => e.id === 'player-me' || e.username === myName);
+    if (!myEntry && myWins > 0) {
+      myEntry = { id: 'player-me', username: myName, wins: myWins };
+      vList.push(myEntry);
+    }
+    vList.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+    drawMiniRows(vList, true);
+
+    if (state.supabase && !state.isOffline) {
+      try {
+        const colName = `versus_wins_${diff}`;
+        const { data, error } = await state.supabase
+          .from('profiles')
+          .select(`id, username, ${colName}`)
+          .gt(colName, 0)
+          .order(colName, { ascending: false })
+          .limit(10);
+        if (!error && data && data.length > 0) {
+          const onlineWins = data.map(r => ({ id: r.id, username: r.username || 'Spieler', wins: r[colName] || 0 }));
+          if (myEntry && !onlineWins.some(e => (state.user && e.id === state.user.id) || e.username === myName)) {
+            onlineWins.push(myEntry);
+          }
+          onlineWins.sort((a, b) => (b.wins || 0) - (a.wins || 0));
+          drawMiniRows(onlineWins, true);
+        }
+      } catch (_) {}
+    }
+    return;
+  }
+
+  const key = `${mode}_${diff}`;
+  let localList = (boards[key] || []).filter(e => e && !e.id?.startsWith('bot-')).sort((a, b) => a.time - b.time);
+  const myLocalEntry = localList.find(e => e.id === 'player-me' || e.username === myName);
+  drawMiniRows(localList, false);
+
+  if (state.supabase && !state.isOffline) {
+    try {
+      const { data, error } = await state.supabase
+        .from('leaderboard_scores')
+        .select('id, user_id, username, time_seconds')
+        .eq('mode', mode)
+        .eq('difficulty', diff)
+        .order('time_seconds', { ascending: true })
+        .limit(50);
+
+      if (!error && data && data.length > 0) {
+        const bestByPlayer = new Map();
+        for (const row of data) {
+          const uname = (row.username || 'Spieler').trim();
+          const isGenericGuest = !row.user_id && (uname.toLowerCase() === 'spieler' || uname.toLowerCase() === 'player');
+          const playerKey = row.user_id || (isGenericGuest ? `guest-row:${row.id}` : `name:${uname.toLowerCase()}`);
+          if (!bestByPlayer.has(playerKey)) {
+            bestByPlayer.set(playerKey, { id: row.id, user_id: row.user_id, username: uname, time: row.time_seconds });
+          }
+        }
+        const onlineList = Array.from(bestByPlayer.values());
+        const hasMe = onlineList.some(e => (state.user && e.user_id === state.user.id) || (!e.user_id && e.username === myName));
+        if (myLocalEntry && !hasMe) {
+          onlineList.push(myLocalEntry);
+        }
+        onlineList.sort((a, b) => a.time - b.time);
+        drawMiniRows(onlineList, false);
+      }
+    } catch (_) {}
+  }
 }
 
 function updateRematchButtonUI() {
@@ -3448,6 +3574,7 @@ function handleRematchButtonClick() {
   const inLiveRoom = Boolean(state.channel && state.roomCode && !state.peerLeftRoom);
   if (!inLiveRoom) {
     startNewGame();
+    ensureGameStarted();
     return;
   }
 
@@ -4905,6 +5032,8 @@ function bindEvents() {
 
   // Board Result Overlay
   if (dom.btnResultNewGame) dom.btnResultNewGame.addEventListener('click', handleRematchButtonClick);
+  const btnResultOpenLeaderboard = document.getElementById('btnResultOpenLeaderboard');
+  if (btnResultOpenLeaderboard) btnResultOpenLeaderboard.addEventListener('click', openLeaderboard);
   if (dom.btnResultDeclineRematch) dom.btnResultDeclineRematch.addEventListener('click', handleDeclineRematchClick);
   if (dom.btnResultSolution) dom.btnResultSolution.addEventListener('click', showFullSolution);
   if (dom.btnResultInspect) dom.btnResultInspect.addEventListener('click', hideResultOverlayForInspection);
