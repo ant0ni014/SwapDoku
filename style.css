@@ -324,7 +324,7 @@ body {
   flex-direction: column;
   justify-content: flex-start;
   gap: 10px;
-  padding-top: 0;
+  padding-top: 74px;
 }
 
 /* Spieloptionen */
@@ -1371,7 +1371,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 9px;
-  height: 36px;
+  height: 34px;
   padding: 0 4px;
   font-size: 0.78rem;
   font-weight: 500;
@@ -1404,7 +1404,7 @@ body {
 }
 
 .num {
-  height: clamp(42px, 6.8vh, 56px);
+  height: clamp(38px, 6.4vh, 54px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
