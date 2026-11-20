@@ -1845,21 +1845,26 @@ function playSfx(type) {
 
   try {
     if (type === 'input') {
-      // Dezenter, angenehmer Klick-/Pluck-Ton beim Eintippen einer Zahl
+      // Tiefer, warmer, chilliger Soft-Tap beim Eintippen einer Zahl
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(650, now);
+      filter.connect(ctx.destination);
+
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(520, now);
-      osc.frequency.exponentialRampToValueAtTime(740, now + 0.045);
+      osc.frequency.setValueAtTime(290, now);
+      osc.frequency.exponentialRampToValueAtTime(215, now + 0.065);
 
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(0.22 * vol, now + 0.008);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.075);
+      gain.gain.linearRampToValueAtTime(0.24 * vol, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
 
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(filter);
       osc.start(now);
-      osc.stop(now + 0.08);
+      osc.stop(now + 0.1);
     } else if (type === 'error') {
       // Deutlicher, tiefer Doppel-Ton bei falscher Zahl
       const filter = ctx.createBiquadFilter();
