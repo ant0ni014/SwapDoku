@@ -327,10 +327,10 @@ body {
   padding-top: 74px;
 }
 
-/* Spieloptionen: feste Mindesthöhe auf Desktop, damit das Numpad in allen Modi exakt an derselben Stelle bleibt */
+/* Spieloptionen: feste Mindesthöhe auf Desktop, damit das Numpad direkt an die Lobby anknüpft und im Einzelspieler auf gleicher Höhe bleibt */
 .game-options {
   width: 100%;
-  min-height: 190px;
+  min-height: 162px;
   display: flex;
   flex-direction: column;
   gap: 6px;
