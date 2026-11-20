@@ -25,10 +25,44 @@
         <button class="pill-btn lang-btn" id="langToggleBtn" title="Sprache wechseln / Switch Language" aria-label="Sprache">
           <span id="langLabel">EN</span>
         </button>
-        <!-- Ambient Sound / Musik Button -->
-        <button class="icon-toggle" id="audioToggleBtn" title="Lofi Ambient-Musik an/aus" aria-label="Entspannte Musik">
-          <span id="audioToggleIcon">♪</span>
-        </button>
+        <!-- Ambient Sound / Musik Dropdown-Menü -->
+        <div class="audio-menu-anchor" id="audioMenuAnchor">
+          <button class="icon-toggle" id="audioToggleBtn" title="Musik & Soundeffekte" aria-label="Musik & Soundeffekte" aria-expanded="false">
+            <span id="audioToggleIcon">♪</span>
+          </button>
+          <div class="audio-popover hidden" id="audioPopover" role="menu">
+            <div class="audio-popover-section">
+              <span class="audio-popover-heading" id="audioTrackHeader">Soundtrack</span>
+              <div class="audio-track-pills" id="audioTrackList">
+                <button class="track-pill active" data-track="lofi" type="button">Lofi</button>
+                <button class="track-pill" data-track="jazz" type="button">Jazz</button>
+                <button class="track-pill" data-track="ambient" type="button">Ambient</button>
+              </div>
+            </div>
+            <div class="audio-popover-divider"></div>
+            <div class="audio-popover-section">
+              <div class="audio-slider-header">
+                <span class="audio-popover-heading" id="audioVolLabel">Musik</span>
+                <span class="audio-pct" id="volValue">60%</span>
+              </div>
+              <div class="audio-control-row">
+                <button class="audio-mute-btn" id="btnMusicMute" type="button" title="Musik an/aus" aria-label="Musik an/aus"></button>
+                <input type="range" id="audioVolumeSlider" min="0" max="100" value="60" aria-label="Musik-Lautstärke">
+              </div>
+            </div>
+            <div class="audio-popover-divider"></div>
+            <div class="audio-popover-section">
+              <div class="audio-slider-header">
+                <span class="audio-popover-heading" id="sfxVolLabel">Soundeffekte</span>
+                <span class="audio-pct" id="sfxVolValue">70%</span>
+              </div>
+              <div class="audio-control-row">
+                <button class="audio-mute-btn" id="btnSfxMute" type="button" title="Soundeffekte an/aus" aria-label="Soundeffekte an/aus"></button>
+                <input type="range" id="sfxVolumeSlider" min="0" max="100" value="70" aria-label="Soundeffekt-Lautstärke">
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Rangliste Button -->
         <button class="icon-toggle" id="openLeaderboardBtn" title="Rangliste öffnen" aria-label="Rangliste">
           <span style="font-size: 0.8rem; font-weight: 600;">#1</span>
@@ -583,50 +617,6 @@
 
         <h3>5. Ihre Rechte</h3>
         <p>Sie haben gemäß Art. 15–20 DSGVO jederzeit das Recht auf unentgeltliche Auskunft über Herkunft, Empfänger und Zweck Ihrer gespeicherten personenbezogenen Daten sowie ein Recht auf Berichtigung, Sperrung oder Löschung dieser Daten.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Modal: Soundtracks & Soundeffekte -->
-  <div class="modal hidden" id="audioModal">
-    <div class="modal-card audio-card">
-      <div class="modal-top">
-        <h2 id="audioModalTitle">Musik &amp; Soundeffekte</h2>
-        <button class="close-btn" id="closeAudioBtn">&times;</button>
-      </div>
-      <div class="audio-modal-body">
-        <div class="audio-play-row">
-          <span class="audio-label-text" id="audioStatusText">Wiedergabe: Inaktiv</span>
-          <button class="btn btn-primary" id="btnAudioTogglePlay">Musik starten</button>
-        </div>
-        <div class="audio-track-section">
-          <label class="profile-label" id="audioTrackHeader">Soundtrack wählen:</label>
-          <div class="track-list" id="audioTrackList">
-            <button class="track-item active" data-track="lofi">
-              <div class="track-info">
-                <span class="track-title">Lofi</span>
-              </div>
-            </button>
-            <button class="track-item" data-track="jazz">
-              <div class="track-info">
-                <span class="track-title">Jazz</span>
-              </div>
-            </button>
-            <button class="track-item" data-track="ambient">
-              <div class="track-info">
-                <span class="track-title">Ambient</span>
-              </div>
-            </button>
-          </div>
-        </div>
-        <div class="audio-volume-row">
-          <label for="audioVolumeSlider" id="audioVolLabel">Musik-Lautstärke: <span id="volValue">60%</span></label>
-          <input type="range" id="audioVolumeSlider" min="0" max="100" value="60">
-        </div>
-        <div class="audio-volume-row">
-          <label for="sfxVolumeSlider" id="sfxVolLabel">Soundeffekte: <span id="sfxVolValue">70%</span></label>
-          <input type="range" id="sfxVolumeSlider" min="0" max="100" value="70">
-        </div>
       </div>
     </div>
   </div>

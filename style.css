@@ -2244,98 +2244,131 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* Audio & Musik Modal */
-.audio-card {
-  max-width: 380px;
-}
-
-.audio-play-row {
-  display: flex;
-  justify-content: space-between;
+/* Audio & Musik Popover-Menü direkt unter der Musiknote */
+.audio-menu-anchor {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  background: var(--surface-hover);
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  margin-bottom: 12px;
 }
 
-.audio-label-text {
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.audio-track-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.track-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.track-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
+.audio-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 248px;
   background: var(--surface);
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.track-item:hover {
-  background: var(--surface-hover);
-}
-
-.track-item.active {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.track-info {
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  z-index: 1200;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 10px;
 }
 
-.track-title {
-  font-size: 0.82rem;
+.audio-popover.hidden {
+  display: none;
+}
+
+.audio-popover-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audio-popover-heading {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.audio-popover-divider {
+  height: 1px;
+  background: var(--border);
+  width: 100%;
+}
+
+.audio-track-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.track-pill {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.track-pill:hover {
+  background: var(--surface-hover);
+}
+
+.track-pill.active {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 600;
+}
+
+.audio-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.audio-pct {
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
-.track-badge {
-  font-size: 0.68rem;
-  color: var(--muted);
-}
-
-.audio-volume-row {
+.audio-control-row {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 6px;
+  align-items: center;
+  gap: 8px;
 }
 
-.audio-volume-row label {
-  font-size: 0.78rem;
+.audio-mute-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--bg);
   color: var(--text);
-  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.audio-volume-row input[type="range"] {
+.audio-mute-btn:hover {
+  background: var(--surface-hover);
+}
+
+.audio-mute-btn.muted {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.audio-control-row input[type="range"] {
+  flex: 1;
   width: 100%;
   accent-color: var(--user-val);
   cursor: pointer;
+  margin: 0;
 }
 
 /* Toast (oben zentriert, sofort sichtbar und niemals vom Footer überdeckt) */

@@ -1032,15 +1032,14 @@ const dom = {
   numpad: document.getElementById('numpad'),
   toast: document.getElementById('toast'),
 
-  // Audio Modal
-  audioModal: document.getElementById('audioModal'),
-  audioModalTitle: document.getElementById('audioModalTitle'),
+  // Audio Popover-Menü
+  audioMenuAnchor: document.getElementById('audioMenuAnchor'),
+  audioPopover: document.getElementById('audioPopover'),
   audioTrackHeader: document.getElementById('audioTrackHeader'),
   audioVolLabel: document.getElementById('audioVolLabel'),
   sfxVolLabel: document.getElementById('sfxVolLabel'),
-  closeAudioBtn: document.getElementById('closeAudioBtn'),
-  btnAudioTogglePlay: document.getElementById('btnAudioTogglePlay'),
-  audioStatusText: document.getElementById('audioStatusText'),
+  btnMusicMute: document.getElementById('btnMusicMute'),
+  btnSfxMute: document.getElementById('btnSfxMute'),
   audioTrackList: document.getElementById('audioTrackList'),
   audioVolumeSlider: document.getElementById('audioVolumeSlider'),
   volValue: document.getElementById('volValue'),
@@ -1183,6 +1182,7 @@ function applyLanguageToDOM() {
   updateAccountUI();
   updateSwapProgressBars();
   updateSwapSolvedOverlay();
+  updateAudioModalUI();
 }
 
 function updatePauseBtnTitle() {
@@ -1608,59 +1608,81 @@ const AUDIO_TRACKS = {
   ambient: { src: 'audio/ambient.mp3', label: 'Ambient' }
 };
 
-function openAudioModal() {
-  if (dom.audioModal) dom.audioModal.classList.remove('hidden');
+const SPEAKER_ON_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+const SPEAKER_MUTE_SVG = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+
+function openAudioPopover() {
+  if (!dom.audioPopover) return;
+  dom.audioPopover.classList.remove('hidden');
+  if (dom.audioToggleBtn) dom.audioToggleBtn.setAttribute('aria-expanded', 'true');
   updateAudioModalUI();
 }
 
-function closeAudioModal() {
-  if (dom.audioModal) dom.audioModal.classList.add('hidden');
+function closeAudioPopover() {
+  if (!dom.audioPopover) return;
+  dom.audioPopover.classList.add('hidden');
+  if (dom.audioToggleBtn) dom.audioToggleBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleAudioPopover() {
+  if (!dom.audioPopover) return;
+  if (dom.audioPopover.classList.contains('hidden')) {
+    openAudioPopover();
+  } else {
+    closeAudioPopover();
+  }
 }
 
 function updateAudioModalUI() {
   const isDe = state.currentLang === 'de';
-  const trackInfo = AUDIO_TRACKS[state.currentAudioTrack] || AUDIO_TRACKS.lofi;
 
-  if (dom.audioModalTitle) {
-    dom.audioModalTitle.textContent = isDe ? 'Musik & Soundeffekte' : 'Music & Sound Effects';
-  }
   if (dom.audioTrackHeader) {
-    dom.audioTrackHeader.textContent = isDe ? 'Soundtrack wählen:' : 'Choose soundtrack:';
+    dom.audioTrackHeader.textContent = isDe ? 'Soundtrack' : 'Soundtrack';
   }
-  if (dom.btnAudioTogglePlay) {
-    dom.btnAudioTogglePlay.textContent = state.audioPlaying
-      ? (isDe ? 'Musik pausieren' : 'Pause Music')
-      : (isDe ? 'Musik starten' : 'Play Music');
+  if (dom.audioVolLabel) {
+    dom.audioVolLabel.textContent = isDe ? 'Musik' : 'Music';
   }
-  if (dom.audioStatusText) {
-    dom.audioStatusText.textContent = state.audioPlaying
-      ? (isDe ? `Aktiv: ${trackInfo.label}` : `Playing: ${trackInfo.label}`)
-      : (isDe ? 'Wiedergabe: Inaktiv' : 'Playback: Inactive');
+  if (dom.sfxVolLabel) {
+    dom.sfxVolLabel.textContent = isDe ? 'Soundeffekte' : 'Sound Effects';
   }
+
   if (dom.audioTrackList) {
-    const trackBtns = dom.audioTrackList.querySelectorAll('.track-item');
+    const trackBtns = dom.audioTrackList.querySelectorAll('.track-pill');
     trackBtns.forEach(btn => {
       btn.classList.toggle('active', btn.dataset.track === state.currentAudioTrack);
     });
   }
-  const musicPct = Math.round(state.audioVolume * 100);
+
+  const musicMuted = !state.audioPlaying || state.audioVolume <= 0;
+  const musicPct = musicMuted ? 0 : Math.round(state.audioVolume * 100);
   if (dom.audioVolumeSlider) {
     dom.audioVolumeSlider.value = musicPct;
   }
-  if (dom.audioVolLabel) {
-    const labelText = isDe ? 'Musik-Lautstärke: ' : 'Music Volume: ';
-    dom.audioVolLabel.innerHTML = `${labelText}<span id="volValue">${musicPct}%</span>`;
-    dom.volValue = document.getElementById('volValue');
+  if (dom.volValue) {
+    dom.volValue.textContent = musicMuted ? (isDe ? 'Aus' : 'Off') : `${musicPct}%`;
   }
+  if (dom.btnMusicMute) {
+    dom.btnMusicMute.innerHTML = musicMuted ? SPEAKER_MUTE_SVG : SPEAKER_ON_SVG;
+    dom.btnMusicMute.classList.toggle('muted', musicMuted);
+    dom.btnMusicMute.title = musicMuted
+      ? (isDe ? 'Musik einschalten' : 'Unmute music')
+      : (isDe ? 'Musik ausschalten' : 'Mute music');
+  }
+
+  const sfxMuted = state.sfxVolume <= 0;
   const sfxPct = Math.round(state.sfxVolume * 100);
   if (dom.sfxVolumeSlider) {
     dom.sfxVolumeSlider.value = sfxPct;
   }
-  if (dom.sfxVolLabel) {
-    const sfxLabelText = isDe ? 'Soundeffekte: ' : 'Sound Effects: ';
-    const sfxDisplay = sfxPct === 0 ? (isDe ? 'Aus' : 'Off') : `${sfxPct}%`;
-    dom.sfxVolLabel.innerHTML = `${sfxLabelText}<span id="sfxVolValue">${sfxDisplay}</span>`;
-    dom.sfxVolValue = document.getElementById('sfxVolValue');
+  if (dom.sfxVolValue) {
+    dom.sfxVolValue.textContent = sfxMuted ? (isDe ? 'Aus' : 'Off') : `${sfxPct}%`;
+  }
+  if (dom.btnSfxMute) {
+    dom.btnSfxMute.innerHTML = sfxMuted ? SPEAKER_MUTE_SVG : SPEAKER_ON_SVG;
+    dom.btnSfxMute.classList.toggle('muted', sfxMuted);
+    dom.btnSfxMute.title = sfxMuted
+      ? (isDe ? 'Soundeffekte einschalten' : 'Unmute sound effects')
+      : (isDe ? 'Soundeffekte ausschalten' : 'Mute sound effects');
   }
 }
 
@@ -1669,6 +1691,12 @@ function setAudioTrack(trackId) {
   const changed = state.currentAudioTrack !== trackId;
   state.currentAudioTrack = trackId;
   localStorage.setItem('swapdoku_audio_track', trackId);
+
+  if (state.audioVolume <= 0) {
+    state.audioVolume = state.lastAudioVolume || 0.6;
+    localStorage.setItem('swapdoku_music_volume', String(state.audioVolume));
+  }
+
   updateAudioModalUI();
 
   if (state.audioPlaying && changed) {
@@ -1679,24 +1707,64 @@ function setAudioTrack(trackId) {
   }
 }
 
+function toggleMusicMute() {
+  if (state.audioPlaying && state.audioVolume > 0) {
+    state.lastAudioVolume = state.audioVolume;
+    stopAmbientSound(true);
+  } else {
+    if (state.audioVolume <= 0) {
+      state.audioVolume = state.lastAudioVolume || 0.6;
+      localStorage.setItem('swapdoku_music_volume', String(state.audioVolume));
+    }
+    startAmbientSound(true);
+  }
+}
+
 function setAudioVolume(vol) {
-  state.audioVolume = Math.max(0, Math.min(1, vol));
+  const clamped = Math.max(0, Math.min(1, vol));
+  if (clamped > 0) {
+    state.lastAudioVolume = clamped;
+  }
+  state.audioVolume = clamped;
   localStorage.setItem('swapdoku_music_volume', String(state.audioVolume));
-  if (dom.volValue) dom.volValue.textContent = `${Math.round(state.audioVolume * 100)}%`;
+
+  if (clamped <= 0) {
+    if (state.audioPlaying) {
+      stopAmbientSound(true);
+    } else {
+      updateAudioModalUI();
+    }
+    return;
+  }
+
   if (state.audioElement) {
     state.audioElement.volume = state.audioVolume;
+  }
+  if (!state.audioPlaying) {
+    startAmbientSound(true);
+  } else {
+    updateAudioModalUI();
+  }
+}
+
+function toggleSfxMute() {
+  if (state.sfxVolume > 0) {
+    state.lastSfxVolume = state.sfxVolume;
+    setSfxVolume(0);
+  } else {
+    setSfxVolume(state.lastSfxVolume || 0.7);
+    playSfx('input');
   }
 }
 
 function setSfxVolume(vol) {
-  state.sfxVolume = Math.max(0, Math.min(1, vol));
-  localStorage.setItem('swapdoku_sfx_volume', String(state.sfxVolume));
-  const pct = Math.round(state.sfxVolume * 100);
-  if (dom.sfxVolValue) {
-    dom.sfxVolValue.textContent = pct === 0
-      ? (state.currentLang === 'de' ? 'Aus' : 'Off')
-      : `${pct}%`;
+  const clamped = Math.max(0, Math.min(1, vol));
+  if (clamped > 0) {
+    state.lastSfxVolume = clamped;
   }
+  state.sfxVolume = clamped;
+  localStorage.setItem('swapdoku_sfx_volume', String(state.sfxVolume));
+  updateAudioModalUI();
 }
 
 function toggleAmbientSound() {
@@ -4715,13 +4783,22 @@ function bindEvents() {
   // Sprachwechsel DE / EN
   dom.langToggleBtn.addEventListener('click', toggleLanguage);
 
-  // Audio Toggle & Modal
-  dom.audioToggleBtn.addEventListener('click', () => {
-    toggleAmbientSound();
+  // Audio Popover-Menü direkt unter der Musiknote
+  dom.audioToggleBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    toggleAudioPopover();
   });
-  dom.audioToggleBtn.addEventListener('contextmenu', e => {
-    e.preventDefault();
-    openAudioModal();
+  document.addEventListener('click', e => {
+    if (dom.audioMenuAnchor && dom.audioPopover && !dom.audioPopover.classList.contains('hidden')) {
+      if (!dom.audioMenuAnchor.contains(e.target)) {
+        closeAudioPopover();
+      }
+    }
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && dom.audioPopover && !dom.audioPopover.classList.contains('hidden')) {
+      closeAudioPopover();
+    }
   });
 
   // Theme Toggle (Hell/Dunkel)
@@ -4760,12 +4837,9 @@ function bindEvents() {
   if (dom.btnHudReopen) dom.btnHudReopen.addEventListener('click', restoreResultOverlay);
   if (dom.btnHudSolution) dom.btnHudSolution.addEventListener('click', showFullSolution);
 
-  // Audio & Soundtrack Modal
-  if (dom.closeAudioBtn) dom.closeAudioBtn.addEventListener('click', closeAudioModal);
-  if (dom.audioModal) dom.audioModal.addEventListener('click', e => {
-    if (e.target === dom.audioModal) closeAudioModal();
-  });
-  if (dom.btnAudioTogglePlay) dom.btnAudioTogglePlay.addEventListener('click', toggleAmbientSound);
+  // Audio & Soundeffekte Popover-Steuerung
+  if (dom.btnMusicMute) dom.btnMusicMute.addEventListener('click', toggleMusicMute);
+  if (dom.btnSfxMute) dom.btnSfxMute.addEventListener('click', toggleSfxMute);
   if (dom.audioVolumeSlider) dom.audioVolumeSlider.addEventListener('input', e => setAudioVolume(e.target.value / 100));
   if (dom.sfxVolumeSlider) {
     dom.sfxVolumeSlider.addEventListener('input', e => setSfxVolume(e.target.value / 100));
@@ -4775,7 +4849,7 @@ function bindEvents() {
   }
   if (dom.audioTrackList) {
     dom.audioTrackList.addEventListener('click', e => {
-      const btn = e.target.closest('.track-item');
+      const btn = e.target.closest('.track-pill');
       if (btn && btn.dataset.track) setAudioTrack(btn.dataset.track);
     });
   }
