@@ -938,6 +938,20 @@ const dom = {
   gameTimerDisplay: document.getElementById('gameTimerDisplay'),
   btnPauseGame: document.getElementById('btnPauseGame'),
   pauseBtnIcon: document.getElementById('pauseBtnIcon'),
+  zenProgressWrap: document.getElementById('zenProgressWrap'),
+  zenProgressLabelText: document.getElementById('zenProgressLabelText'),
+  zenProgressBar: document.getElementById('zenProgressBar'),
+  zenProgressPct: document.getElementById('zenProgressPct'),
+  zenRecordsTitle: document.getElementById('zenRecordsTitle'),
+  zenBestItemEasy: document.getElementById('zenBestItemEasy'),
+  zenBestItemMedium: document.getElementById('zenBestItemMedium'),
+  zenBestItemHard: document.getElementById('zenBestItemHard'),
+  zenBestLblEasy: document.getElementById('zenBestLblEasy'),
+  zenBestLblMedium: document.getElementById('zenBestLblMedium'),
+  zenBestLblHard: document.getElementById('zenBestLblHard'),
+  zenBestValEasy: document.getElementById('zenBestValEasy'),
+  zenBestValMedium: document.getElementById('zenBestValMedium'),
+  zenBestValHard: document.getElementById('zenBestValHard'),
   versusBars: document.getElementById('versusBars'),
   playerLabelText: document.getElementById('playerLabelText'),
   playerBar: document.getElementById('playerProgressBar'),
@@ -2380,6 +2394,8 @@ function checkProgress() {
   const pct = SudokuEngine.getProgress(state.currentBoard, state.initialBoard, state.solution);
   if (dom.playerBar) dom.playerBar.style.width = `${pct}%`;
   if (dom.playerLabel) dom.playerLabel.textContent = `${pct}%`;
+  if (dom.zenProgressBar) dom.zenProgressBar.style.width = `${pct}%`;
+  if (dom.zenProgressPct) dom.zenProgressPct.textContent = `${pct}%`;
 
   const currentBoardKey = state.activeBoard || 'A';
 
@@ -2452,6 +2468,8 @@ function checkProgress() {
 function updateProgressBars(playerPct, oppPct) {
   if (dom.playerBar) dom.playerBar.style.width = `${playerPct}%`;
   if (dom.playerLabel) dom.playerLabel.textContent = `${playerPct}%`;
+  if (dom.zenProgressBar) dom.zenProgressBar.style.width = `${playerPct}%`;
+  if (dom.zenProgressPct) dom.zenProgressPct.textContent = `${playerPct}%`;
   if (dom.opponentBar) dom.opponentBar.style.width = `${oppPct}%`;
   if (dom.opponentLabel) dom.opponentLabel.textContent = `${oppPct}%`;
 }
@@ -2804,6 +2822,7 @@ function setMode(mode) {
   [dom.tabZen, dom.tabVersus, dom.tabSwap].forEach(b => b.classList.remove('active'));
 
   dom.zenDifficultyBar.classList.toggle('hidden', mode !== 'zen');
+  if (dom.zenProgressWrap) dom.zenProgressWrap.classList.toggle('hidden', mode !== 'zen');
   dom.lobby.classList.toggle('hidden', mode === 'zen');
   dom.versusBars.classList.toggle('hidden', mode !== 'versus');
   dom.swapBox.classList.toggle('hidden', mode !== 'swap');
@@ -2829,6 +2848,9 @@ function setZenDifficulty(diff) {
   state.zenDifficulty = diff;
   [dom.zenDiffEasy, dom.zenDiffMedium, dom.zenDiffHard].forEach(b => {
     b.classList.toggle('active', b.dataset.diff === diff);
+  });
+  [dom.zenBestItemEasy, dom.zenBestItemMedium, dom.zenBestItemHard].forEach(el => {
+    if (el) el.classList.toggle('active', el.dataset.diff === diff);
   });
   startNewGame();
 }
@@ -4192,9 +4214,27 @@ function updateAccountUI() {
     return entry ? formatTime(entry.time) : '--:--';
   }
 
-  if (dom.recZenEasy) dom.recZenEasy.textContent = getTime('zen', 'easy');
-  if (dom.recZenMedium) dom.recZenMedium.textContent = getTime('zen', 'medium');
-  if (dom.recZenHard) dom.recZenHard.textContent = getTime('zen', 'hard');
+  const zenEasyTime = getTime('zen', 'easy');
+  const zenMedTime = getTime('zen', 'medium');
+  const zenHardTime = getTime('zen', 'hard');
+
+  if (dom.recZenEasy) dom.recZenEasy.textContent = zenEasyTime;
+  if (dom.recZenMedium) dom.recZenMedium.textContent = zenMedTime;
+  if (dom.recZenHard) dom.recZenHard.textContent = zenHardTime;
+
+  // Einzelspieler-Bestzeiten-Karte & Fortschritts-Label aktualisieren
+  const isDe = state.currentLang !== 'en';
+  if (dom.zenProgressLabelText) dom.zenProgressLabelText.textContent = isDe ? 'Fortschritt' : 'Progress';
+  if (dom.zenRecordsTitle) dom.zenRecordsTitle.textContent = isDe ? 'Eigene Bestzeiten' : 'Personal Best Times';
+  if (dom.zenBestLblEasy) dom.zenBestLblEasy.textContent = isDe ? 'Einfach' : 'Easy';
+  if (dom.zenBestLblMedium) dom.zenBestLblMedium.textContent = isDe ? 'Mittel' : 'Medium';
+  if (dom.zenBestLblHard) dom.zenBestLblHard.textContent = isDe ? 'Schwer' : 'Hard';
+  if (dom.zenBestValEasy) dom.zenBestValEasy.textContent = zenEasyTime;
+  if (dom.zenBestValMedium) dom.zenBestValMedium.textContent = zenMedTime;
+  if (dom.zenBestValHard) dom.zenBestValHard.textContent = zenHardTime;
+  [dom.zenBestItemEasy, dom.zenBestItemMedium, dom.zenBestItemHard].forEach(el => {
+    if (el) el.classList.toggle('active', el.dataset.diff === state.zenDifficulty);
+  });
 
   if (dom.recVersusWins) dom.recVersusWins.textContent = `${state.profile.versus_wins || 0} ${d.winsUnit || 'Siege'}`;
   if (dom.recVersusEasy) dom.recVersusEasy.textContent = getTime('versus', 'easy');
